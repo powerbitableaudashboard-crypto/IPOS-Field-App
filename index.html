@@ -224,13 +224,8 @@ input[type=file]{display:none}
     <div class="form-grid" id="home-forms-grid">
       <div class="form-card blue" onclick="goForm('screen-route')">
         <div class="form-card-icon">📋</div>
-        <div class="form-card-title">Morning Route Plan</div>
-        <div class="form-card-desc">Plan your client visits</div>
-      </div>
-      <div class="form-card green" onclick="goForm('screen-evening')">
-        <div class="form-card-icon">🌆</div>
-        <div class="form-card-title">Evening Report</div>
-        <div class="form-card-desc">Record visit results</div>
+        <div class="form-card-title">Daily Activity Progress</div>
+        <div class="form-card-desc">Daily Actual visits</div>
       </div>
       <div class="form-card purple" onclick="goForm('screen-survey')">
         <div class="form-card-icon">🏪</div>
@@ -266,13 +261,8 @@ input[type=file]{display:none}
         </div>
         <div class="form-card green" onclick="setFormType('route')">
           <div class="form-card-icon">📋</div>
-          <div class="form-card-title">Morning Route Plans</div>
-          <div class="form-card-desc">View planned visits</div>
-        </div>
-        <div class="form-card purple" onclick="setFormType('evening')">
-          <div class="form-card-icon">🌆</div>
-          <div class="form-card-title">Evening Reports</div>
-          <div class="form-card-desc">View visit results</div>
+          <div class="form-card-title">Daily Activity Progress</div>
+          <div class="form-card-desc">View Actual visits</div>
         </div>
         <div class="form-card orange" onclick="setFormType('survey')">
           <div class="form-card-icon">🏪</div>
@@ -366,7 +356,7 @@ input[type=file]{display:none}
 <div class="screen" id="screen-route">
   <div class="app-header">
     <div class="app-header-icon"><img src="data:image/jpeg;base64,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" alt="iPOS"></div>
-    <div><h1>Morning Route Plan</h1><p>Plan your client visits</p></div>
+    <div><h1>Daily Activity Progress</h1><p>Plan your client visits</p></div>
     <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
   </div>
   <div class="form-body">
@@ -393,16 +383,16 @@ input[type=file]{display:none}
       <div class="field"><label>Email</label><input type="email" id="r-email" readonly></div>
     </div>
     <div class="section">
-      <div class="section-title">🗺️ Planned visits (up to 15)</div>
+      <div class="section-title">🗺️ Activity Progress</div>
       <div id="visits-container"></div>
       <button class="add-visit-btn" onclick="addVisit()">+ Add another visit</button>
     </div>
     <button class="submit-btn" id="r-submit" onclick="submitForm('route')">
-      <div class="spinner" id="r-spinner"></div><span id="r-btn">Submit Route Plan</span>
+      <div class="spinner" id="r-spinner"></div><span id="r-btn">Update Activity Progress</span>
     </button>
     <div class="error-msg" id="r-error"></div>
     <div class="success-banner" id="r-success">
-      <div class="success-icon">✅</div><h2>Route Plan Submitted!</h2>
+      <div class="success-icon">✅</div><h2>Activity Progress Submitted!</h2>
       <p>Saved to Google Sheets and your manager has been notified.</p>
       <div class="success-meta" id="r-meta"></div>
       <button class="home-btn" onclick="resetForm('route')">← Back to Home</button>
@@ -410,24 +400,7 @@ input[type=file]{display:none}
   </div>
 </div>
 
-<!-- ══════════════════════════ FORM 2: EVENING REPORT -->
-<div class="screen" id="screen-evening">
-  <div class="app-header">
-    <div class="app-header-icon"><img src="data:image/jpeg;base64,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" alt="iPOS"></div>
-    <div><h1>Evening Report</h1><p>Record today's results</p></div>
-    <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
-  </div>
-  <div class="form-body">
-    <div class="progress-wrap">
-      <div class="progress-label"><span>Progress</span><span id="e-pct">0%</span></div>
-      <div class="progress-bar"><div class="progress-fill" id="e-fill"></div></div>
-    </div>
-    <div class="section">
-      <div class="section-title">📍 Auto-captured</div>
-      <div class="field"><label>Date &amp; time</label>
-        <div class="auto-field"><span>📅</span><span class="auto-val" id="e-date">—</span><span class="badge badge-green">Captured</span></div>
-      </div>
-    </div>
+
     <div class="section">
       <div class="section-title">👤 Trainer (auto-filled)</div>
       <div class="two-col">
@@ -526,7 +499,7 @@ input[type=file]{display:none}
     </button>
     <div class="error-msg" id="s-error"></div>
     <div class="success-banner" id="s-success">
-      <div class="success-icon">✅</div><h2>Survey Submitted!</h2>
+      <div class="success-icon">✅</div><h2>Survey Form Submitted!</h2>
       <p>Saved to Google Sheets.</p>
       <div class="success-meta" id="s-meta"></div>
       <button class="home-btn" onclick="resetForm('survey')">← Back to Home</button>
