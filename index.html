@@ -215,12 +215,12 @@ input[type=file]{display:none}
         <div style="font-size:28px">📊</div>
         <div style="flex:1">
           <div class="form-card-title" style="margin-bottom:2px">Manager Dashboard</div>
-          <div class="form-card-desc">Review and approve pending installations</div>
+          <div class="form-card-desc">View trainer submissions & approve installations</div>
         </div>
         <div id="dashboard-pending-count" style="background:#dc2626;color:#fff;font-size:12px;font-weight:700;border-radius:20px;padding:3px 10px;display:none">0</div>
       </div>
     </div>
-    <div class="form-grid">
+    <div class="form-grid" id="home-forms-grid">
       <div class="form-card blue" onclick="goForm('screen-route')">
         <div class="form-card-icon">📋</div>
         <div class="form-card-title">Morning Route Plan</div>
@@ -250,60 +250,100 @@ input[type=file]{display:none}
 <div class="screen" id="screen-dashboard">
   <div class="app-header">
     <div class="app-header-icon" style="background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px">📊</div>
-    <div><h1>Manager Dashboard</h1><p id="dash-sub">All submitted forms</p></div>
-    <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
+    <div><h1 id="dash-header-title">Manager Dashboard</h1><p id="dash-sub">Select a form to view</p></div>
+    <button class="back-btn" id="dash-back-btn" onclick="showScreen('screen-home')">← Home</button>
   </div>
   <div class="form-body">
-    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      <button class="filter-tab" id="form-install" onclick="setFormType('install')" style="flex:1 1 45%">🔧 Installations</button>
-      <button class="filter-tab" id="form-route" onclick="setFormType('route')" style="flex:1 1 45%">📋 Route Plans</button>
-      <button class="filter-tab" id="form-evening" onclick="setFormType('evening')" style="flex:1 1 45%">🌆 Evening Reports</button>
-      <button class="filter-tab" id="form-survey" onclick="setFormType('survey')" style="flex:1 1 45%">🏪 Shop Surveys</button>
-      <button class="filter-tab" id="form-users" onclick="setFormType('users')" style="flex:1 1 100%">👥 Manage Users</button>
-    </div>
-    <div class="field" id="dash-trainer-filter-wrap" style="margin-bottom:10px">
-      <label>Filter by trainer</label>
-      <select id="dash-trainer-filter" onchange="renderDashList()">
-        <option value="">All trainers</option>
-      </select>
-    </div>
-    <button class="submit-btn" id="add-user-btn" onclick="openUserForm(null)" style="display:none;margin-top:0;margin-bottom:1rem">➕ Register New User</button>
 
-    <!-- User add/edit form (hidden by default) -->
-    <div id="user-form-wrap" style="display:none;background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
-      <div class="section-title" id="user-form-title">➕ Register New User</div>
-      <input type="hidden" id="uf-original-email">
-      <div class="field"><label>Full name<span class="req">*</span></label>
-        <input type="text" id="uf-name" placeholder="e.g. Alice Wanjiku"></div>
-      <div class="field"><label>Email<span class="req">*</span></label>
-        <input type="email" id="uf-email" placeholder="alice@enduring.co.ke"></div>
-      <div class="field"><label>Role<span class="req">*</span></label>
-        <select id="uf-role">
-          <option value="Trainer">Trainer</option>
-          <option value="Manager">Manager</option>
-          <option value="Admin">Admin</option>
-        </select></div>
-      <div class="field"><label>County <span style="font-size:11px;color:#9ca3af;font-weight:400">(trainers only)</span></label>
-        <select id="uf-county"><option value="">Select county…</option><option>Baringo</option><option>Bomet</option><option>Bungoma</option><option>Busia</option><option>Elgeyo-Marakwet</option><option>Embu</option><option>Garissa</option><option>Homa Bay</option><option>Isiolo</option><option>Kajiado</option><option>Kakamega</option><option>Kericho</option><option>Kiambu</option><option>Kilifi</option><option>Kirinyaga</option><option>Kisii</option><option>Kisumu</option><option>Kitui</option><option>Kwale</option><option>Laikipia</option><option>Lamu</option><option>Machakos</option><option>Makueni</option><option>Mandera</option><option>Marsabit</option><option>Meru</option><option>Migori</option><option>Mombasa</option><option>Murang'a</option><option>Nairobi</option><option>Nakuru</option><option>Nandi</option><option>Narok</option><option>Nyamira</option><option>Nyandarua</option><option>Nyeri</option><option>Samburu</option><option>Siaya</option><option>Taita-Taveta</option><option>Tana River</option><option>Tharaka-Nithi</option><option>Trans-Nzoia</option><option>Turkana</option><option>Uasin Gishu</option><option>Vihiga</option><option>Wajir</option><option>West Pokot</option></select></div>
-      <div class="field"><label>Manager Email <span style="font-size:11px;color:#9ca3af;font-weight:400">(who this user reports to)</span></label>
-        <input type="email" id="uf-manager-email" placeholder="manager@enduring.co.ke"></div>
-      <div style="display:flex;gap:8px;margin-top:1rem">
-        <button class="submit-btn" style="margin-top:0" id="uf-save-btn" onclick="saveUser()">💾 Save</button>
-        <button class="home-btn" style="margin-top:0" onclick="closeUserForm()">Cancel</button>
+    <!-- STEP 1: Menu of forms -->
+    <div id="dash-menu">
+      <div class="form-grid">
+        <div class="form-card blue" onclick="setFormType('install')">
+          <div class="form-card-icon">🔧</div>
+          <div class="form-card-title">Installations</div>
+          <div class="form-card-desc">Approve or reject requests</div>
+        </div>
+        <div class="form-card green" onclick="setFormType('route')">
+          <div class="form-card-icon">📋</div>
+          <div class="form-card-title">Route Plans</div>
+          <div class="form-card-desc">View planned visits</div>
+        </div>
+        <div class="form-card purple" onclick="setFormType('evening')">
+          <div class="form-card-icon">🌆</div>
+          <div class="form-card-title">Evening Reports</div>
+          <div class="form-card-desc">View visit results</div>
+        </div>
+        <div class="form-card orange" onclick="setFormType('survey')">
+          <div class="form-card-icon">🏪</div>
+          <div class="form-card-title">Shop Surveys</div>
+          <div class="form-card-desc">View onboarded shops</div>
+        </div>
       </div>
-      <div class="error-msg" id="uf-error"></div>
+      <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb;margin-top:4px" onclick="setFormType('users')">
+        <div class="form-card-icon">👥</div>
+        <div class="form-card-title">Manage Users</div>
+        <div class="form-card-desc">Register, edit or remove trainers</div>
+      </div>
     </div>
-    <div id="install-status-tabs" style="display:flex;gap:8px;margin-bottom:1rem">
-      <button class="filter-tab active" id="filter-pending" onclick="setDashFilter('PENDING')">⏳ Pending</button>
-      <button class="filter-tab" id="filter-approved" onclick="setDashFilter('APPROVED')">✅ Approved</button>
-      <button class="filter-tab" id="filter-rejected" onclick="setDashFilter('REJECTED')">❌ Rejected</button>
+
+    <!-- STEP 2: Detail view (filters + list) -->
+    <div id="dash-detail" style="display:none">
+      <button class="back-btn" style="margin:0 0 1rem 0;background:var(--surface-2);color:var(--text-s)" onclick="backToDashMenu()">← Back to menu</button>
+
+      <div id="dash-filters" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px">
+        <div class="two-col">
+          <div class="field" style="margin-bottom:0"><label>Trainer</label>
+            <select id="dash-trainer-filter" onchange="renderDashList()"><option value="">All trainers</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0"><label>County</label>
+            <select id="dash-county-filter" onchange="renderDashList()"><option value="">All counties</option></select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0"><label>Date</label>
+          <input type="date" id="dash-date-filter" onchange="renderDashList()">
+        </div>
+      </div>
+
+      <button class="submit-btn" id="add-user-btn" onclick="openUserForm(null)" style="display:none;margin-top:0;margin-bottom:1rem">➕ Register New User</button>
+
+      <!-- User add/edit form (hidden by default) -->
+      <div id="user-form-wrap" style="display:none;background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+        <div class="section-title" id="user-form-title">➕ Register New User</div>
+        <input type="hidden" id="uf-original-email">
+        <div class="field"><label>Full name<span class="req">*</span></label>
+          <input type="text" id="uf-name" placeholder="e.g. Alice Wanjiku"></div>
+        <div class="field"><label>Email<span class="req">*</span></label>
+          <input type="email" id="uf-email" placeholder="alice@enduring.co.ke"></div>
+        <div class="field"><label>Role<span class="req">*</span></label>
+          <select id="uf-role">
+            <option value="Trainer">Trainer</option>
+            <option value="Manager">Manager</option>
+            <option value="Admin">Admin</option>
+          </select></div>
+        <div class="field"><label>County <span style="font-size:11px;color:#9ca3af;font-weight:400">(trainers only)</span></label>
+          <select id="uf-county"><option value="">Select county…</option><option>Baringo</option><option>Bomet</option><option>Bungoma</option><option>Busia</option><option>Elgeyo-Marakwet</option><option>Embu</option><option>Garissa</option><option>Homa Bay</option><option>Isiolo</option><option>Kajiado</option><option>Kakamega</option><option>Kericho</option><option>Kiambu</option><option>Kilifi</option><option>Kirinyaga</option><option>Kisii</option><option>Kisumu</option><option>Kitui</option><option>Kwale</option><option>Laikipia</option><option>Lamu</option><option>Machakos</option><option>Makueni</option><option>Mandera</option><option>Marsabit</option><option>Meru</option><option>Migori</option><option>Mombasa</option><option>Murang'a</option><option>Nairobi</option><option>Nakuru</option><option>Nandi</option><option>Narok</option><option>Nyamira</option><option>Nyandarua</option><option>Nyeri</option><option>Samburu</option><option>Siaya</option><option>Taita-Taveta</option><option>Tana River</option><option>Tharaka-Nithi</option><option>Trans-Nzoia</option><option>Turkana</option><option>Uasin Gishu</option><option>Vihiga</option><option>Wajir</option><option>West Pokot</option></select></div>
+        <div class="field"><label>Manager Email <span style="font-size:11px;color:#9ca3af;font-weight:400">(who this user reports to)</span></label>
+          <input type="email" id="uf-manager-email" placeholder="manager@enduring.co.ke"></div>
+        <div style="display:flex;gap:8px;margin-top:1rem">
+          <button class="submit-btn" style="margin-top:0" id="uf-save-btn" onclick="saveUser()">💾 Save</button>
+          <button class="home-btn" style="margin-top:0" onclick="closeUserForm()">Cancel</button>
+        </div>
+        <div class="error-msg" id="uf-error"></div>
+      </div>
+
+      <div id="install-status-tabs" style="display:flex;gap:8px;margin-bottom:1rem">
+        <button class="filter-tab active" id="filter-pending" onclick="setDashFilter('PENDING')">⏳ Pending</button>
+        <button class="filter-tab" id="filter-approved" onclick="setDashFilter('APPROVED')">✅ Approved</button>
+        <button class="filter-tab" id="filter-rejected" onclick="setDashFilter('REJECTED')">❌ Rejected</button>
+      </div>
+      <div id="dash-loading" style="text-align:center;padding:2rem;color:#9ca3af;font-size:13px">Loading…</div>
+      <div id="dash-empty" style="display:none;text-align:center;padding:2.5rem 1rem;color:#9ca3af">
+        <div style="font-size:36px;margin-bottom:8px">📭</div>
+        <div style="font-size:13px">No records found</div>
+      </div>
+      <div id="dash-list"></div>
     </div>
-    <div id="dash-loading" style="text-align:center;padding:2rem;color:#9ca3af;font-size:13px">Loading…</div>
-    <div id="dash-empty" style="display:none;text-align:center;padding:2.5rem 1rem;color:#9ca3af">
-      <div style="font-size:36px;margin-bottom:8px">📭</div>
-      <div style="font-size:13px">No records found</div>
-    </div>
-    <div id="dash-list"></div>
+
   </div>
 </div>
 
@@ -648,17 +688,19 @@ function doLogout() {
 function goHome() {
   if(!session){ showScreen('screen-login'); return; }
   var now = new Date();
+  var isManagerOrAdmin = session.role === 'Manager' || session.role === 'Admin';
   document.getElementById('home-welcome').textContent = 'Good ' + getTimeOfDay() + ', ' + session.name.split(' ')[0] + '!';
   document.getElementById('home-date-str').textContent = now.toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  document.getElementById('home-county-chip').textContent = '📍 ' + (session.county||'Unknown');
+  document.getElementById('home-county-chip').textContent = '📍 ' + (session.county || (isManagerOrAdmin ? 'All Regions' : 'Unknown'));
   document.getElementById('home-manager-chip').textContent = '👔 ' + (session.managerName||'Manager');
   document.getElementById('home-role-chip').textContent = '🎯 ' + (session.role||'Trainer');
   document.getElementById('home-user-initial').textContent = session.name.charAt(0).toUpperCase();
-  document.getElementById('home-header-sub').textContent = session.county + ' County';
+  document.getElementById('home-header-sub').textContent = session.county ? session.county+' County' : 'Field data collection';
 
-  var isManagerOrAdmin = session.role === 'Manager' || session.role === 'Admin';
   document.getElementById('dashboard-card-wrap').style.display = isManagerOrAdmin ? 'block' : 'none';
   document.getElementById('notif-bell').style.display = isManagerOrAdmin ? 'flex' : 'none';
+  // Managers/Admin only use the dashboard to view data — they don't fill trainer forms
+  document.getElementById('home-forms-grid').style.display = isManagerOrAdmin ? 'none' : 'grid';
   if(isManagerOrAdmin) refreshPendingBadge();
 
   showScreen('screen-home');
@@ -1096,18 +1138,26 @@ var dashLabels = { install:'Installations', route:'Route Plans', evening:'Evenin
 
 function openDashboard(){
   showScreen('screen-dashboard');
-  document.getElementById('dash-sub').textContent = session.role==='Admin' ? 'All counties' : (session.county||'') + ' region';
-  setFormType('install');
+  backToDashMenu();
+}
+
+function backToDashMenu(){
+  document.getElementById('dash-menu').style.display='block';
+  document.getElementById('dash-detail').style.display='none';
+  document.getElementById('dash-sub').textContent = 'Select a form to view';
+  closeUserForm();
 }
 
 function setFormType(type){
   dashFormType = type;
-  ['install','route','evening','survey','users'].forEach(function(t){
-    document.getElementById('form-'+t).classList.toggle('active', t===type);
-  });
+  document.getElementById('dash-menu').style.display='none';
+  document.getElementById('dash-detail').style.display='block';
   document.getElementById('install-status-tabs').style.display = (type==='install') ? 'flex' : 'none';
-  document.getElementById('dash-trainer-filter-wrap').style.display = (type==='users') ? 'none' : 'block';
+  document.getElementById('dash-filters').style.display = (type==='users') ? 'none' : 'flex';
   document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
+  document.getElementById('dash-trainer-filter').value='';
+  document.getElementById('dash-county-filter').value='';
+  document.getElementById('dash-date-filter').value='';
   closeUserForm();
   document.getElementById('dash-sub').textContent = dashLabels[type] + ' — ' + (session.role==='Admin' ? 'All counties' : (session.county||'') + ' region');
   loadDashboard();
@@ -1150,17 +1200,31 @@ function loadDashboard(){
 }
 
 function populateTrainerFilter(){
-  var sel = document.getElementById('dash-trainer-filter');
-  var current = sel.value;
+  var trainerSel = document.getElementById('dash-trainer-filter');
+  var countySel = document.getElementById('dash-county-filter');
+  var curTrainer = trainerSel.value, curCounty = countySel.value;
   var nameKey = dashFormType==='install' ? 'trainerName' : 'Trainer Name';
-  var names = [];
+  var countyKey = dashFormType==='install' ? 'county' : 'County';
+  var names = [], counties = [];
   dashAllItems.forEach(function(item){
-    var n = item[nameKey];
-    if(n && names.indexOf(n)===-1) names.push(n);
+    var n = item[nameKey]; if(n && names.indexOf(n)===-1) names.push(n);
+    var c = item[countyKey]; if(c && counties.indexOf(c)===-1) counties.push(c);
   });
-  names.sort();
-  sel.innerHTML = '<option value="">All trainers</option>' + names.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('');
-  if(names.indexOf(current)!==-1) sel.value = current;
+  names.sort(); counties.sort();
+  trainerSel.innerHTML = '<option value="">All trainers</option>' + names.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('');
+  countySel.innerHTML = '<option value="">All counties</option>' + counties.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  if(names.indexOf(curTrainer)!==-1) trainerSel.value = curTrainer;
+  if(counties.indexOf(curCounty)!==-1) countySel.value = curCounty;
+}
+
+function dateMatches(itemDateStr, filterDateVal){
+  if(!filterDateVal) return true;
+  if(!itemDateStr) return false;
+  // itemDateStr looks like "Mon, Jul 26 2026, 09:15" — parse loosely
+  var d = new Date(itemDateStr);
+  if(isNaN(d.getTime())) return true; // if unparseable, don't exclude
+  var iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return iso === filterDateVal;
 }
 
 function renderDashList(){
@@ -1171,8 +1235,13 @@ function renderDashList(){
 
 function renderInstallList(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
+  var countyFilter = document.getElementById('dash-county-filter').value;
+  var dateFilter = document.getElementById('dash-date-filter').value;
   var filtered = dashAllItems.filter(function(x){
-    return x.status===dashFilter && (!trainerFilter || x.trainerName===trainerFilter);
+    return x.status===dashFilter &&
+      (!trainerFilter || x.trainerName===trainerFilter) &&
+      (!countyFilter || x.county===countyFilter) &&
+      dateMatches(x.date, dateFilter);
   });
   var listEl = document.getElementById('dash-list');
   listEl.innerHTML='';
@@ -1202,9 +1271,9 @@ function renderInstallList(){
         '<div class="dash-item-status" style="background:'+statusColors[item.status].split(';')[0]+';color:'+statusColors[item.status].split('color:')[1]+'">'+item.status+'</div>' +
       '</div>' +
       '<div class="dash-item-body">' +
-        '👤 '+(item.trainerName||'')+' · 📍 '+(item.shopLocation||'')+'<br>'+
+        '👤 '+(item.trainerName||'')+' · 📍 '+(item.county?item.county+' · ':'')+(item.shopLocation||'')+'<br>'+
         (item.ownerName ? '👨 Owner: '+item.ownerName+' · 📞 '+(item.ownerPhone||'')+'<br>' : '') +
-        '🕐 '+(item.submittedAt||'')+
+        '🕐 '+(item.date||item.submittedAt||'')+
         (item.notes ? '<br>📝 '+item.notes : '') +
       '</div>' +
       (photosHtml ? '<div class="dash-item-photos">'+photosHtml+'</div>' : '') +
@@ -1215,8 +1284,12 @@ function renderInstallList(){
 
 function renderGenericList(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
+  var countyFilter = document.getElementById('dash-county-filter').value;
+  var dateFilter = document.getElementById('dash-date-filter').value;
   var filtered = dashAllItems.filter(function(x){
-    return !trainerFilter || x['Trainer Name']===trainerFilter;
+    return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
+      (!countyFilter || x['County']===countyFilter) &&
+      dateMatches(x['Date'], dateFilter);
   });
   var listEl = document.getElementById('dash-list');
   listEl.innerHTML='';
