@@ -211,15 +211,16 @@ input[type=file]{display:none}
       </div>
     </div>
     <div id="dashboard-card-wrap" style="display:none">
-      <div class="form-card" style="background:#fef2f2;border-color:#fecaca;margin-bottom:12px;display:flex;align-items:center;gap:14px;text-align:left;padding:1rem" onclick="openDashboard()">
-        <div style="font-size:28px">📊</div>
+      <div onclick="openDashboard()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:18px;margin-bottom:16px;display:flex;align-items:center;gap:18px;text-align:left;padding:1.5rem 1.25rem;cursor:pointer;box-shadow:0 8px 20px rgba(79,70,229,.35);-webkit-tap-highlight-color:transparent">
+        <div style="font-size:44px;background:rgba(255,255,255,.18);border-radius:14px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;flex-shrink:0">📊</div>
         <div style="flex:1">
-          <div class="form-card-title" style="margin-bottom:2px">Manager Dashboard</div>
-          <div class="form-card-desc">View trainer submissions & approve installations</div>
+          <div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:3px">Manager Dashboard</div>
+          <div style="font-size:12.5px;color:rgba(255,255,255,.85);line-height:1.5">View trainer submissions &amp; approve installations</div>
         </div>
-        <div id="dashboard-pending-count" style="background:#dc2626;color:#fff;font-size:12px;font-weight:700;border-radius:20px;padding:3px 10px;display:none">0</div>
+        <div id="dashboard-pending-count" style="background:#dc2626;color:#fff;font-size:13px;font-weight:700;border-radius:20px;padding:4px 12px;display:none;flex-shrink:0">0</div>
       </div>
     </div>
+
     <div class="form-grid" id="home-forms-grid">
       <div class="form-card blue" onclick="goForm('screen-route')">
         <div class="form-card-icon">📋</div>
@@ -299,8 +300,22 @@ input[type=file]{display:none}
             <select id="dash-county-filter" onchange="renderDashList()"><option value="">All counties</option></select>
           </div>
         </div>
-        <div class="field" style="margin-bottom:0"><label>Date</label>
-          <input type="date" id="dash-date-filter" onchange="renderDashList()">
+        <div class="field" style="margin-bottom:0"><label>Date range</label>
+          <select id="dash-range-filter" onchange="onRangeFilterChange()">
+            <option value="all">All time</option>
+            <option value="today">Today</option>
+            <option value="month">This Month</option>
+            <option value="year">This Year</option>
+            <option value="custom">Custom range…</option>
+          </select>
+        </div>
+        <div class="two-col" id="dash-custom-range-wrap" style="display:none">
+          <div class="field" style="margin-bottom:0"><label>From</label>
+            <input type="date" id="dash-date-from" onchange="renderDashList()">
+          </div>
+          <div class="field" style="margin-bottom:0"><label>To</label>
+            <input type="date" id="dash-date-to" onchange="renderDashList()">
+          </div>
         </div>
       </div>
 
@@ -612,7 +627,7 @@ input[type=file]{display:none}
 </div>
 
 <script>
-var APPS_SCRIPT_URL ='https://script.google.com/macros/s/AKfycbyGO_3aw2o5g7UMxBJnZEYxjh2Lt9rOnA0nM0ZRNLWpF-TPE_psWqONiQACqw0LCff9/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGO_3aw2o5g7UMxBJnZEYxjh2Lt9rOnA0nM0ZRNLWpF-TPE_psWqONiQACqw0LCff9/exec';
 
 // ── SESSION ──────────────────────────────────────────────────
 var session = null; // { name, email, county, managerEmail, managerName, role }
@@ -1157,7 +1172,10 @@ function setFormType(type){
   document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
   document.getElementById('dash-trainer-filter').value='';
   document.getElementById('dash-county-filter').value='';
-  document.getElementById('dash-date-filter').value='';
+  document.getElementById('dash-range-filter').value='all';
+  document.getElementById('dash-custom-range-wrap').style.display='none';
+  document.getElementById('dash-date-from').value='';
+  document.getElementById('dash-date-to').value='';
   closeUserForm();
   document.getElementById('dash-sub').textContent = dashLabels[type] + ' — ' + (session.role==='Admin' ? 'All counties' : (session.county||'') + ' region');
   loadDashboard();
@@ -1217,14 +1235,38 @@ function populateTrainerFilter(){
   if(counties.indexOf(curCounty)!==-1) countySel.value = curCounty;
 }
 
-function dateMatches(itemDateStr, filterDateVal){
-  if(!filterDateVal) return true;
+function onRangeFilterChange(){
+  var range = document.getElementById('dash-range-filter').value;
+  document.getElementById('dash-custom-range-wrap').style.display = (range==='custom') ? 'grid' : 'none';
+  renderDashList();
+}
+
+function dateMatches(itemDateStr){
+  var range = document.getElementById('dash-range-filter').value;
+  if(range==='all') return true;
   if(!itemDateStr) return false;
-  // itemDateStr looks like "Mon, Jul 26 2026, 09:15" — parse loosely
   var d = new Date(itemDateStr);
   if(isNaN(d.getTime())) return true; // if unparseable, don't exclude
-  var iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  return iso === filterDateVal;
+
+  var now = new Date();
+  if(range==='today'){
+    return d.toDateString() === now.toDateString();
+  }
+  if(range==='month'){
+    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+  }
+  if(range==='year'){
+    return d.getFullYear()===now.getFullYear();
+  }
+  if(range==='custom'){
+    var fromVal = document.getElementById('dash-date-from').value;
+    var toVal = document.getElementById('dash-date-to').value;
+    var itemIso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(fromVal && itemIso < fromVal) return false;
+    if(toVal && itemIso > toVal) return false;
+    return true;
+  }
+  return true;
 }
 
 function renderDashList(){
@@ -1236,12 +1278,11 @@ function renderDashList(){
 function renderInstallList(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
-  var dateFilter = document.getElementById('dash-date-filter').value;
   var filtered = dashAllItems.filter(function(x){
     return x.status===dashFilter &&
       (!trainerFilter || x.trainerName===trainerFilter) &&
       (!countyFilter || x.county===countyFilter) &&
-      dateMatches(x.date, dateFilter);
+      dateMatches(x.date);
   });
   var listEl = document.getElementById('dash-list');
   listEl.innerHTML='';
@@ -1285,11 +1326,10 @@ function renderInstallList(){
 function renderGenericList(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
-  var dateFilter = document.getElementById('dash-date-filter').value;
   var filtered = dashAllItems.filter(function(x){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
-      dateMatches(x['Date'], dateFilter);
+      dateMatches(x['Date']);
   });
   var listEl = document.getElementById('dash-list');
   listEl.innerHTML='';
