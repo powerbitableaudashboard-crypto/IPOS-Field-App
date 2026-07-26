@@ -196,8 +196,8 @@ input[type=file]{display:none}
       <span id="home-user-initial">A</span>
       <span>Sign out</span>
     </div>
-    <div id="notif-bell" onclick="event.stopPropagation();openDashboard()" style="display:none;position:relative;background:rgba(255,255,255,0.2);border-radius:8px;width:36px;height:36px;display:none;align-items:center;justify-content:center;cursor:pointer;margin-left:8px;flex-shrink:0">
-      🔔<span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px">0</span>
+    <div id="notif-bell" onclick="event.stopPropagation();openDashboard()" style="display:none;position:relative;background:rgba(255,255,255,0.2);border-radius:8px;width:36px;height:36px;align-items:center;justify-content:center;cursor:pointer;margin-left:8px;flex-shrink:0;font-size:16px">
+      🔔<span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:16px;height:16px;align-items:center;justify-content:center;padding:0 3px">0</span>
     </div>
   </div>
   <div class="home-body">
@@ -250,19 +250,58 @@ input[type=file]{display:none}
 <div class="screen" id="screen-dashboard">
   <div class="app-header">
     <div class="app-header-icon" style="background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px">📊</div>
-    <div><h1>Installation Approvals</h1><p id="dash-sub">Pending requests</p></div>
+    <div><h1>Manager Dashboard</h1><p id="dash-sub">All submitted forms</p></div>
     <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
   </div>
   <div class="form-body">
-    <div style="display:flex;gap:8px;margin-bottom:1rem">
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="filter-tab" id="form-install" onclick="setFormType('install')" style="flex:1 1 45%">🔧 Installations</button>
+      <button class="filter-tab" id="form-route" onclick="setFormType('route')" style="flex:1 1 45%">📋 Route Plans</button>
+      <button class="filter-tab" id="form-evening" onclick="setFormType('evening')" style="flex:1 1 45%">🌆 Evening Reports</button>
+      <button class="filter-tab" id="form-survey" onclick="setFormType('survey')" style="flex:1 1 45%">🏪 Shop Surveys</button>
+      <button class="filter-tab" id="form-users" onclick="setFormType('users')" style="flex:1 1 100%">👥 Manage Users</button>
+    </div>
+    <div class="field" id="dash-trainer-filter-wrap" style="margin-bottom:10px">
+      <label>Filter by trainer</label>
+      <select id="dash-trainer-filter" onchange="renderDashList()">
+        <option value="">All trainers</option>
+      </select>
+    </div>
+    <button class="submit-btn" id="add-user-btn" onclick="openUserForm(null)" style="display:none;margin-top:0;margin-bottom:1rem">➕ Register New User</button>
+
+    <!-- User add/edit form (hidden by default) -->
+    <div id="user-form-wrap" style="display:none;background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+      <div class="section-title" id="user-form-title">➕ Register New User</div>
+      <input type="hidden" id="uf-original-email">
+      <div class="field"><label>Full name<span class="req">*</span></label>
+        <input type="text" id="uf-name" placeholder="e.g. Alice Wanjiku"></div>
+      <div class="field"><label>Email<span class="req">*</span></label>
+        <input type="email" id="uf-email" placeholder="alice@enduring.co.ke"></div>
+      <div class="field"><label>Role<span class="req">*</span></label>
+        <select id="uf-role">
+          <option value="Trainer">Trainer</option>
+          <option value="Manager">Manager</option>
+          <option value="Admin">Admin</option>
+        </select></div>
+      <div class="field"><label>County <span style="font-size:11px;color:#9ca3af;font-weight:400">(trainers only)</span></label>
+        <select id="uf-county"><option value="">Select county…</option><option>Baringo</option><option>Bomet</option><option>Bungoma</option><option>Busia</option><option>Elgeyo-Marakwet</option><option>Embu</option><option>Garissa</option><option>Homa Bay</option><option>Isiolo</option><option>Kajiado</option><option>Kakamega</option><option>Kericho</option><option>Kiambu</option><option>Kilifi</option><option>Kirinyaga</option><option>Kisii</option><option>Kisumu</option><option>Kitui</option><option>Kwale</option><option>Laikipia</option><option>Lamu</option><option>Machakos</option><option>Makueni</option><option>Mandera</option><option>Marsabit</option><option>Meru</option><option>Migori</option><option>Mombasa</option><option>Murang'a</option><option>Nairobi</option><option>Nakuru</option><option>Nandi</option><option>Narok</option><option>Nyamira</option><option>Nyandarua</option><option>Nyeri</option><option>Samburu</option><option>Siaya</option><option>Taita-Taveta</option><option>Tana River</option><option>Tharaka-Nithi</option><option>Trans-Nzoia</option><option>Turkana</option><option>Uasin Gishu</option><option>Vihiga</option><option>Wajir</option><option>West Pokot</option></select></div>
+      <div class="field"><label>Manager Email <span style="font-size:11px;color:#9ca3af;font-weight:400">(who this user reports to)</span></label>
+        <input type="email" id="uf-manager-email" placeholder="manager@enduring.co.ke"></div>
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button class="submit-btn" style="margin-top:0" id="uf-save-btn" onclick="saveUser()">💾 Save</button>
+        <button class="home-btn" style="margin-top:0" onclick="closeUserForm()">Cancel</button>
+      </div>
+      <div class="error-msg" id="uf-error"></div>
+    </div>
+    <div id="install-status-tabs" style="display:flex;gap:8px;margin-bottom:1rem">
       <button class="filter-tab active" id="filter-pending" onclick="setDashFilter('PENDING')">⏳ Pending</button>
       <button class="filter-tab" id="filter-approved" onclick="setDashFilter('APPROVED')">✅ Approved</button>
       <button class="filter-tab" id="filter-rejected" onclick="setDashFilter('REJECTED')">❌ Rejected</button>
     </div>
-    <div id="dash-loading" style="text-align:center;padding:2rem;color:#9ca3af;font-size:13px">Loading installations…</div>
+    <div id="dash-loading" style="text-align:center;padding:2rem;color:#9ca3af;font-size:13px">Loading…</div>
     <div id="dash-empty" style="display:none;text-align:center;padding:2.5rem 1rem;color:#9ca3af">
       <div style="font-size:36px;margin-bottom:8px">📭</div>
-      <div style="font-size:13px">No installations in this category</div>
+      <div style="font-size:13px">No records found</div>
     </div>
     <div id="dash-list"></div>
   </div>
@@ -399,6 +438,9 @@ input[type=file]{display:none}
       <div class="field"><label for="s-shopname">Shop name<span class="req">*</span></label>
         <input type="text" id="s-shopname" placeholder="e.g. Kamau General Store" oninput="calcProgress('s')">
       </div>
+      <div class="field"><label for="s-shopid">Shop ID<span class="req">*</span></label>
+        <input type="text" id="s-shopid" placeholder="e.g. 123456" inputmode="numeric" oninput="calcProgress('s')">
+      </div>
       <div class="field"><label for="s-owner">Owner name<span class="req">*</span></label>
         <input type="text" id="s-owner" placeholder="e.g. John Kamau" oninput="calcProgress('s')">
       </div>
@@ -416,14 +458,7 @@ input[type=file]{display:none}
     </div>
     <div class="section">
       <div class="section-title">📷 Photos</div>
-      <div class="field"><label>Shop picture<span class="req">*</span></label>
-        <div class="photo-box" onclick="document.getElementById('s-shop-file').click()">
-          <div class="photo-ph" id="s-shop-ph"><span class="photo-ph-icon">📸</span><span>Tap to photograph</span><small>Shop exterior or interior</small></div>
-          <div class="photo-preview" id="s-shop-preview"><img id="s-shop-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('s-shop')">↺ Retake</button></div>
-        </div>
-        <input type="file" id="s-shop-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'s-shop','s')">
-      </div>
-      <div class="field" style="margin-top:1rem"><label>Owner App Photo (Onboarding Form)<span class="req">*</span></label>
+      <div class="field"><label>Owner App Photo (Onboarding Form)<span class="req">*</span></label>
         <div class="photo-box" onclick="document.getElementById('s-owner-file').click()">
           <div class="photo-ph" id="s-owner-ph"><span class="photo-ph-icon">🤳</span><span>Tap to photograph</span><small>Owner with app visible</small></div>
           <div class="photo-preview" id="s-owner-preview"><img id="s-owner-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('s-owner')">↺ Retake</button></div>
@@ -477,6 +512,12 @@ input[type=file]{display:none}
       <div class="section-title">🔧 Installation details</div>
       <div class="field"><label for="i-shopname">Shop name<span class="req">*</span></label>
         <input type="text" id="i-shopname" placeholder="e.g. Kamau General Store" oninput="calcProgress('i')">
+      </div>
+      <div class="field"><label for="i-ownername">Shop owner name<span class="req">*</span></label>
+        <input type="text" id="i-ownername" placeholder="e.g. John Kamau" oninput="calcProgress('i')">
+      </div>
+      <div class="field"><label for="i-ownerphone">Shop owner phone<span class="req">*</span></label>
+        <input type="tel" id="i-ownerphone" placeholder="0712 345 678" oninput="calcProgress('i')">
       </div>
       <div class="field"><label for="i-location">Shop location<span class="req">*</span></label>
         <input type="text" id="i-location" placeholder="e.g. Nakuru Town, Kenyatta Ave" oninput="calcProgress('i')">
@@ -662,6 +703,7 @@ function showScreen(id) {
 
 // ── GPS ──────────────────────────────────────────────────────
 var gpsStore = {};
+var visitGpsStore = {};
 
 function initGPS(prefix) {
   if(!navigator.geolocation){ setGPS(prefix,'GPS not supported','red'); return; }
@@ -722,24 +764,55 @@ var visitCount=0, resultCount=0;
 function addVisit(){
   if(visitCount>=15){alert('Maximum 15 visits.');return;}
   visitCount++;
+  var id=visitCount;
   var c=document.getElementById('visits-container');
   var d=document.createElement('div');
-  d.className='visit-row'; d.id='visit-'+visitCount;
-  d.innerHTML='<div class="visit-num">Visit '+visitCount+
-    '<button class="remove-btn" onclick="removeVisit('+visitCount+')">✕ Remove</button></div>'+
+  d.className='visit-row'; d.id='visit-'+id;
+  d.innerHTML='<div class="visit-num">Visit '+id+
+    '<button class="remove-btn" onclick="removeVisit('+id+')">✕ Remove</button></div>'+
     '<div class="field"><label>Client / Shop name<span class="req">*</span></label>'+
-    '<input type="text" id="v-name-'+visitCount+'" placeholder="Shop or client name" oninput="calcProgress(\'r\')"></div>'+
+    '<input type="text" id="v-name-'+id+'" placeholder="Shop or client name" oninput="calcProgress(\'r\')"></div>'+
     '<div class="two-col">'+
-    '<div class="field"><label>Location</label><input type="text" id="v-loc-'+visitCount+'" placeholder="Area/town"></div>'+
-    '<div class="field"><label>Expected time</label><input type="time" id="v-time-'+visitCount+'"></div>'+
+    '<div class="field"><label>Location</label><input type="text" id="v-loc-'+id+'" placeholder="Area/town"></div>'+
+    '<div class="field"><label>Expected time</label><input type="time" id="v-time-'+id+'"></div>'+
     '</div>'+
+    '<div class="field"><label>Shop owner phone number</label>'+
+    '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" oninput="calcProgress(\'r\')"></div>'+
+    '<div class="field"><label>GPS location <span style="font-size:11px;color:#9ca3af;font-weight:400">(tap to capture at this shop)</span></label>'+
+    '<div class="auto-field"><span>📌</span><span class="auto-val" id="v-gps-'+id+'">Not captured</span>'+
+    '<span class="badge badge-yellow" id="v-gps-badge-'+id+'">Pending</span></div>'+
+    '<button type="button" onclick="captureVisitGPS('+id+')" style="margin-top:8px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">📍 Capture Location</button></div>'+
     '<div class="field"><label>Purpose<span class="req">*</span></label>'+
-    '<select id="v-purpose-'+visitCount+'"><option value="">Select purpose…</option>'+
-    '<option>Shop onboarding</option><option>Follow-up visit</option>'+
+    '<select id="v-purpose-'+id+'" onchange="calcProgress(\'r\')"><option value="">Select purpose…</option>'+
+    '<option>Shop onboarding</option><option>Pitching</option><option>Follow-up visit</option>'+
     '<option>Installation</option><option>Training</option>'+
-    '<option>Issue resolution</option><option>Routine check</option><option>Other</option></select></div>';
+    '<option>Issue resolution</option><option>Routine check</option><option>Other</option></select></div>'+
+    '<div class="field"><label>Front shop picture <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>'+
+    '<div class="photo-box" onclick="document.getElementById(\'v-photo-'+id+'-file\').click()">'+
+    '<div class="photo-ph" id="v-photo-'+id+'-ph"><span class="photo-ph-icon">📸</span><span>Tap to photograph</span><small>Front of the shop</small></div>'+
+    '<div class="photo-preview" id="v-photo-'+id+'-preview"><img id="v-photo-'+id+'-img" src="" alt="">'+
+    '<button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto(\'v-photo-'+id+'\')">↺ Retake</button></div></div>'+
+    '<input type="file" id="v-photo-'+id+'-file" accept="image/*" capture="environment" onchange="previewPhoto(this,\'v-photo-'+id+'\',\'r\')"></div>'+
+    '<div class="field"><label>Client feedback <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>'+
+    '<textarea id="v-feedback-'+id+'" placeholder="Any expected feedback or notes for this visit..." style="min-height:60px"></textarea></div>';
   c.appendChild(d);
   calcProgress('r');
+}
+
+function captureVisitGPS(id){
+  var valEl=document.getElementById('v-gps-'+id);
+  var badgeEl=document.getElementById('v-gps-badge-'+id);
+  if(!navigator.geolocation){ valEl.textContent='GPS not supported'; badgeEl.textContent='Failed'; badgeEl.className='badge badge-red'; return; }
+  valEl.textContent='Getting location...';
+  badgeEl.textContent='Trying...'; badgeEl.className='badge badge-yellow';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat=pos.coords.latitude.toFixed(6), lng=pos.coords.longitude.toFixed(6), acc=Math.round(pos.coords.accuracy);
+    visitGpsStore[id]={lat:lat,lng:lng,acc:acc};
+    valEl.textContent=lat+', '+lng+' (\u00b1'+acc+'m)';
+    badgeEl.textContent='Captured'; badgeEl.className='badge badge-green';
+  },function(err){
+    valEl.textContent='Failed \u2014 tap to retry'; badgeEl.textContent='Failed'; badgeEl.className='badge badge-red';
+  },{enableHighAccuracy:true,timeout:12000});
 }
 
 function removeVisit(n){
@@ -750,18 +823,21 @@ function removeVisit(n){
 
 function addResult(){
   resultCount++;
+  var id=resultCount;
+  var nowTime=new Date().toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'});
   var c=document.getElementById('results-container');
   var d=document.createElement('div');
-  d.className='visit-row'; d.id='result-'+resultCount;
-  d.innerHTML='<div class="visit-num">Result '+resultCount+
-    '<button class="remove-btn" onclick="removeResult('+resultCount+')">✕ Remove</button></div>'+
+  d.className='visit-row'; d.id='result-'+id;
+  d.innerHTML='<div class="visit-num">Result '+id+
+    '<button class="remove-btn" onclick="removeResult('+id+')">✕ Remove</button></div>'+
     '<div class="two-col">'+
     '<div class="field"><label>Client / Shop<span class="req">*</span></label>'+
-    '<input type="text" id="er-name-'+resultCount+'" placeholder="Shop name" oninput="calcProgress(\'e\')"></div>'+
-    '<div class="field"><label>Arrival time</label><input type="time" id="er-time-'+resultCount+'"></div>'+
+    '<input type="text" id="er-name-'+id+'" placeholder="Shop name" oninput="calcProgress(\'e\')"></div>'+
+    '<div class="field"><label>Time <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>'+
+    '<input type="text" id="er-time-'+id+'" value="'+nowTime+'" readonly style="background:#f3f4f6"></div>'+
     '</div>'+
     '<div class="field"><label>Result<span class="req">*</span></label>'+
-    '<select id="er-result-'+resultCount+'"><option value="">Select…</option>'+
+    '<select id="er-result-'+id+'"><option value="">Select…</option>'+
     '<option>Successful onboarding</option><option>Installation done</option>'+
     '<option>Follow-up required</option><option>Client not available</option>'+
     '<option>Issue resolved</option><option>Training completed</option>'+
@@ -818,7 +894,7 @@ function calcProgress(prefix){
       fields.push(v('er-name-'+id),v('er-result-'+id));
     });
   } else if(prefix==='s'){
-    fields=[v('s-trainer'),v('s-county'),v('s-shopname'),v('s-owner'),v('s-location'),v('s-phone'),v('s-transactions'),photos['s-shop']||'',photos['s-owner']||''];
+    fields=[v('s-trainer'),v('s-county'),v('s-shopname'),v('s-shopid'),v('s-owner'),v('s-location'),v('s-phone'),v('s-transactions'),photos['s-owner']||''];
   } else if(prefix==='i'){
     fields=[v('i-trainer'),v('i-county'),v('i-shopname'),v('i-location'),photos['i-ext']||'',photos['i-int']||''];
   }
@@ -846,7 +922,17 @@ function submitForm(type){
       var name=v('v-name-'+id),purpose=v('v-purpose-'+id);
       if(!name) missing.push('Visit '+id+' name');
       if(!purpose) missing.push('Visit '+id+' purpose');
-      visits.push({name:name,location:v('v-loc-'+id),time:v('v-time-'+id),purpose:purpose});
+      var g=visitGpsStore[id];
+      visits.push({
+        name:name,
+        location:v('v-loc-'+id),
+        time:v('v-time-'+id),
+        phone:v('v-phone-'+id),
+        gps: g ? (g.lat+', '+g.lng+' (\u00b1'+g.acc+'m)') : 'Not captured',
+        purpose:purpose,
+        photo: photos['v-photo-'+id]||'',
+        feedback: v('v-feedback-'+id)
+      });
     });
     if(!visits.length) missing.push('At least one visit');
     payload.visits=visits;
@@ -860,29 +946,32 @@ function submitForm(type){
       var name=v('er-name-'+id),result=v('er-result-'+id);
       if(!name) missing.push('Result '+id+' name');
       if(!result) missing.push('Result '+id+' outcome');
-      results.push({name:name,arrivalTime:v('er-time-'+id),result:result,notes:v('er-notes-'+id)});
+      results.push({name:name,time:v('er-time-'+id),result:result,notes:v('er-notes-'+id)});
     });
     if(!results.length) missing.push('At least one result');
     payload.results=results;
   }
   else if(type==='survey'){
-    payload.shopName=v('s-shopname'); payload.ownerName=v('s-owner');
+    payload.shopName=v('s-shopname'); payload.shopId=v('s-shopid'); payload.ownerName=v('s-owner');
     payload.shopLocation=v('s-location'); payload.ownerPhone=v('s-phone');
     payload.numTransactions=v('s-transactions');
-    payload.shopImage=photos['s-shop']||''; payload.ownerImage=photos['s-owner']||'';
+    payload.ownerImage=photos['s-owner']||'';
     if(!payload.shopName) missing.push('Shop name');
+    if(!payload.shopId) missing.push('Shop ID');
     if(!payload.ownerName) missing.push('Owner name');
     if(!payload.shopLocation) missing.push('Shop location');
     if(!payload.ownerPhone) missing.push('Owner phone');
     if(!payload.numTransactions) missing.push('No. of transactions');
-    if(!payload.shopImage) missing.push('Shop picture');
     if(!payload.ownerImage) missing.push('Owner app photo');
   }
   else if(type==='install'){
-    payload.shopName=v('i-shopname'); payload.shopLocation=v('i-location');
+    payload.shopName=v('i-shopname'); payload.ownerName=v('i-ownername'); payload.ownerPhone=v('i-ownerphone');
+    payload.shopLocation=v('i-location');
     payload.notes=v('i-notes');
     payload.exteriorImage=photos['i-ext']||''; payload.interiorImage=photos['i-int']||'';
     if(!payload.shopName) missing.push('Shop name');
+    if(!payload.ownerName) missing.push('Shop owner name');
+    if(!payload.ownerPhone) missing.push('Shop owner phone');
     if(!payload.shopLocation) missing.push('Shop location');
     if(!payload.exteriorImage) missing.push('Exterior photo');
     if(!payload.interiorImage) missing.push('Interior photo');
@@ -989,6 +1078,8 @@ function resetInstallForm(){
   document.getElementById('i-rejected').style.display='none';
   document.getElementById('i-submit').style.display='flex';
   document.getElementById('i-shopname').value='';
+  document.getElementById('i-ownername').value='';
+  document.getElementById('i-ownerphone').value='';
   document.getElementById('i-location').value='';
   document.getElementById('i-notes').value='';
   clearPhoto('i-ext'); clearPhoto('i-int');
@@ -998,11 +1089,27 @@ function resetInstallForm(){
 
 // ── MANAGER DASHBOARD ───────────────────────────────────────────
 var dashFilter = 'PENDING';
+var dashFormType = 'install';
 var dashAllItems = [];
+var dashSheetMap = { route:'Route Plans', evening:'Evening Reports', survey:'Shop Surveys' };
+var dashLabels = { install:'Installations', route:'Route Plans', evening:'Evening Reports', survey:'Shop Surveys', users:'Manage Users' };
 
 function openDashboard(){
   showScreen('screen-dashboard');
   document.getElementById('dash-sub').textContent = session.role==='Admin' ? 'All counties' : (session.county||'') + ' region';
+  setFormType('install');
+}
+
+function setFormType(type){
+  dashFormType = type;
+  ['install','route','evening','survey','users'].forEach(function(t){
+    document.getElementById('form-'+t).classList.toggle('active', t===type);
+  });
+  document.getElementById('install-status-tabs').style.display = (type==='install') ? 'flex' : 'none';
+  document.getElementById('dash-trainer-filter-wrap').style.display = (type==='users') ? 'none' : 'block';
+  document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
+  closeUserForm();
+  document.getElementById('dash-sub').textContent = dashLabels[type] + ' — ' + (session.role==='Admin' ? 'All counties' : (session.county||'') + ' region');
   loadDashboard();
 }
 
@@ -1020,19 +1127,53 @@ function loadDashboard(){
   document.getElementById('dash-empty').style.display='none';
   document.getElementById('dash-list').innerHTML='';
 
-  var url = APPS_SCRIPT_URL + '?action=getInstalls&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  var url;
+  if(dashFormType==='install'){
+    url = APPS_SCRIPT_URL + '?action=getInstalls&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  } else if(dashFormType==='users'){
+    url = APPS_SCRIPT_URL + '?action=getUsers&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  } else {
+    url = APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent(dashSheetMap[dashFormType]) + '&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  }
+
   fetch(url).then(function(r){return r.json();}).then(function(data){
     document.getElementById('dash-loading').style.display='none';
-    dashAllItems = data.installs || [];
+    if(dashFormType==='install') dashAllItems = data.installs || [];
+    else if(dashFormType==='users') dashAllItems = data.users || [];
+    else dashAllItems = data.rows || [];
+    if(dashFormType!=='users') populateTrainerFilter();
     renderDashList();
-    updateBadgeCount();
+    if(dashFormType==='install') updateBadgeCount();
   }).catch(function(){
     document.getElementById('dash-loading').textContent='Failed to load. Pull down to retry.';
   });
 }
 
+function populateTrainerFilter(){
+  var sel = document.getElementById('dash-trainer-filter');
+  var current = sel.value;
+  var nameKey = dashFormType==='install' ? 'trainerName' : 'Trainer Name';
+  var names = [];
+  dashAllItems.forEach(function(item){
+    var n = item[nameKey];
+    if(n && names.indexOf(n)===-1) names.push(n);
+  });
+  names.sort();
+  sel.innerHTML = '<option value="">All trainers</option>' + names.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('');
+  if(names.indexOf(current)!==-1) sel.value = current;
+}
+
 function renderDashList(){
-  var filtered = dashAllItems.filter(function(x){ return x.status === dashFilter; });
+  if(dashFormType==='install'){ renderInstallList(); }
+  else if(dashFormType==='users'){ renderUsersList(); }
+  else { renderGenericList(); }
+}
+
+function renderInstallList(){
+  var trainerFilter = document.getElementById('dash-trainer-filter').value;
+  var filtered = dashAllItems.filter(function(x){
+    return x.status===dashFilter && (!trainerFilter || x.trainerName===trainerFilter);
+  });
   var listEl = document.getElementById('dash-list');
   listEl.innerHTML='';
   document.getElementById('dash-empty').style.display = filtered.length ? 'none' : 'block';
@@ -1048,9 +1189,9 @@ function renderDashList(){
     var actionsHtml='';
     if(item.status==='PENDING'){
       actionsHtml = '<div class="dash-item-actions">' +
-  '<button class="dash-approve-btn" onclick="actOnInstall(\''+item.installId+'\',\'APPROVED\',this)">✅ Approve</button>' +
-  '<button class="dash-reject-btn" onclick="actOnInstall(\''+item.installId+'\',\'REJECTED\',this)">❌ Reject</button>' +
-  '</div>';
+        '<button class="dash-approve-btn" onclick="actOnInstall(\''+item.installId+'\',\'APPROVED\',this)">✅ Approve</button>' +
+        '<button class="dash-reject-btn" onclick="actOnInstall(\''+item.installId+'\',\'REJECTED\',this)">❌ Reject</button>' +
+        '</div>';
     } else {
       actionsHtml = '<div style="font-size:11px;color:#9ca3af;margin-top:8px">By: '+(item.approvedBy||'—')+'</div>';
     }
@@ -1061,12 +1202,43 @@ function renderDashList(){
         '<div class="dash-item-status" style="background:'+statusColors[item.status].split(';')[0]+';color:'+statusColors[item.status].split('color:')[1]+'">'+item.status+'</div>' +
       '</div>' +
       '<div class="dash-item-body">' +
-        '👤 '+(item.trainerName||'')+' · 📍 '+(item.shopLocation||'')+'<br>' +
+        '👤 '+(item.trainerName||'')+' · 📍 '+(item.shopLocation||'')+'<br>'+
+        (item.ownerName ? '👨 Owner: '+item.ownerName+' · 📞 '+(item.ownerPhone||'')+'<br>' : '') +
         '🕐 '+(item.submittedAt||'')+
         (item.notes ? '<br>📝 '+item.notes : '') +
       '</div>' +
       (photosHtml ? '<div class="dash-item-photos">'+photosHtml+'</div>' : '') +
       actionsHtml;
+    listEl.appendChild(div);
+  });
+}
+
+function renderGenericList(){
+  var trainerFilter = document.getElementById('dash-trainer-filter').value;
+  var filtered = dashAllItems.filter(function(x){
+    return !trainerFilter || x['Trainer Name']===trainerFilter;
+  });
+  var listEl = document.getElementById('dash-list');
+  listEl.innerHTML='';
+  document.getElementById('dash-empty').style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach(function(row){
+    var div = document.createElement('div');
+    div.className='dash-item';
+    var titleField = row['Shop Name'] || row['Client Name'] || row['Trainer Name'] || 'Record';
+    var bodyRows = '';
+    Object.keys(row).forEach(function(k){
+      if(k==='Row#' || !row[k] || row[k]==='') return;
+      var val = String(row[k]);
+      if(/^https?:\/\//.test(val)){
+        bodyRows += '<div><strong>'+k+':</strong> <a href="'+val+'" target="_blank">View photo</a></div>';
+      } else {
+        bodyRows += '<div><strong>'+k+':</strong> '+val+'</div>';
+      }
+    });
+    div.innerHTML =
+      '<div class="dash-item-top"><div class="dash-item-shop">📄 '+titleField+'</div></div>' +
+      '<div class="dash-item-body" style="line-height:2">'+bodyRows+'</div>';
     listEl.appendChild(div);
   });
 }
@@ -1109,6 +1281,114 @@ function refreshPendingBadge(){
     dashAllItems = data.installs || [];
     updateBadgeCount();
   }).catch(function(){});
+}
+
+// ── USER MANAGEMENT ─────────────────────────────────────────────
+function renderUsersList(){
+  var listEl = document.getElementById('dash-list');
+  listEl.innerHTML='';
+  document.getElementById('dash-empty').style.display = dashAllItems.length ? 'none' : 'block';
+
+  dashAllItems.forEach(function(u){
+    var div = document.createElement('div');
+    div.className='dash-item';
+    var roleColors = { Trainer:'#dbeafe;color:#1d4ed8', Manager:'#ede9fe;color:#6d28d9', Admin:'#fee2e2;color:#b91c1c' };
+    var rc = roleColors[u.role] || '#f3f4f6;color:#374151';
+    div.innerHTML =
+      '<div class="dash-item-top">' +
+        '<div><div class="dash-item-shop">👤 '+(u.name||'Unknown')+'</div><div class="dash-item-ref">'+(u.email||'')+'</div></div>' +
+        '<div class="dash-item-status" style="background:'+rc.split(';')[0]+';color:'+rc.split('color:')[1]+'">'+(u.role||'')+'</div>' +
+      '</div>' +
+      '<div class="dash-item-body">' +
+        (u.county ? '📍 '+u.county+'<br>' : '') +
+        (u.managerEmail ? '👔 Reports to: '+u.managerEmail : '<span style="color:#9ca3af">No manager assigned</span>') +
+      '</div>' +
+      '<div class="dash-item-actions">' +
+        '<button class="dash-approve-btn" style="background:var(--accent)" onclick=\'openUserForm('+JSON.stringify(u)+')\'>✏️ Edit</button>' +
+        '<button class="dash-reject-btn" onclick="deleteUser(\''+u.email+'\',this)">🗑️ Delete</button>' +
+      '</div>';
+    listEl.appendChild(div);
+  });
+}
+
+function openUserForm(user){
+  document.getElementById('user-form-wrap').style.display='block';
+  document.getElementById('uf-error').style.display='none';
+  if(user){
+    document.getElementById('user-form-title').textContent='✏️ Edit User';
+    document.getElementById('uf-original-email').value=user.email;
+    document.getElementById('uf-name').value=user.name||'';
+    document.getElementById('uf-email').value=user.email||'';
+    document.getElementById('uf-role').value=user.role||'Trainer';
+    document.getElementById('uf-county').value=user.county||'';
+    document.getElementById('uf-manager-email').value=user.managerEmail||'';
+  } else {
+    document.getElementById('user-form-title').textContent='➕ Register New User';
+    document.getElementById('uf-original-email').value='';
+    document.getElementById('uf-name').value='';
+    document.getElementById('uf-email').value='';
+    document.getElementById('uf-role').value='Trainer';
+    document.getElementById('uf-county').value='';
+    // Managers registering a new trainer default the manager email to themselves
+    document.getElementById('uf-manager-email').value = session.role==='Manager' ? session.email : '';
+  }
+  document.getElementById('user-form-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+function closeUserForm(){
+  document.getElementById('user-form-wrap').style.display='none';
+}
+
+function saveUser(){
+  var originalEmail = v('uf-original-email');
+  var name = v('uf-name');
+  var email = v('uf-email').toLowerCase();
+  var role = document.getElementById('uf-role').value;
+  var county = document.getElementById('uf-county').value;
+  var managerEmail = v('uf-manager-email').toLowerCase();
+
+  if(!name || !email){
+    var el=document.getElementById('uf-error'); el.textContent='⚠️ Name and email are required.'; el.style.display='block';
+    return;
+  }
+
+  var btn=document.getElementById('uf-save-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    body: JSON.stringify({
+      formType:'userAction',
+      action: originalEmail ? 'edit' : 'add',
+      originalEmail: originalEmail,
+      name:name, email:email, role:role, county:county, managerEmail:managerEmail,
+      requestedBy: session.email, requestedByRole: session.role
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    btn.disabled=false; btn.textContent='💾 Save';
+    if(data.status==='success'){ closeUserForm(); loadDashboard(); }
+    else { var el=document.getElementById('uf-error'); el.textContent='⚠️ '+(data.message||'Failed to save.'); el.style.display='block'; }
+  })
+  .catch(function(){ btn.disabled=false; btn.textContent='💾 Save'; var el=document.getElementById('uf-error'); el.textContent='⚠️ Network error.'; el.style.display='block'; });
+}
+
+function deleteUser(email, btnEl){
+  if(!confirm('Remove '+email+' from the system? This cannot be undone.')) return;
+  var row = btnEl.closest('.dash-item');
+  row.querySelectorAll('button').forEach(function(b){ b.disabled=true; });
+
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    body: JSON.stringify({ formType:'userAction', action:'delete', originalEmail: email, requestedBy: session.email, requestedByRole: session.role })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.status==='success'){ loadDashboard(); }
+    else { alert('Failed: '+(data.message||'Unknown error')); row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); }
+  })
+  .catch(function(){ alert('Network error.'); row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); });
 }
 
 // ── INIT ─────────────────────────────────────────────────────
