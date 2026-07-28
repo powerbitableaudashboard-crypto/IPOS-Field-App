@@ -1,7 +1,1513 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8"><!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPOS Field App</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="iPOS Field">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.json">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#2563eb;--accent-dark:#1d4ed8;
+  --green:#16a34a;--green-bg:#f0fdf4;--green-border:#bbf7d0;
+  --orange:#c2410c;--orange-bg:#fff7ed;--orange-border:#fed7aa;
+  --purple:#7c3aed;--purple-bg:#f5f3ff;--purple-border:#ddd6fe;
+  --red:#dc2626;--surface:#fff;--surface-1:#f9fafb;--surface-2:#f3f4f6;
+  --border:#e5e7eb;--border-strong:#d1d5db;
+  --text:#111827;--text-s:#6b7280;--text-m:#9ca3af;
+  --radius:10px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f4f8;min-height:100vh;color:var(--text)}
+.screen{display:none;min-height:100vh;padding-bottom:3rem}
+.screen.active{display:block}
+
+/* HEADER */
+.app-header{background:var(--accent);padding:1.25rem 1.5rem;color:#fff;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.app-header-icon{width:42px;height:42px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:3px;flex-shrink:0}
+.app-header-icon img{width:36px;height:36px;object-fit:contain}
+.app-header h1{font-size:17px;font-weight:700}
+.app-header p{font-size:12px;opacity:.8;margin-top:1px}
+.back-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;margin-left:auto;white-space:nowrap}
+.user-chip{margin-left:auto;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;cursor:pointer}
+
+/* LOGIN SCREEN */
+.login-wrap{max-width:420px;margin:0 auto;padding:2rem 1rem}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem 1.5rem;text-align:center}
+.login-logo{width:72px;height:72px;background:#eff6ff;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;padding:8px}
+.login-logo img{width:56px;height:56px;object-fit:contain}
+.login-card h2{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}
+.login-card p{font-size:13px;color:var(--text-s);margin-bottom:1.5rem}
+.login-field{text-align:left;margin-bottom:1rem}
+.login-field label{display:block;font-size:13px;font-weight:500;color:var(--text-s);margin-bottom:5px}
+.login-field input{width:100%;border:1px solid var(--border-strong);border-radius:var(--radius);padding:10px 14px;font-size:14px;color:var(--text);background:var(--surface);font-family:inherit}
+.login-field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.login-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
+.login-btn:hover{background:var(--accent-dark)}
+.login-btn:disabled{background:var(--text-m);cursor:not-allowed}
+.login-error{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:13px;color:#b91c1c;margin-top:1rem;display:none;text-align:left}
+.login-info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e40af;margin-top:1rem;text-align:left;line-height:1.6}
+
+/* HOME */
+.home-body{padding:1.5rem 1rem}
+.welcome-banner{background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;color:#fff}
+.welcome-banner h3{font-size:15px;font-weight:600;margin-bottom:3px}
+.welcome-banner p{font-size:12px;opacity:.85}
+.welcome-meta{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.welcome-meta span{font-size:11px;opacity:.9;background:rgba(255,255,255,.15);border-radius:12px;padding:3px 10px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem}
+.form-card{border-radius:14px;padding:1.25rem 1rem;cursor:pointer;border:1.5px solid transparent;transition:transform .15s;text-align:center;-webkit-tap-highlight-color:transparent}
+.form-card:active{transform:scale(0.97)}
+.form-card.blue{background:#eff6ff;border-color:#bfdbfe}
+.form-card.green{background:var(--green-bg);border-color:var(--green-border)}
+.form-card.purple{background:var(--purple-bg);border-color:var(--purple-border)}
+.form-card.orange{background:var(--orange-bg);border-color:var(--orange-border)}
+.form-card-icon{font-size:32px;margin-bottom:8px}
+.form-card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.form-card-desc{font-size:11px;color:var(--text-m);line-height:1.5}
+.logout-btn{width:100%;padding:11px;background:var(--surface-2);color:var(--text-s);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:.5rem}
+
+/* FORM BODY */
+.form-body{padding:1.25rem 1rem}
+.section{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.section-title{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-m);margin-bottom:1rem;display:flex;align-items:center;gap:7px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--border)}
+.field{margin-bottom:1rem}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--text-s);margin-bottom:5px}
+.req{color:var(--red);margin-left:2px}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--border-strong);border-radius:var(--radius);padding:9px 12px;font-size:14px;color:var(--text);background:var(--surface);font-family:inherit;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+.field input[readonly]{background:var(--surface-2);color:var(--text-s);cursor:not-allowed}
+.field textarea{min-height:80px;resize:vertical}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:400px){.two-col{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
+.filter-tab{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit}
+.filter-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.dash-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.dash-item-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.dash-item-shop{font-size:14px;font-weight:600;color:var(--text)}
+.dash-item-ref{font-size:10px;color:var(--text-muted)}
+.dash-item-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.dash-item-body{font-size:12px;color:var(--text-secondary);line-height:1.9}
+.dash-item-photos{display:flex;gap:8px;margin-top:8px}
+.dash-item-photos img{width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+.dash-item-actions{display:flex;gap:8px;margin-top:10px}
+.dash-approve-btn{flex:1;padding:9px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.dash-reject-btn{flex:1;padding:9px;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.dash-approve-btn:disabled,.dash-reject-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* AUTO FIELD */
+.auto-field{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius)}
+.auto-val{font-size:13px;color:var(--text);flex:1;word-break:break-all}
+.badge{font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px;white-space:nowrap}
+.badge-green{background:#dcfce7;color:#15803d}
+.badge-yellow{background:#fef9c3;color:#854d0e}
+.badge-red{background:#fee2e2;color:#b91c1c}
+
+/* VISIT ROW */
+.visit-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;position:relative}
+.visit-num{font-size:11px;font-weight:600;color:var(--text-m);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.remove-btn{position:absolute;top:10px;right:10px;background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit}
+.add-visit-btn{width:100%;padding:10px;background:var(--surface);border:1.5px dashed var(--border-strong);border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--accent);cursor:pointer;font-family:inherit;margin-top:8px}
+
+/* PHOTO */
+.photo-box{border:1.5px dashed var(--border-strong);border-radius:var(--radius);background:var(--surface);overflow:hidden;cursor:pointer;transition:border-color .15s,background .15s}
+.photo-box:hover{border-color:var(--accent);background:#eff6ff}
+.photo-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:1.75rem 1rem;pointer-events:none}
+.photo-ph-icon{font-size:28px}
+.photo-ph span{font-size:13px;font-weight:500;color:var(--text-s)}
+.photo-ph small{font-size:11px;color:var(--text-m)}
+.photo-preview{position:relative;display:none}
+.photo-preview img{width:100%;max-height:200px;object-fit:cover;display:block}
+.retake-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+input[type=file]{display:none}
+
+/* PROGRESS */
+.progress-wrap{margin-bottom:1.25rem}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-m);margin-bottom:5px}
+.progress-bar{height:4px;background:var(--border);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .3s ease;width:0%}
+
+/* BUTTONS */
+.submit-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;margin-top:1.25rem;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;transition:background .15s}
+.submit-btn:hover{background:var(--accent-dark)}
+.submit-btn:disabled{background:var(--text-m);cursor:not-allowed}
+.submit-btn.green-btn{background:var(--green)}
+.submit-btn.orange-btn{background:var(--orange)}
+.submit-btn.purple-btn{background:var(--purple)}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SUCCESS / ERROR */
+.success-banner{display:none;background:var(--green-bg);border:1px solid var(--green-border);border-radius:12px;padding:2rem 1.5rem;text-align:center;margin-top:1rem}
+.success-icon{font-size:40px;margin-bottom:8px}
+.success-banner h2{font-size:18px;color:var(--green);font-weight:600;margin-bottom:4px}
+.success-banner p{font-size:13px;color:#166534}
+.success-meta{margin-top:10px;background:#dcfce7;border-radius:8px;padding:10px 14px;font-size:12px;color:#15803d;text-align:left;line-height:1.9}
+.error-msg{display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:13px;color:#b91c1c;margin-top:1rem}
+.home-btn{width:100%;padding:11px;background:var(--surface-2);color:var(--text-s);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;margin-top:10px;font-family:inherit}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════ LOGIN SCREEN -->
+<div class="screen active" id="screen-login">
+  <div class="app-header">
+    <div class="app-header-icon"><img src="data:image/jpeg;base64,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" alt="iPOS"></div>
+    <div><h1>iPOS Field App</h1><p>Sign in to continue</p></div>
+  </div>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo"><img src="data:image/jpeg;base64,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" alt="iPOS Logo"></div>
+      <h2>Welcome</h2>
+      <p>Sign in with your registered work email to access your forms</p>
+      <div class="login-field">
+        <label for="login-email">Work email address</label>
+        <input type="email" id="login-email" placeholder="yourname@example.com" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="login-field">
+        <label for="login-name">Your full name</label>
+        <input type="text" id="login-name" placeholder="e.g. Alice Wanjiku" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">
+        <div class="spinner" id="login-spinner"></div>
+        <span id="login-btn-label">Sign In</span>
+      </button>
+      <div class="login-error" id="login-error"></div>
+      <div class="login-info">
+        🔒 Your email is verified against the registered iPOS trainer list. Contact your manager if you cannot sign in.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ HOME SCREEN -->
+<div class="screen" id="screen-home">
+  <div class="app-header">
+    <div class="app-header-icon"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAMAAwAMBIgACEQEDEQH/xAAbAAEAAgMBAQAAAAAAAAAAAAAABgcBBAUCA//EAEQQAAEDAwIDAwcHBw0AAAAAAAABAgMEBREGIQcSMSJBcRMUFRZRYdIygZKTlKHRFyNCVVeR4yU1Q0VSVFZyc4KjsbL/xAAYAQEBAQEBAAAAAAAAAAAAAAAAAQIDBP/EAB8RAQEAAgICAwEAAAAAAAAAAAABAhESIQMxQVFhgf/aAAwDAQACEQMRAD8AvEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwvRQMZTqEVMka1lqj1fjgip4POa2pXEMOcJ4rj37HDp9f11BMjNR2WWmauPzsSLhPFF/E6Y+LPKbjnl5cZdLDBzbVfLbd4Ukt9VHMne1F7SeKdToouTFlntuWX0yACKAAAAAAAAAAAAAAAAAAAAAAXoDC9FAhd3o6Sq15bKqe50zFpmLy0rndtX74/wC8/MdO+aisFJU+jbrNHzPRFcx7OZrUX2+wh1zt83puo0ykdO6W41aVbK52fKRsTtKn+ZOXCb956S20t14nXalr4UlhdF8ldujGboeqeOX3epHm53fTo3HQ1JNy3LS9W6kmVOaNY3ZY7wUkGmam6x2pz9SpDDLG5W+U5kTmb7V7kI7q6oq9JQW9bHVww0UDVatG92XSe/fdUJK+Cm1VpmNtZG5kVZC16tauFauyphfEznbcZy9fbWMkt17dmORkjWvjcjmuTKORcop9CudG1FdYdVTaXqKjzmmRquicv6KcqOTHs26p7d+hYpyzx43Tphnymxy4TJjm9xEOLNdVW/Q9bNQ1D4JlfGzyka4ciK9EXHzGnDQ3jVPDSzpS3mSir5qaGSSpxlX7bouFTqZ00niLnuBTC6L1C3ZeIdMmNt5F+MepuoP2iUv1rvjLxibXMq4HMUfc9O6htNDPcW8QKeZaZiyJGyVUV2O5O0u/zE80pq2So4epf7qn5ynif5VcY51btnHdlRpdprnKApS0UGttfxyXtt79F0cj3NgiTm3RF7kRU2zlM+46H5N9Z/4zX6MnxDjJ8ptbargxkqKXh1raNjnw6wV8rUy1vbblfHmO9wu1RcLqlfZL8n8rW1/bev8ASNVVTPiipj37DS7T/mM5KOnrr9rbVN3gi1HFY6ehlfFFA96tyjXK3OMplctVVXuybXqbqDv4i0v1q/GOP6nJc+THMUz6m6g/aJS/Wu+M72jdJ36hvUVbU6xZcaaNF54I8u58+3LlwOMnybqyk3QGE6GTLQYXoZC9AIvVWSaXXVFd0niSGKncxY1VedVwqbJ7NzTgkoarVt7httItPeWU6J50/dqqrW42/wBzf3GvcHuTitbm87kTzR6cuVx8ly9DWtNR5vxC1JUpG6RGQc3LGmVdhrNk/cp6Zjdb/Hmtm/6+9l0I1k63LVNV5/VIvN23qrU8VXr4dEPN+1pJPL6I0lCtTVu7Plmty1ie1v4rt49DSVupNbydpHWy0KuFauUc9PDvJrYdPW6x06RUEKNcuz5V3e/xUWyd5d36WS3rHr9cnRek1s8ktwuMvnFznzzuVcozPXfvX3ktwEbjvMnnyyuV3XbHGYzUQXjQuNAVn+rF/wC0InqutnpOBljbBI6JJoaeKRWrhVaqdNvbgt240FLc6OSjr4GT08ny43plF7zXq7Fa6y3R26qoYZaKLl5IHN7LeXphPcWXpbFZ2bgzYK21UlTUVVX5WWFr38qRomVTP9k3PyH6b/vVb/x/CWdFEyGNscbUaxqI1rU7kQ9k3SRWMXBHTLJGudUVzkTuRzEz86NJRqLTscmh6uxWiJsTUpljp4+5MdEJMYVMjdNKf4dcQ7NYNPxWS/vloqqic6PCwPcipnbomy/gSlOKujU29KO+zSfCdy4aR0/c6p1VX2mlnnd8qRzN18TW9QdJ4/mGi+gW2X2mq5M/FjR8cbnsuEkjkTKMZTSZd9xxeE8NReNS37Vr4XQ01a7ydO136Xay5fuRCYpoLSiLlLFR/QO9T0sFLAyCmjZFExMNYxMIiC2a6JL8qj4g2/hxPqSo9M3CejuXZWobTRq5quVEVFd2VRHKip47Eb9DcKV/r6v+z/wy6rlpHT90rX1lwtNLPUvwjpHs3XGyfciGt6g6T/UNF9AbhpTvoXhT+vrh9m/hnwt7LNbNa2T1CuFXVOkk5ajni5e/p0TKKir3dxdPqDpP9Q0f0DctelrHaJ1nttspqaVUxzxs3wXknF2E6GQDDYYXZFMgCB6v05e6/UVNcbNPFBiFYnSq7eLOUVcd+yna0rpinsET3pK6esn3mnf1d7k9iEg5U95nB0vkyuPFieOS8nlGonTY9IhkHNsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//9k=" alt="iPOS"></div>
+    <div><h1>IPOS Team App</h1><p id="home-header-sub">Field data collection</p></div>
+    <div class="user-chip" onclick="doLogout()">
+      <span id="home-user-initial">A</span>
+      <span>Sign out</span>
+    </div>
+    <div id="notif-bell" onclick="event.stopPropagation();openDashboard()" style="display:none;position:relative;background:rgba(255,255,255,0.2);border-radius:8px;width:36px;height:36px;align-items:center;justify-content:center;cursor:pointer;margin-left:8px;flex-shrink:0;font-size:16px">
+      🔔<span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:16px;height:16px;align-items:center;justify-content:center;padding:0 3px">0</span>
+    </div>
+  </div>
+  <div class="home-body">
+    <div class="welcome-banner">
+      <h3 id="home-welcome">Welcome!</h3>
+      <p id="home-date-str"></p>
+      <div class="welcome-meta">
+        <span id="home-county-chip">📍 County</span>
+        <span id="home-manager-chip">👔 Manager</span>
+        <span id="home-role-chip">🎯 Role</span>
+      </div>
+    </div>
+    <div id="dashboard-card-wrap" style="display:none">
+      <div onclick="openDashboard()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:18px;margin-bottom:16px;display:flex;align-items:center;gap:18px;text-align:left;padding:1.5rem 1.25rem;cursor:pointer;box-shadow:0 8px 20px rgba(79,70,229,.35);-webkit-tap-highlight-color:transparent">
+        <div style="font-size:44px;background:rgba(255,255,255,.18);border-radius:14px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;flex-shrink:0">📊</div>
+        <div style="flex:1">
+          <div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:3px">Manager Dashboard</div>
+          <div style="font-size:12.5px;color:rgba(255,255,255,.85);line-height:1.5">View trainer submissions &amp; approve installations</div>
+        </div>
+        <div id="dashboard-pending-count" style="background:#dc2626;color:#fff;font-size:13px;font-weight:700;border-radius:20px;padding:4px 12px;display:none;flex-shrink:0">0</div>
+      </div>
+    </div>
+
+    <div class="form-grid" id="home-forms-grid">
+      <div class="form-card blue" onclick="goForm('screen-route')">
+        <div class="form-card-icon">📋</div>
+        <div class="form-card-title">Clients Engagement Tracker</div>
+        <div class="form-card-desc">Update your client visits</div>
+      </div>
+      <div class="form-card green" onclick="goForm('screen-evening')">
+        <div class="form-card-icon">🌆</div>
+        <div class="form-card-title">Evening Report</div>
+        <div class="form-card-desc">Record visit results</div>
+      </div>
+      <div class="form-card purple" onclick="goForm('screen-survey')">
+        <div class="form-card-icon">🏪</div>
+        <div class="form-card-title">Shop Survey</div>
+        <div class="form-card-desc">Onboard a new shop</div>
+      </div>
+      <div class="form-card orange" onclick="goForm('screen-install')">
+        <div class="form-card-icon">🔧</div>
+        <div class="form-card-title">Installation</div>
+        <div class="form-card-desc">Record installation</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">⬅ Sign Out</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════ MANAGER DASHBOARD -->
+<div class="screen" id="screen-dashboard">
+  <div class="app-header">
+    <div class="app-header-icon" style="background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px">📊</div>
+    <div><h1 id="dash-header-title">Manager Dashboard</h1><p id="dash-sub">Select a form to view</p></div>
+    <button class="back-btn" id="dash-back-btn" onclick="showScreen('screen-home')">← Home</button>
+  </div>
+  <div class="form-body">
+
+    <!-- STEP 1: Menu of forms -->
+    <div id="dash-menu">
+      <div class="form-grid">
+        <div class="form-card blue" onclick="setFormType('install')">
+          <div class="form-card-icon">🔧</div>
+          <div class="form-card-title">Installations</div>
+          <div class="form-card-desc">Approve or reject requests</div>
+        </div>
+        <div class="form-card green" onclick="setFormType('route')">
+          <div class="form-card-icon">📋</div>
+          <div class="form-card-title">Daily Clients Engagements</div>
+          <div class="form-card-desc">View Daily visits</div>
+        </div>
+        <div class="form-card purple" onclick="setFormType('evening')">
+          <div class="form-card-icon">🌆</div>
+          <div class="form-card-title">Evening Reports</div>
+          <div class="form-card-desc">View visit results</div>
+        </div>
+        <div class="form-card orange" onclick="setFormType('survey')">
+          <div class="form-card-icon">🏪</div>
+          <div class="form-card-title">Shop Surveys</div>
+          <div class="form-card-desc">View onboarded shops</div>
+        </div>
+      </div>
+      <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb;margin-top:4px" onclick="setFormType('users')">
+        <div class="form-card-icon">👥</div>
+        <div class="form-card-title">Manage Users</div>
+        <div class="form-card-desc">Register, edit or remove trainers</div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Detail view (filters + list) -->
+    <div id="dash-detail" style="display:none">
+      <button class="back-btn" style="margin:0 0 1rem 0;background:var(--surface-2);color:var(--text-s)" onclick="backToDashMenu()">← Back to menu</button>
+
+      <div id="dash-filters" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px">
+        <div class="two-col">
+          <div class="field" style="margin-bottom:0"><label>Trainer</label>
+            <select id="dash-trainer-filter" onchange="renderDashList()"><option value="">All trainers</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0"><label>County</label>
+            <select id="dash-county-filter" onchange="renderDashList()"><option value="">All counties</option></select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0"><label>Date range</label>
+          <select id="dash-range-filter" onchange="onRangeFilterChange()">
+            <option value="all">All time</option>
+            <option value="today">Today</option>
+            <option value="month">This Month</option>
+            <option value="year">This Year</option>
+            <option value="custom">Custom range…</option>
+          </select>
+        </div>
+        <div class="two-col" id="dash-custom-range-wrap" style="display:none">
+          <div class="field" style="margin-bottom:0"><label>From</label>
+            <input type="date" id="dash-date-from" onchange="renderDashList()">
+          </div>
+          <div class="field" style="margin-bottom:0"><label>To</label>
+            <input type="date" id="dash-date-to" onchange="renderDashList()">
+          </div>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="add-user-btn" onclick="openUserForm(null)" style="display:none;margin-top:0;margin-bottom:1rem">➕ Register New User</button>
+
+      <!-- User add/edit form (hidden by default) -->
+      <div id="user-form-wrap" style="display:none;background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+        <div class="section-title" id="user-form-title">➕ Register New User</div>
+        <input type="hidden" id="uf-original-email">
+        <div class="field"><label>Full name<span class="req">*</span></label>
+          <input type="text" id="uf-name" placeholder="e.g. Alice Wanjiku"></div>
+        <div class="field"><label>Email<span class="req">*</span></label>
+          <input type="email" id="uf-email" placeholder="alice@enduring.co.ke"></div>
+        <div class="field"><label>Role<span class="req">*</span></label>
+          <select id="uf-role">
+            <option value="Trainer">Trainer</option>
+            <option value="Manager">Manager</option>
+            <option value="Admin">Admin</option>
+          </select></div>
+        <div class="field"><label>County <span style="font-size:11px;color:#9ca3af;font-weight:400">(trainers only)</span></label>
+          <select id="uf-county"><option value="">Select county…</option><option>Baringo</option><option>Bomet</option><option>Bungoma</option><option>Busia</option><option>Elgeyo-Marakwet</option><option>Embu</option><option>Garissa</option><option>Homa Bay</option><option>Isiolo</option><option>Kajiado</option><option>Kakamega</option><option>Kericho</option><option>Kiambu</option><option>Kilifi</option><option>Kirinyaga</option><option>Kisii</option><option>Kisumu</option><option>Kitui</option><option>Kwale</option><option>Laikipia</option><option>Lamu</option><option>Machakos</option><option>Makueni</option><option>Mandera</option><option>Marsabit</option><option>Meru</option><option>Migori</option><option>Mombasa</option><option>Murang'a</option><option>Nairobi</option><option>Nakuru</option><option>Nandi</option><option>Narok</option><option>Nyamira</option><option>Nyandarua</option><option>Nyeri</option><option>Samburu</option><option>Siaya</option><option>Taita-Taveta</option><option>Tana River</option><option>Tharaka-Nithi</option><option>Trans-Nzoia</option><option>Turkana</option><option>Uasin Gishu</option><option>Vihiga</option><option>Wajir</option><option>West Pokot</option></select></div>
+        <div class="field"><label>Manager Email <span style="font-size:11px;color:#9ca3af;font-weight:400">(who this user reports to)</span></label>
+          <input type="email" id="uf-manager-email" placeholder="manager@enduring.co.ke"></div>
+        <div style="display:flex;gap:8px;margin-top:1rem">
+          <button class="submit-btn" style="margin-top:0" id="uf-save-btn" onclick="saveUser()">💾 Save</button>
+          <button class="home-btn" style="margin-top:0" onclick="closeUserForm()">Cancel</button>
+        </div>
+        <div class="error-msg" id="uf-error"></div>
+      </div>
+
+      <div id="install-status-tabs" style="display:flex;gap:8px;margin-bottom:1rem">
+        <button class="filter-tab active" id="filter-pending" onclick="setDashFilter('PENDING')">⏳ Pending</button>
+        <button class="filter-tab" id="filter-approved" onclick="setDashFilter('APPROVED')">✅ Approved</button>
+        <button class="filter-tab" id="filter-rejected" onclick="setDashFilter('REJECTED')">❌ Rejected</button>
+      </div>
+      <div id="dash-loading" style="text-align:center;padding:2rem;color:#9ca3af;font-size:13px">Loading…</div>
+      <div id="dash-empty" style="display:none;text-align:center;padding:2.5rem 1rem;color:#9ca3af">
+        <div style="font-size:36px;margin-bottom:8px">📭</div>
+        <div style="font-size:13px">No records found</div>
+      </div>
+      <div id="dash-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════ FORM 1: ROUTE PLAN -->
+<div class="screen" id="screen-route">
+  <div class="app-header">
+    <div class="app-header-icon"><img src="data:image/jpeg;base64,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" alt="iPOS"></div>
+    <div><h1>Clients Engagement Tracker</h1><p>Update your client visits</p></div>
+    <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
+  </div>
+  <div class="form-body">
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Progress</span><span id="r-pct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="r-fill"></div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">📍 Auto-captured</div>
+      <div class="field"><label>Date &amp; time</label>
+        <div class="auto-field"><span>📅</span><span class="auto-val" id="r-date">—</span><span class="badge badge-green">Captured</span></div>
+      </div>
+      <div class="field"><label>GPS location</label>
+        <div class="auto-field"><span>📌</span><span class="auto-val" id="r-gps">Getting location…</span><span class="badge badge-yellow" id="r-gps-badge">Pending</span></div>
+        <button id="r-gps-retry" onclick="retryGPS('r')" style="display:none;margin-top:8px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">📍 Retry GPS</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">👤 Trainer (auto-filled from login)</div>
+      <div class="two-col">
+        <div class="field"><label>Name</label><input type="text" id="r-trainer" readonly></div>
+        <div class="field"><label>County</label><input type="text" id="r-county" readonly></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="r-email" readonly></div>
+    </div>
+    <div class="section">
+      <div class="section-title">🗺️ Shop Visits</div>
+      <div id="visits-container"></div>
+      <button class="add-visit-btn" onclick="addVisit()">+ Add another visit</button>
+    </div>
+    <button class="submit-btn" id="r-submit" onclick="submitForm('route')">
+      <div class="spinner" id="r-spinner"></div><span id="r-btn">Submit Visit</span>
+    </button>
+    <div class="error-msg" id="r-error"></div>
+    <div class="success-banner" id="r-success">
+      <div class="success-icon">✅</div><h2> Visit Submitted!</h2>
+      <p>Saved to Google Sheets and your manager has been notified.</p>
+      <div class="success-meta" id="r-meta"></div>
+      <button class="home-btn" onclick="resetForm('route')">← Back to Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ FORM 2: EVENING REPORT -->
+<div class="screen" id="screen-evening">
+  <div class="app-header">
+    <div class="app-header-icon"><img src="data:image/jpeg;base64,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" alt="iPOS"></div>
+    <div><h1>Evening Report</h1><p>Record today's results</p></div>
+    <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
+  </div>
+  <div class="form-body">
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Progress</span><span id="e-pct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="e-fill"></div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">📍 Auto-captured</div>
+      <div class="field"><label>Date &amp; time</label>
+        <div class="auto-field"><span>📅</span><span class="auto-val" id="e-date">—</span><span class="badge badge-green">Captured</span></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">👤 Trainer (auto-filled)</div>
+      <div class="two-col">
+        <div class="field"><label>Name</label><input type="text" id="e-trainer" readonly></div>
+        <div class="field"><label>County</label><input type="text" id="e-county" readonly></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">🌆 Visit results</div>
+      <div id="results-container"></div>
+      <button class="add-visit-btn" onclick="addResult()">+ Add visit result</button>
+    </div>
+    <div class="section">
+      <div class="section-title">📝 Day summary</div>
+      <div class="field"><label for="e-summary">Overall day summary<span class="req">*</span></label>
+        <textarea id="e-summary" placeholder="How did the day go? Challenges? Achievements?" oninput="calcProgress('e')"></textarea>
+      </div>
+    </div>
+    <button class="submit-btn green-btn" id="e-submit" onclick="submitForm('evening')">
+      <div class="spinner" id="e-spinner"></div><span id="e-btn">Submit Evening Report</span>
+    </button>
+    <div class="error-msg" id="e-error"></div>
+    <div class="success-banner" id="e-success">
+      <div class="success-icon">✅</div><h2>Evening Report Submitted!</h2>
+      <p>Saved to Google Sheets.</p>
+      <div class="success-meta" id="e-meta"></div>
+      <button class="home-btn" onclick="resetForm('evening')">← Back to Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ FORM 3: SHOP SURVEY -->
+<div class="screen" id="screen-survey">
+  <div class="app-header">
+    <div class="app-header-icon"><img src="data:image/jpeg;base64,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" alt="iPOS"></div>
+    <div><h1>Shop Survey</h1><p>Onboard a new shop owner</p></div>
+    <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
+  </div>
+  <div class="form-body">
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Progress</span><span id="s-pct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="s-fill"></div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">📍 Auto-captured</div>
+      <div class="field"><label>Date &amp; time</label>
+        <div class="auto-field"><span>📅</span><span class="auto-val" id="s-date">—</span><span class="badge badge-green">Captured</span></div>
+      </div>
+      <div class="field"><label>GPS location</label>
+        <div class="auto-field"><span>📌</span><span class="auto-val" id="s-gps">Getting location…</span><span class="badge badge-yellow" id="s-gps-badge">Pending</span></div>
+        <button id="s-gps-retry" onclick="retryGPS('s')" style="display:none;margin-top:8px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">📍 Retry GPS</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">👤 Trainer (auto-filled)</div>
+      <div class="two-col">
+        <div class="field"><label>Name</label><input type="text" id="s-trainer" readonly></div>
+        <div class="field"><label>County</label><input type="text" id="s-county" readonly></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">🏪 Shop details</div>
+      <div class="field"><label for="s-shopname">Shop name<span class="req">*</span></label>
+        <input type="text" id="s-shopname" placeholder="e.g. Kamau General Store" oninput="calcProgress('s')">
+      </div>
+      <div class="field"><label for="s-shopid">Shop ID<span class="req">*</span></label>
+        <input type="text" id="s-shopid" placeholder="e.g. 1234" inputmode="numeric" oninput="calcProgress('s')">
+      </div>
+      <div class="field"><label for="s-owner">Owner name<span class="req">*</span></label>
+        <input type="text" id="s-owner" placeholder="e.g. John Kamau" oninput="calcProgress('s')">
+      </div>
+      <div class="field"><label for="s-location">Shop location<span class="req">*</span></label>
+        <input type="text" id="s-location" placeholder="e.g. Nakuru Town, Kenyatta Ave" oninput="calcProgress('s')">
+      </div>
+      <div class="two-col">
+        <div class="field"><label for="s-phone">Owner phone<span class="req">*</span></label>
+          <input type="tel" id="s-phone" placeholder="0712 345 678" oninput="calcProgress('s')">
+        </div>
+        <div class="field"><label for="s-transactions">No. of transactions<span class="req">*</span></label>
+          <input type="text" id="s-transactions" placeholder="e.g. 25" inputmode="numeric" oninput="calcProgress('s')">
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">📷 Photos</div>
+      <div class="field"><label>Owner App Photo (Signed Onboarding Form)<span class="req">*</span></label>
+        <div class="photo-box" onclick="document.getElementById('s-owner-file').click()">
+          <div class="photo-ph" id="s-owner-ph"><span class="photo-ph-icon">🤳</span><span>Tap to photograph</span><small>Owner with app visible</small></div>
+          <div class="photo-preview" id="s-owner-preview"><img id="s-owner-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('s-owner')">↺ Retake</button></div>
+        </div>
+        <input type="file" id="s-owner-file" accept="image/*" capture="user" onchange="previewPhoto(this,'s-owner','s')">
+      </div>
+    </div>
+    <button class="submit-btn purple-btn" id="s-submit" onclick="submitForm('survey')">
+      <div class="spinner" id="s-spinner"></div><span id="s-btn">Submit Shop Survey</span>
+    </button>
+    <div class="error-msg" id="s-error"></div>
+    <div class="success-banner" id="s-success">
+      <div class="success-icon">✅</div><h2>Survey Submitted!</h2>
+      <p>Saved to Google Sheets.</p>
+      <div class="success-meta" id="s-meta"></div>
+      <button class="home-btn" onclick="resetForm('survey')">← Back to Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ FORM 4: INSTALLATION -->
+<div class="screen" id="screen-install">
+  <div class="app-header">
+    <div class="app-header-icon"><img src="data:image/jpeg;base64,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" alt="iPOS"></div>
+    <div><h1>Installation Form</h1><p>Record installation details</p></div>
+    <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
+  </div>
+  <div class="form-body">
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Progress</span><span id="i-pct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="i-fill"></div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">📍 Auto-captured</div>
+      <div class="field"><label>Date &amp; time</label>
+        <div class="auto-field"><span>📅</span><span class="auto-val" id="i-date">—</span><span class="badge badge-green">Captured</span></div>
+      </div>
+      <div class="field"><label>GPS location</label>
+        <div class="auto-field"><span>📌</span><span class="auto-val" id="i-gps">Getting location…</span><span class="badge badge-yellow" id="i-gps-badge">Pending</span></div>
+        <button id="i-gps-retry" onclick="retryGPS('i')" style="display:none;margin-top:8px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">📍 Retry GPS</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">👤 Trainer (auto-filled)</div>
+      <div class="two-col">
+        <div class="field"><label>Name</label><input type="text" id="i-trainer" readonly></div>
+        <div class="field"><label>County</label><input type="text" id="i-county" readonly></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">🔧 Installation details</div>
+      <div class="field"><label for="i-shopname">Shop name<span class="req">*</span></label>
+        <input type="text" id="i-shopname" placeholder="e.g. Kamau General Store" oninput="calcProgress('i')">
+      </div>
+      <div class="field"><label for="i-ownername">Shop owner name<span class="req">*</span></label>
+        <input type="text" id="i-ownername" placeholder="e.g. John Kamau" oninput="calcProgress('i')">
+      </div>
+      <div class="field"><label for="i-ownerphone">Shop owner phone<span class="req">*</span></label>
+        <input type="tel" id="i-ownerphone" placeholder="0712 345 678" oninput="calcProgress('i')">
+      </div>
+      <div class="field"><label for="i-location">Shop location<span class="req">*</span></label>
+        <input type="text" id="i-location" placeholder="e.g. Nakuru Town, Kenyatta Ave" oninput="calcProgress('i')">
+      </div>
+      <div class="field"><label for="i-notes">Installation notes</label>
+        <textarea id="i-notes" placeholder="Any notes about the installation..."></textarea>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">📷 Installation photos</div>
+      <div class="field"><label>Shop exterior photo<span class="req">*</span></label>
+        <div class="photo-box" onclick="document.getElementById('i-ext-file').click()">
+          <div class="photo-ph" id="i-ext-ph"><span class="photo-ph-icon">📸</span><span>Tap to photograph</span><small>Outside of the shop</small></div>
+          <div class="photo-preview" id="i-ext-preview"><img id="i-ext-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-ext')">↺ Retake</button></div>
+        </div>
+        <input type="file" id="i-ext-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-ext','i')">
+      </div>
+      <div class="field" style="margin-top:1rem"><label>Shelve / Interior photo<span class="req">*</span></label>
+        <div class="photo-box" onclick="document.getElementById('i-int-file').click()">
+          <div class="photo-ph" id="i-int-ph"><span class="photo-ph-icon">🏠</span><span>Tap to photograph</span><small>Interior shelve setup</small></div>
+          <div class="photo-preview" id="i-int-preview"><img id="i-int-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-int')">↺ Retake</button></div>
+        </div>
+        <input type="file" id="i-int-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-int','i')">
+      </div>
+    </div>
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;font-size:12px;color:#92400e;margin-top:.5rem">
+      🔔 Submitting will send an email notification to your area manager for approval.
+    </div>
+    <button class="submit-btn orange-btn" id="i-submit" onclick="submitForm('install')">
+      <div class="spinner" id="i-spinner"></div><span id="i-btn">Submit &amp; Notify Manager</span>
+    </button>
+    <div class="error-msg" id="i-error"></div>
+    <div id="i-waiting" style="display:none;text-align:center;padding:2rem 1rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;margin-top:1rem">
+      <div style="font-size:40px;margin-bottom:10px">⏳</div>
+      <h2 style="font-size:16px;color:#1d4ed8;font-weight:600;margin-bottom:6px" id="i-waiting-title">Waiting for manager approval…</h2>
+      <p style="font-size:13px;color:#1e40af;line-height:1.6">Your installation has been sent to your area manager. This screen updates automatically once they respond.</p>
+      <div style="margin-top:14px;font-size:12px;color:#6b7280" id="i-waiting-ref"></div>
+    </div>
+    <div class="success-banner" id="i-approved">
+      <div class="success-icon">✅</div><h2>Approved by your line manager!</h2>
+      <p>You may proceed. Great work!</p>
+      <div class="success-meta" id="i-approved-meta"></div>
+      <button class="home-btn" onclick="resetInstallForm()">➕ Submit Another Installation</button>
+    </div>
+    <div class="success-banner" id="i-rejected" style="display:none;background:#fef2f2;border-color:#fecaca">
+      <div class="success-icon">❌</div><h2 style="color:#b91c1c">Rejected by your line manager</h2>
+      <p style="color:#b91c1c">Please contact your line manager before proceeding.</p>
+      <div class="success-meta" id="i-rejected-meta" style="background:#fee2e2;color:#b91c1c"></div>
+      <button class="home-btn" onclick="resetInstallForm()">↺ Retake / Resubmit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGO_3aw2o5g7UMxBJnZEYxjh2Lt9rOnA0nM0ZRNLWpF-TPE_psWqONiQACqw0LCff9/exec';
+
+// ── SESSION ──────────────────────────────────────────────────
+var session = null; // { name, email, county, managerEmail, managerName, role }
+
+function saveSession(data) {
+  session = data;
+  try { localStorage.setItem('ipos_session', JSON.stringify(data)); } catch(e){}
+}
+
+function loadSession() {
+  try {
+    var s = localStorage.getItem('ipos_session');
+    if(s) { session = JSON.parse(s); return true; }
+  } catch(e){}
+  return false;
+}
+
+function clearSession() {
+  session = null;
+  try { localStorage.removeItem('ipos_session'); } catch(e){}
+}
+
+// ── LOGIN ────────────────────────────────────────────────────
+function doLogin() {
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
+  var name  = document.getElementById('login-name').value.trim();
+  if(!email){ showLoginErr('Please enter your email address.'); return; }
+  if(!name){  showLoginErr('Please enter your full name.'); return; }
+  if(!email.includes('@')){ showLoginErr('Please enter a valid email address.'); return; }
+  if(APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL'){ showLoginErr('App not configured yet. Contact your administrator.'); return; }
+
+  setLoginLoading(true);
+  document.getElementById('login-error').style.display = 'none';
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ formType: 'login', email: email, name: name })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    setLoginLoading(false);
+    if(data.status === 'success') {
+      saveSession(data.user);
+      goHome();
+    } else {
+      showLoginErr(data.message || 'Email not recognised. Please contact your manager to register.');
+    }
+  })
+  .catch(function(){
+    setLoginLoading(false);
+    showLoginErr('Network error. Check your connection and try again.');
+  });
+}
+
+function showLoginErr(msg) {
+  var el = document.getElementById('login-error');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+
+function setLoginLoading(on) {
+  document.getElementById('login-btn').disabled = on;
+  document.getElementById('login-spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('login-btn-label').textContent = on ? 'Verifying…' : 'Sign In';
+}
+
+function doLogout() {
+  clearSession();
+  showScreen('screen-login');
+}
+
+// ── HOME ─────────────────────────────────────────────────────
+function goHome() {
+  if(!session){ showScreen('screen-login'); return; }
+  var now = new Date();
+  var isManagerOrAdmin = session.role === 'Manager' || session.role === 'Admin';
+  document.getElementById('home-welcome').textContent = 'Good ' + getTimeOfDay() + ', ' + session.name.split(' ')[0] + '!';
+  document.getElementById('home-date-str').textContent = now.toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('home-county-chip').textContent = '📍 ' + (session.county || (isManagerOrAdmin ? 'All Regions' : 'Unknown'));
+  document.getElementById('home-manager-chip').textContent = '👔 ' + (session.managerName||'Manager');
+  document.getElementById('home-role-chip').textContent = '🎯 ' + (session.role||'Trainer');
+  document.getElementById('home-user-initial').textContent = session.name.charAt(0).toUpperCase();
+  document.getElementById('home-header-sub').textContent = session.county ? session.county+' County' : 'Field data collection';
+
+  document.getElementById('dashboard-card-wrap').style.display = isManagerOrAdmin ? 'block' : 'none';
+  document.getElementById('notif-bell').style.display = isManagerOrAdmin ? 'flex' : 'none';
+  // Managers/Admin only use the dashboard to view data — they don't fill trainer forms
+  document.getElementById('home-forms-grid').style.display = isManagerOrAdmin ? 'none' : 'grid';
+  if(isManagerOrAdmin) refreshPendingBadge();
+
+  showScreen('screen-home');
+}
+
+function getTimeOfDay() {
+  var h = new Date().getHours();
+  return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+}
+
+function goForm(screenId) {
+  showScreen(screenId);
+  var prefix = {
+    'screen-route':'r','screen-evening':'e',
+    'screen-survey':'s','screen-install':'i'
+  }[screenId];
+  if(!prefix) return;
+  // Fill trainer fields from session
+  var now = new Date();
+  var ds = now.toLocaleString('en-KE',{weekday:'short',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  var dateEl = document.getElementById(prefix+'-date');
+  if(dateEl) dateEl.textContent = ds;
+  window['dateStore_'+prefix] = ds;
+  setVal(prefix+'-trainer', session.name);
+  setVal(prefix+'-email',   session.email);
+  setVal(prefix+'-county',  session.county);
+  if(['r','s','i'].includes(prefix)) initGPS(prefix);
+  calcProgress(prefix);
+}
+
+function setVal(id, val) {
+  var el = document.getElementById(id);
+  if(el) el.value = val||'';
+}
+
+// ── SCREEN NAV ────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── GPS ──────────────────────────────────────────────────────
+var gpsStore = {};
+var visitGpsStore = {};
+
+function initGPS(prefix) {
+  if(!navigator.geolocation){ setGPS(prefix,'GPS not supported','red'); return; }
+  setGPS(prefix,'Getting location...','yellow');
+  navigator.geolocation.getCurrentPosition(
+    function(p){ applyGPS(prefix,p); },
+    function(err){ handleGPSErr(prefix,err); },
+    {enableHighAccuracy:false,timeout:8000,maximumAge:30000}
+  );
+  setTimeout(function(){
+    navigator.geolocation.getCurrentPosition(
+      function(p){ applyGPS(prefix,p); },
+      function(){},
+      {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+    );
+  },3000);
+}
+
+function applyGPS(prefix,pos){
+  var lat=pos.coords.latitude.toFixed(6),lng=pos.coords.longitude.toFixed(6),acc=Math.round(pos.coords.accuracy);
+  gpsStore[prefix]={lat:lat,lng:lng,acc:acc};
+  document.getElementById(prefix+'-gps').textContent=lat+', '+lng+' (±'+acc+'m)';
+  document.getElementById(prefix+'-gps-badge').textContent='Captured';
+  document.getElementById(prefix+'-gps-badge').className='badge badge-green';
+  var rb=document.getElementById(prefix+'-gps-retry');
+  if(rb) rb.style.display='none';
+}
+
+function handleGPSErr(prefix,err){
+  var msgs={1:'Location blocked — tap Retry',2:'Go outdoors and tap Retry',3:'Timed out — tap Retry'};
+  setGPS(prefix,msgs[err.code]||'Failed','red');
+  var rb=document.getElementById(prefix+'-gps-retry');
+  if(rb) rb.style.display='block';
+}
+
+function setGPS(prefix,msg,color){
+  document.getElementById(prefix+'-gps').textContent=msg;
+  var b=document.getElementById(prefix+'-gps-badge');
+  b.textContent=color==='red'?'Failed':'Trying...';
+  b.className='badge badge-'+(color==='red'?'red':'yellow');
+}
+
+function retryGPS(prefix){
+  gpsStore[prefix]=null;
+  var rb=document.getElementById(prefix+'-gps-retry');
+  if(rb) rb.style.display='none';
+  initGPS(prefix);
+}
+
+function gpsStr(prefix){
+  var g=gpsStore[prefix];
+  return g?(g.lat+', '+g.lng+' (±'+g.acc+'m)'):'Not captured';
+}
+
+// ── VISITS ───────────────────────────────────────────────────
+var visitCount = 0, resultCount = 0;
+
+function addVisit() {
+  if (visitCount >= 15) { alert('Maximum 15 visits.'); return; }
+  visitCount++;
+  var id = visitCount;
+  var c = document.getElementById('visits-container');
+  var d = document.createElement('div');
+  d.className = 'visit-row'; d.id = 'visit-' + id;
+  
+  // The HTML string has been updated to remove the Expected time and GPS Location blocks
+  d.innerHTML = '<div class="visit-num">Visit ' + id +
+    '<button class="remove-btn" onclick="removeVisit(' + id + ')">✕ Remove</button></div>' +
+    '<div class="field"><label> Shop name<span class="req">*</span></label>' +
+    '<input type="text" id="v-name-' + id + '" placeholder="Shop or client name" oninput="calcProgress(\'r\')"></div>' +
+    
+    // Kept Location but removed the 'Expected time' and the 'two-col' layout wrapper
+    '<div class="field"><label>Location</label><input type="text" id="v-loc-' + id + '" placeholder="Area/town"></div>' +
+    
+    '<div class="field"><label>Shop owner phone number</label>' +
+    '<input type="tel" id="v-phone-' + id + '" placeholder="0712 345 678" oninput="calcProgress(\'r\')"></div>' +
+    
+    // Note: The entire GPS block that used to be here has been removed.
+    
+    '<div class="field"><label>Purpose<span class="req">*</span></label>' +
+    '<select id="v-purpose-' + id + '" onchange="calcProgress(\'r\')"><option value="">Select purpose…</option>' +
+    '<option>Shop onboarding</option><option>Pitching</option><option>Follow-up visit</option>' +
+    '<option>Installation</option><option>Training</option>' +
+    '<option>Issue resolution</option><option>Routine check</option><option>Other</option></select></div>' +
+    
+    '<div class="field"><label>Front shop picture <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>' +
+    '<div class="photo-box" onclick="document.getElementById(\'v-photo-' + id + '-file\').click()">' +
+    '<div class="photo-ph" id="v-photo-' + id + '-ph"><span class="photo-ph-icon">📸</span><span>Tap to photograph</span><small>Front of the shop</small></div>' +
+    '<div class="photo-preview" id="v-photo-' + id + '-preview"><img id="v-photo-' + id + '-img" src="" alt="">' +
+    '<button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto(\'v-photo-' + id + '\')">↺ Retake</button></div></div>' +
+    '<input type="file" id="v-photo-' + id + '-file" accept="image/*" capture="environment" onchange="previewPhoto(this,\'v-photo-' + id + '\',\'r\')"></div>' +
+    
+    '<div class="field"><label>Client feedback <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>' +
+    '<textarea id="v-feedback-' + id + '" placeholder="Any expected feedback or notes for this visit..." style="min-height:60px"></textarea></div>';
+    
+  c.appendChild(d);
+  calcProgress('r');
+}
+
+function removeVisit(n) {
+  var el = document.getElementById('visit-' + n);
+  if (el) el.remove();
+  calcProgress('r');
+}
+
+function addResult(){
+  resultCount++;
+  var id=resultCount;
+  var nowTime=new Date().toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'});
+  var c=document.getElementById('results-container');
+  var d=document.createElement('div');
+  d.className='visit-row'; d.id='result-'+id;
+  d.innerHTML='<div class="visit-num">Result '+id+
+    '<button class="remove-btn" onclick="removeResult('+id+')">✕ Remove</button></div>'+
+    '<div class="two-col">'+
+    '<div class="field"><label>Client / Shop<span class="req">*</span></label>'+
+    '<input type="text" id="er-name-'+id+'" placeholder="Shop name" oninput="calcProgress(\'e\')"></div>'+
+    '<div class="field"><label>Time <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>'+
+    '<input type="text" id="er-time-'+id+'" value="'+nowTime+'" readonly style="background:#f3f4f6"></div>'+
+    '</div>'+
+    '<div class="field"><label>Result<span class="req">*</span></label>'+
+    '<select id="er-result-'+id+'"><option value="">Select…</option>'+
+    '<option>Successful onboarding</option><option>Installation done</option>'+
+    '<option>Follow-up required</option><option>Client not available</option>'+
+    '<option>Issue resolved</option><option>Training completed</option>'+
+    '<option>Declined</option><option>Other</option></select></div>'+
+    '<div class="field"><label>Notes</label>'+
+    '<textarea id="er-notes-'+resultCount+'" placeholder="Additional notes..." style="min-height:60px"></textarea></div>';
+  c.appendChild(d);
+  calcProgress('e');
+}
+
+function removeResult(n){
+  var el=document.getElementById('result-'+n);
+  if(el) el.remove();
+  calcProgress('e');
+}
+
+// ── PHOTOS ───────────────────────────────────────────────────
+var photos={};
+
+function previewPhoto(input,key,prefix){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    photos[key]=ev.target.result;
+    document.getElementById(key+'-img').src=ev.target.result;
+    document.getElementById(key+'-ph').style.display='none';
+    document.getElementById(key+'-preview').style.display='block';
+    calcProgress(prefix);
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPhoto(key){
+  document.getElementById(key+'-file').value='';
+  document.getElementById(key+'-img').src='';
+  photos[key]='';
+  document.getElementById(key+'-ph').style.display='flex';
+  document.getElementById(key+'-preview').style.display='none';
+}
+
+// ── PROGRESS ─────────────────────────────────────────────────
+function calcProgress(prefix){
+  var fields=[];
+  if(prefix==='r'){
+    fields=[v('r-trainer'),v('r-county')];
+    document.querySelectorAll('#visits-container .visit-row').forEach(function(row){
+      var id=row.id.split('-')[1];
+      fields.push(v('v-name-'+id),v('v-purpose-'+id));
+    });
+  } else if(prefix==='e'){
+    fields=[v('e-trainer'),v('e-county'),v('e-summary')];
+    document.querySelectorAll('#results-container .visit-row').forEach(function(row){
+      var id=row.id.split('-')[1];
+      fields.push(v('er-name-'+id),v('er-result-'+id));
+    });
+  } else if(prefix==='s'){
+    fields=[v('s-trainer'),v('s-county'),v('s-shopname'),v('s-shopid'),v('s-owner'),v('s-location'),v('s-phone'),v('s-transactions'),photos['s-owner']||''];
+  } else if(prefix==='i'){
+    fields=[v('i-trainer'),v('i-county'),v('i-shopname'),v('i-location'),photos['i-ext']||'',photos['i-int']||''];
+  }
+  var pct=fields.length?Math.round(fields.filter(function(f){return f&&f!=='';}).length/fields.length*100):0;
+  document.getElementById(prefix+'-fill').style.width=pct+'%';
+  document.getElementById(prefix+'-pct').textContent=pct+'%';
+}
+
+function v(id){var el=document.getElementById(id);return el?el.value.trim():'';}
+
+// ── SUBMIT ────────────────────────────────────────────────────
+function submitForm(type){
+  if(!session){showScreen('screen-login');return;}
+  var payload={formType:type,trainerName:session.name,trainerEmail:session.email,county:session.county,managerEmail:session.managerEmail,managerName:session.managerName};
+  var missing=[];
+  var map={route:'r',evening:'e',survey:'s',install:'i'};
+  var p=map[type];
+  payload.date=window['dateStore_'+p]||new Date().toLocaleString('en-KE');
+  payload.gps=gpsStr(p);
+
+  if(type==='route'){
+    var visits=[];
+    document.querySelectorAll('#visits-container .visit-row').forEach(function(row){
+      var id=row.id.split('-')[1];
+      var name=v('v-name-'+id),purpose=v('v-purpose-'+id);
+      if(!name) missing.push('Visit '+id+' name');
+      if(!purpose) missing.push('Visit '+id+' purpose');
+      var g=visitGpsStore[id];
+      visits.push({
+        name:name,
+        location:v('v-loc-'+id),
+        time:v('v-time-'+id),
+        phone:v('v-phone-'+id),
+        gps: g ? (g.lat+', '+g.lng+' (\u00b1'+g.acc+'m)') : 'Not captured',
+        purpose:purpose,
+        photo: photos['v-photo-'+id]||'',
+        feedback: v('v-feedback-'+id)
+      });
+    });
+    if(!visits.length) missing.push('At least one visit');
+    payload.visits=visits;
+  }
+  else if(type==='evening'){
+    payload.summary=v('e-summary');
+    if(!payload.summary) missing.push('Day summary');
+    var results=[];
+    document.querySelectorAll('#results-container .visit-row').forEach(function(row){
+      var id=row.id.split('-')[1];
+      var name=v('er-name-'+id),result=v('er-result-'+id);
+      if(!name) missing.push('Result '+id+' name');
+      if(!result) missing.push('Result '+id+' outcome');
+      results.push({name:name,time:v('er-time-'+id),result:result,notes:v('er-notes-'+id)});
+    });
+    if(!results.length) missing.push('At least one result');
+    payload.results=results;
+  }
+  else if(type==='survey'){
+    payload.shopName=v('s-shopname'); payload.shopId=v('s-shopid'); payload.ownerName=v('s-owner');
+    payload.shopLocation=v('s-location'); payload.ownerPhone=v('s-phone');
+    payload.numTransactions=v('s-transactions');
+    payload.ownerImage=photos['s-owner']||'';
+    if(!payload.shopName) missing.push('Shop name');
+    if(!payload.shopId) missing.push('Shop ID');
+    if(!payload.ownerName) missing.push('Owner name');
+    if(!payload.shopLocation) missing.push('Shop location');
+    if(!payload.ownerPhone) missing.push('Owner phone');
+    if(!payload.numTransactions) missing.push('No. of transactions');
+    if(!payload.ownerImage) missing.push('Owner app photo');
+  }
+  else if(type==='install'){
+    payload.shopName=v('i-shopname'); payload.ownerName=v('i-ownername'); payload.ownerPhone=v('i-ownerphone');
+    payload.shopLocation=v('i-location');
+    payload.notes=v('i-notes');
+    payload.exteriorImage=photos['i-ext']||''; payload.interiorImage=photos['i-int']||'';
+    if(!payload.shopName) missing.push('Shop name');
+    if(!payload.ownerName) missing.push('Shop owner name');
+    if(!payload.ownerPhone) missing.push('Shop owner phone');
+    if(!payload.shopLocation) missing.push('Shop location');
+    if(!payload.exteriorImage) missing.push('Exterior photo');
+    if(!payload.interiorImage) missing.push('Interior photo');
+    payload.installId='INST-'+Date.now().toString(36).toUpperCase();
+  }
+
+  if(missing.length){showErr(type,'Please complete: '+missing.join(', '));return;}
+  if(APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL'){showErr(type,'App not configured. Contact admin.');return;}
+
+  setLoading(type,true); hideErr(type);
+
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    setLoading(type,false);
+    if(data.status==='success'){
+      if(type==='install'){ startApprovalWait(payload); }
+      else { showSuccess(type,payload); }
+    }
+    else showErr(type,'Failed: '+(data.message||'Unknown error'));
+  })
+  .catch(function(){setLoading(type,false);showErr(type,'Network error. Check connection.');});
+}
+
+function setLoading(type,on){
+  var map={route:'r',evening:'e',survey:'s',install:'i'};
+  var p=map[type];
+  document.getElementById(p+'-submit').disabled=on;
+  document.getElementById(p+'-spinner').style.display=on?'block':'none';
+  var labels={route:'Submit Route Plan',evening:'Submit Evening Report',survey:'Submit Shop Survey',install:'Submit & Notify Manager'};
+  document.getElementById(p+'-btn').textContent=on?'Submitting…':labels[type];
+}
+function showErr(type,msg){
+  var map={route:'r',evening:'e',survey:'s',install:'i'};
+  var el=document.getElementById(map[type]+'-error');
+  el.textContent='⚠️ '+msg; el.style.display='block';
+}
+function hideErr(type){
+  var map={route:'r',evening:'e',survey:'s',install:'i'};
+  document.getElementById(map[type]+'-error').style.display='none';
+}
+function showSuccess(type,payload){
+  var map={route:'r',evening:'e',survey:'s',install:'i'};
+  var p=map[type];
+  document.getElementById(p+'-submit').style.display='none';
+  document.getElementById(p+'-success').style.display='block';
+  var ref='REF-'+Date.now().toString(36).toUpperCase();
+  var meta='📋 Ref: <strong>'+ref+'</strong><br>👤 '+payload.trainerName+'<br>📍 '+payload.county+' County<br>👔 Notified: '+payload.managerName;
+  if(payload.shopName) meta+='<br>🏪 '+payload.shopName;
+  document.getElementById(p+'-meta').innerHTML=meta;
+}
+function resetForm(type){
+  var map={route:'r',evening:'e',survey:'s',install:'i'};
+  var p=map[type];
+  document.getElementById(p+'-success').style.display='none';
+  document.getElementById(p+'-submit').style.display='flex';
+  goHome();
+}
+
+// ── INSTALLATION APPROVAL POLLING ──────────────────────────────
+var approvalPollTimer = null;
+var approvalPollCount = 0;
+
+function startApprovalWait(payload){
+  document.getElementById('i-submit').style.display='none';
+  document.getElementById('i-waiting').style.display='block';
+  document.getElementById('i-approved').style.display='none';
+  document.getElementById('i-rejected').style.display='none';
+  document.getElementById('i-waiting-ref').textContent='Reference: '+payload.installId;
+  approvalPollCount=0;
+  pollApprovalStatus(payload.installId);
+  approvalPollTimer=setInterval(function(){
+    approvalPollCount++;
+    if(approvalPollCount>120){
+      clearInterval(approvalPollTimer);
+      document.getElementById('i-waiting-title').textContent='Still pending…';
+      return;
+    }
+    pollApprovalStatus(payload.installId);
+  },5000);
+}
+
+function pollApprovalStatus(installId){
+  var url=APPS_SCRIPT_URL+'?action=checkStatus&id='+encodeURIComponent(installId);
+  fetch(url).then(function(r){return r.json();}).then(function(data){
+    if(data.status==='APPROVED'){
+      clearInterval(approvalPollTimer);
+      document.getElementById('i-waiting').style.display='none';
+      document.getElementById('i-approved').style.display='block';
+      document.getElementById('i-approved-meta').innerHTML='📋 Ref: <strong>'+installId+'</strong><br>👤 Approved by: '+(data.approvedBy||'Manager')+'<br>🕐 '+new Date().toLocaleTimeString('en-KE');
+    } else if(data.status==='REJECTED'){
+      clearInterval(approvalPollTimer);
+      document.getElementById('i-waiting').style.display='none';
+      document.getElementById('i-rejected').style.display='block';
+      document.getElementById('i-rejected-meta').innerHTML='📋 Ref: <strong>'+installId+'</strong><br>👤 Rejected by: '+(data.approvedBy||'Manager')+'<br>🕐 '+new Date().toLocaleTimeString('en-KE');
+    }
+  }).catch(function(){});
+}
+
+function resetInstallForm(){
+  if(approvalPollTimer) clearInterval(approvalPollTimer);
+  document.getElementById('i-waiting').style.display='none';
+  document.getElementById('i-approved').style.display='none';
+  document.getElementById('i-rejected').style.display='none';
+  document.getElementById('i-submit').style.display='flex';
+  document.getElementById('i-shopname').value='';
+  document.getElementById('i-ownername').value='';
+  document.getElementById('i-ownerphone').value='';
+  document.getElementById('i-location').value='';
+  document.getElementById('i-notes').value='';
+  clearPhoto('i-ext'); clearPhoto('i-int');
+  calcProgress('i');
+  showScreen('screen-install');
+}
+
+// ── MANAGER DASHBOARD ───────────────────────────────────────────
+var dashFilter = 'PENDING';
+var dashFormType = 'install';
+var dashAllItems = [];
+var dashSheetMap = { route:'Route Plans', evening:'Evening Reports', survey:'Shop Surveys' };
+var dashLabels = { install:'Installations', route:'Route Plans', evening:'Evening Reports', survey:'Shop Surveys', users:'Manage Users' };
+
+function openDashboard(){
+  showScreen('screen-dashboard');
+  backToDashMenu();
+}
+
+function backToDashMenu(){
+  document.getElementById('dash-menu').style.display='block';
+  document.getElementById('dash-detail').style.display='none';
+  document.getElementById('dash-sub').textContent = 'Select a form to view';
+  closeUserForm();
+}
+
+function setFormType(type){
+  dashFormType = type;
+  document.getElementById('dash-menu').style.display='none';
+  document.getElementById('dash-detail').style.display='block';
+  document.getElementById('install-status-tabs').style.display = (type==='install') ? 'flex' : 'none';
+  document.getElementById('dash-filters').style.display = (type==='users') ? 'none' : 'flex';
+  document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
+  document.getElementById('dash-trainer-filter').value='';
+  document.getElementById('dash-county-filter').value='';
+  document.getElementById('dash-range-filter').value='all';
+  document.getElementById('dash-custom-range-wrap').style.display='none';
+  document.getElementById('dash-date-from').value='';
+  document.getElementById('dash-date-to').value='';
+  closeUserForm();
+  document.getElementById('dash-sub').textContent = dashLabels[type] + ' — ' + (session.role==='Admin' ? 'All counties' : (session.county||'') + ' region');
+  loadDashboard();
+}
+
+function setDashFilter(f){
+  dashFilter = f;
+  ['pending','approved','rejected'].forEach(function(k){
+    document.getElementById('filter-'+k).classList.remove('active');
+  });
+  document.getElementById('filter-'+f.toLowerCase()).classList.add('active');
+  renderDashList();
+}
+
+function loadDashboard(){
+  document.getElementById('dash-loading').style.display='block';
+  document.getElementById('dash-empty').style.display='none';
+  document.getElementById('dash-list').innerHTML='';
+
+  var url;
+  if(dashFormType==='install'){
+    url = APPS_SCRIPT_URL + '?action=getInstalls&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  } else if(dashFormType==='users'){
+    url = APPS_SCRIPT_URL + '?action=getUsers&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  } else {
+    url = APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent(dashSheetMap[dashFormType]) + '&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  }
+
+  fetch(url).then(function(r){return r.json();}).then(function(data){
+    document.getElementById('dash-loading').style.display='none';
+    if(dashFormType==='install') dashAllItems = data.installs || [];
+    else if(dashFormType==='users') dashAllItems = data.users || [];
+    else dashAllItems = data.rows || [];
+    if(dashFormType!=='users') populateTrainerFilter();
+    renderDashList();
+    if(dashFormType==='install') updateBadgeCount();
+  }).catch(function(){
+    document.getElementById('dash-loading').textContent='Failed to load. Pull down to retry.';
+  });
+}
+
+function populateTrainerFilter(){
+  var trainerSel = document.getElementById('dash-trainer-filter');
+  var countySel = document.getElementById('dash-county-filter');
+  var curTrainer = trainerSel.value, curCounty = countySel.value;
+  var nameKey = dashFormType==='install' ? 'trainerName' : 'Trainer Name';
+  var countyKey = dashFormType==='install' ? 'county' : 'County';
+  var names = [], counties = [];
+  dashAllItems.forEach(function(item){
+    var n = item[nameKey]; if(n && names.indexOf(n)===-1) names.push(n);
+    var c = item[countyKey]; if(c && counties.indexOf(c)===-1) counties.push(c);
+  });
+  names.sort(); counties.sort();
+  trainerSel.innerHTML = '<option value="">All trainers</option>' + names.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('');
+  countySel.innerHTML = '<option value="">All counties</option>' + counties.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  if(names.indexOf(curTrainer)!==-1) trainerSel.value = curTrainer;
+  if(counties.indexOf(curCounty)!==-1) countySel.value = curCounty;
+}
+
+function onRangeFilterChange(){
+  var range = document.getElementById('dash-range-filter').value;
+  document.getElementById('dash-custom-range-wrap').style.display = (range==='custom') ? 'grid' : 'none';
+  renderDashList();
+}
+
+function dateMatches(itemDateStr){
+  var range = document.getElementById('dash-range-filter').value;
+  if(range==='all') return true;
+  if(!itemDateStr) return false;
+  var d = new Date(itemDateStr);
+  if(isNaN(d.getTime())) return true; // if unparseable, don't exclude
+
+  var now = new Date();
+  if(range==='today'){
+    return d.toDateString() === now.toDateString();
+  }
+  if(range==='month'){
+    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+  }
+  if(range==='year'){
+    return d.getFullYear()===now.getFullYear();
+  }
+  if(range==='custom'){
+    var fromVal = document.getElementById('dash-date-from').value;
+    var toVal = document.getElementById('dash-date-to').value;
+    var itemIso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(fromVal && itemIso < fromVal) return false;
+    if(toVal && itemIso > toVal) return false;
+    return true;
+  }
+  return true;
+}
+
+function renderDashList(){
+  if(dashFormType==='install'){ renderInstallList(); }
+  else if(dashFormType==='users'){ renderUsersList(); }
+  else { renderGenericList(); }
+}
+
+function renderInstallList(){
+  var trainerFilter = document.getElementById('dash-trainer-filter').value;
+  var countyFilter = document.getElementById('dash-county-filter').value;
+  var filtered = dashAllItems.filter(function(x){
+    return x.status===dashFilter &&
+      (!trainerFilter || x.trainerName===trainerFilter) &&
+      (!countyFilter || x.county===countyFilter) &&
+      dateMatches(x.date);
+  });
+  var listEl = document.getElementById('dash-list');
+  listEl.innerHTML='';
+  document.getElementById('dash-empty').style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach(function(item){
+    var statusColors = { PENDING:'#fef9c3;color:#854d0e', APPROVED:'#dcfce7;color:#15803d', REJECTED:'#fee2e2;color:#b91c1c' };
+    var div = document.createElement('div');
+    div.className='dash-item';
+    var photosHtml='';
+    if(item.exteriorUrl) photosHtml += '<a href="'+item.exteriorUrl+'" target="_blank"><img src="'+item.exteriorUrl+'" alt="Exterior"></a>';
+    if(item.interiorUrl) photosHtml += '<a href="'+item.interiorUrl+'" target="_blank"><img src="'+item.interiorUrl+'" alt="Interior"></a>';
+
+    var actionsHtml='';
+    if(item.status==='PENDING'){
+      actionsHtml = '<div class="dash-item-actions">' +
+        '<button class="dash-approve-btn" onclick="actOnInstall(\''+item.installId+'\',\'APPROVED\',this)">✅ Approve</button>' +
+        '<button class="dash-reject-btn" onclick="actOnInstall(\''+item.installId+'\',\'REJECTED\',this)">❌ Reject</button>' +
+        '</div>';
+    } else {
+      actionsHtml = '<div style="font-size:11px;color:#9ca3af;margin-top:8px">By: '+(item.approvedBy||'—')+'</div>';
+    }
+
+    div.innerHTML =
+      '<div class="dash-item-top">' +
+        '<div><div class="dash-item-shop">🏪 '+(item.shopName||'Unknown')+'</div><div class="dash-item-ref">'+item.installId+'</div></div>' +
+        '<div class="dash-item-status" style="background:'+statusColors[item.status].split(';')[0]+';color:'+statusColors[item.status].split('color:')[1]+'">'+item.status+'</div>' +
+      '</div>' +
+      '<div class="dash-item-body">' +
+        '👤 '+(item.trainerName||'')+' · 📍 '+(item.county?item.county+' · ':'')+(item.shopLocation||'')+'<br>'+
+        (item.ownerName ? '👨 Owner: '+item.ownerName+' · 📞 '+(item.ownerPhone||'')+'<br>' : '') +
+        '🕐 '+(item.date||item.submittedAt||'')+
+        (item.notes ? '<br>📝 '+item.notes : '') +
+      '</div>' +
+      (photosHtml ? '<div class="dash-item-photos">'+photosHtml+'</div>' : '') +
+      actionsHtml;
+    listEl.appendChild(div);
+  });
+}
+
+function renderGenericList(){
+  var trainerFilter = document.getElementById('dash-trainer-filter').value;
+  var countyFilter = document.getElementById('dash-county-filter').value;
+  var filtered = dashAllItems.filter(function(x){
+    return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
+      (!countyFilter || x['County']===countyFilter) &&
+      dateMatches(x['Date']);
+  });
+  var listEl = document.getElementById('dash-list');
+  listEl.innerHTML='';
+  document.getElementById('dash-empty').style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach(function(row){
+    var div = document.createElement('div');
+    div.className='dash-item';
+    var titleField = row['Shop Name'] || row['Client Name'] || row['Trainer Name'] || 'Record';
+    var bodyRows = '';
+    Object.keys(row).forEach(function(k){
+      if(k==='Row#' || !row[k] || row[k]==='') return;
+      var val = String(row[k]);
+      if(/^https?:\/\//.test(val)){
+        bodyRows += '<div><strong>'+k+':</strong> <a href="'+val+'" target="_blank">View photo</a></div>';
+      } else {
+        bodyRows += '<div><strong>'+k+':</strong> '+val+'</div>';
+      }
+    });
+    div.innerHTML =
+      '<div class="dash-item-top"><div class="dash-item-shop">📄 '+titleField+'</div></div>' +
+      '<div class="dash-item-body" style="line-height:2">'+bodyRows+'</div>';
+    listEl.appendChild(div);
+  });
+}
+
+function actOnInstall(installId, action, btnEl){
+  var row = btnEl.closest('.dash-item');
+  row.querySelectorAll('button').forEach(function(b){ b.disabled=true; });
+  btnEl.textContent = 'Processing…';
+
+  fetch(APPS_SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({ formType:'approvalAction', installId:installId, action: action==='APPROVED'?'approve':'reject', by: session.name })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.status==='success'){ loadDashboard(); }
+    else { alert('Failed: '+(data.message||'Unknown error')); row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); }
+  })
+  .catch(function(){ alert('Network error.'); row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); });
+}
+
+function updateBadgeCount(){
+  var pending = dashAllItems.filter(function(x){ return x.status==='PENDING'; }).length;
+  var badge = document.getElementById('notif-badge');
+  var dashCount = document.getElementById('dashboard-pending-count');
+  if(pending>0){
+    badge.textContent = pending>99?'99+':pending;
+    badge.style.display='flex';
+    dashCount.textContent = pending;
+    dashCount.style.display='inline-block';
+  } else {
+    badge.style.display='none';
+    dashCount.style.display='none';
+  }
+}
+
+function refreshPendingBadge(){
+  var url = APPS_SCRIPT_URL + '?action=getInstalls&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  fetch(url).then(function(r){return r.json();}).then(function(data){
+    dashAllItems = data.installs || [];
+    updateBadgeCount();
+  }).catch(function(){});
+}
+
+// ── USER MANAGEMENT ─────────────────────────────────────────────
+function renderUsersList(){
+  var listEl = document.getElementById('dash-list');
+  listEl.innerHTML='';
+  document.getElementById('dash-empty').style.display = dashAllItems.length ? 'none' : 'block';
+
+  dashAllItems.forEach(function(u){
+    var div = document.createElement('div');
+    div.className='dash-item';
+    var roleColors = { Trainer:'#dbeafe;color:#1d4ed8', Manager:'#ede9fe;color:#6d28d9', Admin:'#fee2e2;color:#b91c1c' };
+    var rc = roleColors[u.role] || '#f3f4f6;color:#374151';
+    div.innerHTML =
+      '<div class="dash-item-top">' +
+        '<div><div class="dash-item-shop">👤 '+(u.name||'Unknown')+'</div><div class="dash-item-ref">'+(u.email||'')+'</div></div>' +
+        '<div class="dash-item-status" style="background:'+rc.split(';')[0]+';color:'+rc.split('color:')[1]+'">'+(u.role||'')+'</div>' +
+      '</div>' +
+      '<div class="dash-item-body">' +
+        (u.county ? '📍 '+u.county+'<br>' : '') +
+        (u.managerEmail ? '👔 Reports to: '+u.managerEmail : '<span style="color:#9ca3af">No manager assigned</span>') +
+      '</div>' +
+      '<div class="dash-item-actions">' +
+        '<button class="dash-approve-btn" style="background:var(--accent)" onclick=\'openUserForm('+JSON.stringify(u)+')\'>✏️ Edit</button>' +
+        '<button class="dash-reject-btn" onclick="deleteUser(\''+u.email+'\',this)">🗑️ Delete</button>' +
+      '</div>';
+    listEl.appendChild(div);
+  });
+}
+
+function openUserForm(user){
+  document.getElementById('user-form-wrap').style.display='block';
+  document.getElementById('uf-error').style.display='none';
+  if(user){
+    document.getElementById('user-form-title').textContent='✏️ Edit User';
+    document.getElementById('uf-original-email').value=user.email;
+    document.getElementById('uf-name').value=user.name||'';
+    document.getElementById('uf-email').value=user.email||'';
+    document.getElementById('uf-role').value=user.role||'Trainer';
+    document.getElementById('uf-county').value=user.county||'';
+    document.getElementById('uf-manager-email').value=user.managerEmail||'';
+  } else {
+    document.getElementById('user-form-title').textContent='➕ Register New User';
+    document.getElementById('uf-original-email').value='';
+    document.getElementById('uf-name').value='';
+    document.getElementById('uf-email').value='';
+    document.getElementById('uf-role').value='Trainer';
+    document.getElementById('uf-county').value='';
+    // Managers registering a new trainer default the manager email to themselves
+    document.getElementById('uf-manager-email').value = session.role==='Manager' ? session.email : '';
+  }
+  document.getElementById('user-form-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+function closeUserForm(){
+  document.getElementById('user-form-wrap').style.display='none';
+}
+
+function saveUser(){
+  var originalEmail = v('uf-original-email');
+  var name = v('uf-name');
+  var email = v('uf-email').toLowerCase();
+  var role = document.getElementById('uf-role').value;
+  var county = document.getElementById('uf-county').value;
+  var managerEmail = v('uf-manager-email').toLowerCase();
+
+  if(!name || !email){
+    var el=document.getElementById('uf-error'); el.textContent='⚠️ Name and email are required.'; el.style.display='block';
+    return;
+  }
+
+  var btn=document.getElementById('uf-save-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    body: JSON.stringify({
+      formType:'userAction',
+      action: originalEmail ? 'edit' : 'add',
+      originalEmail: originalEmail,
+      name:name, email:email, role:role, county:county, managerEmail:managerEmail,
+      requestedBy: session.email, requestedByRole: session.role
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    btn.disabled=false; btn.textContent='💾 Save';
+    if(data.status==='success'){ closeUserForm(); loadDashboard(); }
+    else { var el=document.getElementById('uf-error'); el.textContent='⚠️ '+(data.message||'Failed to save.'); el.style.display='block'; }
+  })
+  .catch(function(){ btn.disabled=false; btn.textContent='💾 Save'; var el=document.getElementById('uf-error'); el.textContent='⚠️ Network error.'; el.style.display='block'; });
+}
+
+function deleteUser(email, btnEl){
+  if(!confirm('Remove '+email+' from the system? This cannot be undone.')) return;
+  var row = btnEl.closest('.dash-item');
+  row.querySelectorAll('button').forEach(function(b){ b.disabled=true; });
+
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    body: JSON.stringify({ formType:'userAction', action:'delete', originalEmail: email, requestedBy: session.email, requestedByRole: session.role })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.status==='success'){ loadDashboard(); }
+    else { alert('Failed: '+(data.message||'Unknown error')); row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); }
+  })
+  .catch(function(){ alert('Network error.'); row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); });
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+if(loadSession()){ goHome(); } else { showScreen('screen-login'); }
+addVisit(); addResult();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>iPOS Field App</title>
 <meta name="mobile-web-app-capable" content="yes">
