@@ -897,13 +897,15 @@ function addResult(){
   d.innerHTML='<div class="visit-num">Result '+id+
     '<button class="remove-btn" onclick="removeResult('+id+')">✕ Remove</button></div>'+
     '<div class="two-col">'+
-    '<div class="field"><label>Client / Shop<span class="req">*</span></label>'+
+    '<div class="field"><label>Shop Name <span class="req">*</span></label>'+
     '<input type="text" id="er-name-'+id+'" placeholder="Shop name" oninput="calcProgress(\'e\')"></div>'+
     '<div class="field"><label>Time <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>'+
     '<input type="text" id="er-time-'+id+'" value="'+nowTime+'" readonly style="background:#f3f4f6"></div>'+
     '</div>'+
     '<div class="field"><label>Result<span class="req">*</span></label>'+
     '<select id="er-result-'+id+'"><option value="">Select…</option>'+
+    '<option>Retention/Churn</option><option>Subscription Follow up</option>'+
+    '<option>Non,Low-Transacting Users</option><option>Zero-Low Transacting Users</option>'+
     '<option>Successful onboarding</option><option>Installation done</option>'+
     '<option>Follow-up required</option><option>Client not available</option>'+
     '<option>Issue resolved</option><option>Training completed</option>'+
