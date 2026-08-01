@@ -285,6 +285,11 @@ input[type=file]{display:none}
         <div class="form-card-title">Manage Users</div>
         <div class="form-card-desc">Register, edit or remove trainers</div>
       </div>
+      <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb;margin-top:10px" onclick="openDeviceSettings()">
+        <div class="form-card-icon">⚙️</div>
+        <div class="form-card-title">Device Settings</div>
+        <div class="form-card-desc">Set the default device request amount</div>
+      </div>
     </div>
 
     <!-- STEP 2: Detail view (filters + list) -->
@@ -424,10 +429,6 @@ input[type=file]{display:none}
     <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
   </div>
   <div class="form-body">
-    <div class="progress-wrap">
-      <div class="progress-label"><span>Progress</span><span id="d-pct">0%</span></div>
-      <div class="progress-bar"><div class="progress-fill" id="d-fill"></div></div>
-    </div>
     <div class="section">
       <div class="section-title">📍 Auto-captured</div>
       <div class="field"><label>Date &amp; time</label>
@@ -444,14 +445,19 @@ input[type=file]{display:none}
     </div>
 
     <div class="section">
-      <div class="section-title">💳 Device Payment Record</div>
-      <div id="payments-container"></div>
-      <button class="add-visit-btn" onclick="addPayment()">+ Add payment record</button>
+      <div class="field"><label for="d-purpose">Select Purpose<span class="req">*</span></label>
+        <select id="d-purpose" onchange="onPurposeChange()">
+          <option value="">-- Select an action --</option>
+          <option value="repayment">💳 Device Repayment</option>
+          <option value="request">📦 Device Request</option>
+        </select>
+      </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">🔍 Record a Credit Repayment</div>
-      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Search an existing shop with an outstanding balance to log a top-up payment — the balance updates automatically.</p>
+    <!-- ═══ PURPOSE 1: DEVICE REPAYMENT ═══ -->
+    <div class="section" id="purpose-repayment" style="display:none">
+      <div class="section-title">🔍 Device Repayment</div>
+      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Search a shop by ID or name. If they have a balance, log a top-up. If it's their first device, you'll be able to record a new sale.</p>
       <div class="field">
         <label for="cr-search">Search by Shop ID or Shop Name</label>
         <div style="display:flex;gap:8px">
@@ -461,7 +467,11 @@ input[type=file]{display:none}
       </div>
       <div id="cr-search-status" style="font-size:12px;color:var(--text-m);margin-bottom:6px"></div>
       <div id="cr-results"></div>
+      <div id="cr-no-match" style="display:none;margin-bottom:10px">
+        <button type="button" onclick="startNewSaleFromSearch()" style="width:100%;padding:12px;border-radius:10px;border:1px dashed var(--accent);background:transparent;color:var(--accent);font-weight:600;cursor:pointer">+ Not found — record a new device sale</button>
+      </div>
 
+      <!-- Existing shop → top-up repayment -->
       <div id="cr-selected" style="display:none;margin-top:12px">
         <div id="cr-selected-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px"></div>
         <div class="field"><label for="cr-amount">Repayment amount (KES)<span class="req">*</span></label>
@@ -475,7 +485,7 @@ input[type=file]{display:none}
             <div class="photo-ph" id="cr-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa confirmation screenshot</small></div>
             <div class="photo-preview" id="cr-mpesa-preview"><img id="cr-mpesa-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('cr-mpesa')">↺ Retake</button></div>
           </div>
-          <input type="file" id="cr-mpesa-file" accept="image/*" onchange="previewPhoto(this,'cr-mpesa','d')">
+          <input type="file" id="cr-mpesa-file" accept="image/*" onchange="previewPhoto(this,'cr-mpesa')">
         </div>
         <button type="button" class="submit-btn green-btn" id="cr-submit" onclick="submitCreditRepayment()">
           <div class="spinner" id="cr-spinner"></div><span id="cr-btn">Submit Repayment</span>
@@ -483,82 +493,143 @@ input[type=file]{display:none}
         <div class="error-msg" id="cr-error"></div>
         <div id="cr-success" style="display:none;background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:14px;margin-top:10px;text-align:center;color:#166534;font-weight:600"></div>
       </div>
+
+      <!-- No existing record → new device sale -->
+      <div id="ns-fields" style="display:none;margin-top:12px">
+        <div class="two-col">
+          <div class="field"><label for="ns-method">Payment method<span class="req">*</span></label>
+            <select id="ns-method" onchange="onNewSaleMethodChange()"><option value="">Select…</option>
+            <option value="Cash">Cash</option><option value="Installment">Installment (Credit)</option></select>
+          </div>
+          <div class="field"><label for="ns-price">Device price (KES)</label>
+            <input type="text" id="ns-price" inputmode="numeric" placeholder="e.g. 4500" oninput="calcNewSaleBalance()">
+          </div>
+        </div>
+        <div class="field"><label for="ns-custname">Customer name<span class="req">*</span></label>
+          <input type="text" id="ns-custname" placeholder="e.g. Jane Wambui">
+        </div>
+        <div class="two-col">
+          <div class="field"><label for="ns-phone">Customer phone number<span class="req">*</span></label>
+            <input type="tel" id="ns-phone" placeholder="0712 345 678">
+          </div>
+          <div class="field"><label for="ns-shopid">Shop ID<span class="req">*</span></label>
+            <input type="text" id="ns-shopid" placeholder="e.g. 123456">
+          </div>
+        </div>
+        <div class="field"><label for="ns-shopname">Shop name<span class="req">*</span></label>
+          <input type="text" id="ns-shopname" placeholder="e.g. Kamau General Store">
+        </div>
+        <div class="two-col">
+          <div class="field"><label for="ns-location">Location<span class="req">*</span></label>
+            <input type="text" id="ns-location" placeholder="Centers/Town">
+          </div>
+          <div class="field"><label for="ns-county">County</label>
+            <select id="ns-county"></select>
+          </div>
+        </div>
+        <div class="field" id="ns-paid-wrap" style="display:none"><label for="ns-paid">Amount paid now (KES)</label>
+          <input type="text" id="ns-paid" inputmode="numeric" placeholder="e.g. 1500" oninput="calcNewSaleBalance()">
+        </div>
+        <div id="ns-balance" style="display:none;font-size:12px;color:var(--text-s);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:6px"></div>
+
+        <button type="button" class="submit-btn green-btn" id="ns-submit" onclick="submitNewSale()" style="margin-top:1rem">
+          <div class="spinner" id="ns-spinner"></div><span id="ns-btn">Submit New Sale</span>
+        </button>
+        <div class="error-msg" id="ns-error"></div>
+        <div id="ns-success" style="display:none;background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:14px;margin-top:10px;text-align:center;color:#166534;font-weight:600"></div>
+      </div>
     </div>
 
+    <!-- ═══ PURPOSE 2: DEVICE REQUEST ═══ -->
+    <div class="section" id="purpose-request" style="display:none">
+      <div class="section-title">📦 Device Request</div>
+      <div class="field"><label for="d-req-email">Send request to (email)<span class="req">*</span></label>
+        <input type="email" id="d-req-email" placeholder="devices@enduring.co.ke">
+      </div>
+      <div class="field"><label for="d-req-cc">CC (optional, comma-separated)</label>
+        <input type="text" id="d-req-cc" placeholder="manager@enduring.co.ke, ops@enduring.co.ke">
+      </div>
+      <div class="two-col">
+        <div class="field"><label for="d-req-amount">Device amount (KES)<span class="req">*</span></label>
+          <input type="text" id="d-req-amount" inputmode="numeric" placeholder="e.g. 4500">
+          <small id="d-req-amount-hint" style="display:none;color:var(--text-m);font-size:11px">Prefilled with the area's default device price — you can change it.</small>
+        </div>
+        <div class="field"><label for="d-req-paytype">Payment type<span class="req">*</span></label>
+          <select id="d-req-paytype">
+            <option value="">Select…</option>
+            <option value="Cash">Cash</option>
+            <option value="Credit">Credit</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label for="d-req-mpesa-msg">M-Pesa message <span style="font-size:11px;color:#9ca3af;font-weight:400">(paste confirmation text)</span></label>
+        <textarea id="d-req-mpesa-msg" placeholder="e.g. Confirmed. You have received KES4,500.00 from..." style="min-height:60px"></textarea>
+      </div>
+      <div class="field"><label>M-Pesa screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
+        <div class="photo-box" onclick="document.getElementById('d-req-mpesa-file').click()">
+          <div class="photo-ph" id="d-req-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa confirmation screenshot</small></div>
+          <div class="photo-preview" id="d-req-mpesa-preview"><img id="d-req-mpesa-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('d-req-mpesa')">↺ Retake</button></div>
+        </div>
+        <input type="file" id="d-req-mpesa-file" accept="image/*" onchange="previewPhoto(this,'d-req-mpesa')">
+      </div>
+      <div class="field"><label for="d-req-location">Location<span class="req">*</span></label>
+        <input type="text" id="d-req-location" placeholder="e.g. Nakuru Town">
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Trainer full name <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
+          <input type="text" id="d-req-name" readonly>
+        </div>
+        <div class="field"><label for="d-req-phone">Trainer phone number<span class="req">*</span></label>
+          <input type="tel" id="d-req-phone" placeholder="0712 345 678">
+        </div>
+      </div>
+      <div class="field"><label for="d-req-shipping">Shipping location<span class="req">*</span></label>
+        <input type="text" id="d-req-shipping" placeholder="e.g. Nakuru — Kenyatta Ave stage">
+      </div>
+      <div class="two-col">
+        <div class="field"><label for="d-req-start">Start date<span class="req">*</span></label>
+          <input type="date" id="d-req-start">
+        </div>
+        <div class="field"><label for="d-req-end">End date</label>
+          <input type="date" id="d-req-end">
+        </div>
+      </div>
+      <div class="field"><label for="d-req-message">Short message about request</label>
+        <textarea id="d-req-message" placeholder="Anything the device team should know..." style="min-height:60px"></textarea>
+      </div>
+
+      <button type="button" class="submit-btn green-btn" id="d-submit" onclick="submitDeviceRequest()">
+        <div class="spinner" id="d-spinner"></div><span id="d-btn">Submit Device Request</span>
+      </button>
+      <div class="error-msg" id="d-error"></div>
+      <div class="success-banner" id="d-success">
+        <div class="success-icon">✅</div><h2>Device Request Submitted!</h2>
+        <p>Emailed to the device team and saved to Google Sheets.</p>
+        <div class="success-meta" id="d-meta"></div>
+        <button class="home-btn" onclick="resetForm('devicepay')">← Back to Home</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ MANAGER: DEVICE SETTINGS -->
+<div class="screen" id="screen-settings">
+  <div class="app-header">
+    <div><h1>Device Settings</h1><p>Default device request amount</p></div>
+    <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
+  </div>
+  <div class="form-body">
     <div class="section">
-      <div class="section-title">📦 Device Payment Report — Request a Device</div>
-      <div class="field" style="margin-bottom:0">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;color:var(--text)">
-          <input type="checkbox" id="d-req-toggle" onchange="toggleDeviceRequest()" style="width:17px;height:17px;accent-color:var(--accent)">
-          Also request a device shipment
-        </label>
+      <div class="section-title">⚙️ Default Device Amount</div>
+      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">This amount auto-fills the "Device amount" field on every trainer's Device Request form. Trainers can still edit it per request.</p>
+      <div class="field"><label for="set-device-amount">Amount (KES)</label>
+        <input type="text" id="set-device-amount" inputmode="numeric" placeholder="e.g. 4500">
       </div>
-      <div id="d-req-fields" style="display:none;margin-top:1rem">
-        <div class="field"><label for="d-req-email">Send request to (email)<span class="req">*</span></label>
-          <input type="email" id="d-req-email" placeholder="devices@enduring.co.ke" oninput="calcProgress('d')">
-        </div>
-        <div class="field"><label for="d-req-cc">CC (optional, comma-separated)</label>
-          <input type="text" id="d-req-cc" placeholder="manager@enduring.co.ke, ops@enduring.co.ke">
-        </div>
-        <div class="two-col">
-          <div class="field"><label for="d-req-amount">Payment amount (KES)<span class="req">*</span></label>
-            <input type="text" id="d-req-amount" inputmode="numeric" placeholder="e.g. 4500" oninput="calcProgress('d')">
-          </div>
-          <div class="field"><label for="d-req-paytype">Payment type<span class="req">*</span></label>
-            <select id="d-req-paytype" onchange="calcProgress('d')">
-              <option value="">Select…</option>
-              <option value="Cash">Cash</option>
-              <option value="Credit">Credit</option>
-            </select>
-          </div>
-        </div>
-        <div class="field"><label for="d-req-mpesa-msg">M-Pesa message <span style="font-size:11px;color:#9ca3af;font-weight:400">(paste confirmation text)</span></label>
-          <textarea id="d-req-mpesa-msg" placeholder="e.g. Confirmed. You have received KES4,500.00 from..." style="min-height:60px"></textarea>
-        </div>
-        <div class="field"><label>M-Pesa screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
-          <div class="photo-box" onclick="document.getElementById('d-req-mpesa-file').click()">
-            <div class="photo-ph" id="d-req-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa confirmation screenshot</small></div>
-            <div class="photo-preview" id="d-req-mpesa-preview"><img id="d-req-mpesa-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('d-req-mpesa')">↺ Retake</button></div>
-          </div>
-          <input type="file" id="d-req-mpesa-file" accept="image/*" onchange="previewPhoto(this,'d-req-mpesa','d')">
-        </div>
-        <div class="field"><label for="d-req-location">Location<span class="req">*</span></label>
-          <input type="text" id="d-req-location" placeholder="e.g. Nakuru Town" oninput="calcProgress('d')">
-        </div>
-        <div class="two-col">
-          <div class="field"><label>Trainer full name <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
-            <input type="text" id="d-req-name" readonly>
-          </div>
-          <div class="field"><label for="d-req-phone">Trainer phone number<span class="req">*</span></label>
-            <input type="tel" id="d-req-phone" placeholder="0712 345 678" oninput="calcProgress('d')">
-          </div>
-        </div>
-        <div class="field"><label for="d-req-shipping">Shipping location<span class="req">*</span></label>
-          <input type="text" id="d-req-shipping" placeholder="e.g. Nakuru — Kenyatta Ave stage">
-        </div>
-        <div class="two-col">
-          <div class="field"><label for="d-req-start">Start date<span class="req">*</span></label>
-            <input type="date" id="d-req-start" oninput="calcProgress('d')">
-          </div>
-          <div class="field"><label for="d-req-end">End date</label>
-            <input type="date" id="d-req-end">
-          </div>
-        </div>
-        <div class="field"><label for="d-req-message">Short message about request</label>
-          <textarea id="d-req-message" placeholder="Anything the device team should know..." style="min-height:60px"></textarea>
-        </div>
+      <div style="display:flex;gap:10px">
+        <button type="button" onclick="saveDeviceAmountSetting()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">💾 Save</button>
+        <button type="button" onclick="deleteDeviceAmountSetting()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;font-weight:600;cursor:pointer">🗑️ Clear</button>
       </div>
-    </div>
-
-    <button class="submit-btn green-btn" id="d-submit" onclick="submitForm('devicepay')">
-      <div class="spinner" id="d-spinner"></div><span id="d-btn">Submit Device Payment Report</span>
-    </button>
-    <div class="error-msg" id="d-error"></div>
-    <div class="success-banner" id="d-success">
-      <div class="success-icon">✅</div><h2>Device Payment Report Submitted!</h2>
-      <p>Saved to Google Sheets<span id="d-success-req-note"></span>.</p>
-      <div class="success-meta" id="d-meta"></div>
-      <button class="home-btn" onclick="resetForm('devicepay')">← Back to Home</button>
+      <div id="set-status" style="font-size:12px;color:var(--text-m);margin-top:10px"></div>
     </div>
   </div>
 </div>
@@ -854,6 +925,7 @@ function goForm(screenId) {
   setVal(prefix+'-email',   session.email);
   setVal(prefix+'-county',  session.county);
   if(['r','s','i'].includes(prefix)) initGPS(prefix);
+  if(prefix==='d') resetPurposeUI();
   calcProgress(prefix);
 }
 
@@ -971,87 +1043,77 @@ function removeVisit(n){
   calcProgress('r');
 }
 
-function addPayment(){
-  resultCount++;
-  var id=resultCount;
-  var c=document.getElementById('payments-container');
-  var d=document.createElement('div');
-  d.className='visit-row'; d.id='payment-'+id;
-  var defaultCounty = session ? session.county : '';
-  d.innerHTML='<div class="visit-num">Payment '+id+
-    '<button class="remove-btn" onclick="removePayment('+id+')">✕ Remove</button></div>'+
-
-    '<div class="two-col">'+
-    '<div class="field"><label>Payment method<span class="req">*</span></label>'+
-    '<select id="dp-method-'+id+'" onchange="calcProgress(\'d\')"><option value="">Select…</option>'+
-    '<option value="Cash">Cash</option><option value="Installment">Installment (Credit)</option></select></div>'+
-    '<div class="field"><label>Device price (KES)</label>'+
-    '<input type="text" id="dp-price-'+id+'" inputmode="numeric" placeholder="e.g. 4500" oninput="calcBalance('+id+')"></div>'+
-    '</div>'+
-
-    '<div class="field"><label>Customer name<span class="req">*</span></label>'+
-    '<input type="text" id="dp-cust-'+id+'" placeholder="e.g. Jane Wambui" oninput="calcProgress(\'d\')"></div>'+
-
-    '<div class="two-col">'+
-    '<div class="field"><label>Customer phone number<span class="req">*</span></label>'+
-    '<input type="tel" id="dp-phone-'+id+'" placeholder="0712 345 678" oninput="calcProgress(\'d\')"></div>'+
-    '<div class="field"><label>Shop ID<span class="req">*</span></label>'+
-    '<input type="text" id="dp-shopid-'+id+'" placeholder="e.g. 123456" oninput="calcProgress(\'d\')"></div>'+
-    '</div>'+
-
-    '<div class="field"><label>Shop name<span class="req">*</span></label>'+
-    '<input type="text" id="dp-shopname-'+id+'" placeholder="e.g. Kamau General Store" oninput="calcProgress(\'d\')"></div>'+
-
-    '<div class="two-col">'+
-    '<div class="field"><label>Location<span class="req">*</span></label>'+
-    '<input type="text" id="dp-loc-'+id+'" placeholder="Centers/Town" oninput="calcProgress(\'d\')"></div>'+
-    '<div class="field"><label>County</label>'+
-    '<select id="dp-county-'+id+'">'+countyOptionsHTML(defaultCounty)+'</select></div>'+
-    '</div>'+
-
-    '<div class="field" id="dp-paid-wrap-'+id+'" style="display:none"><label>Amount paid now (KES)</label>'+
-    '<input type="text" id="dp-paid-'+id+'" inputmode="numeric" placeholder="e.g. 1500" oninput="calcBalance('+id+')"></div>'+
-
-    '<div id="dp-balance-'+id+'" style="display:none;font-size:12px;color:var(--text-s);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:6px"></div>';
-
-  c.appendChild(d);
-  document.getElementById('dp-method-'+id).addEventListener('change',function(){ onPaymentMethodChange(id); });
-  calcProgress('d');
+// ── DEVICE SETTINGS (default device amount) ─────────────────────
+function loadDeviceSettings(){
+  // Prefill the trainer's Device Request amount field with the area's default (only if empty)
+  if(v('d-req-amount')) return;
+  fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.amount && !v('d-req-amount')){
+        setVal('d-req-amount', data.amount);
+        document.getElementById('d-req-amount-hint').style.display='block';
+      }
+    })
+    .catch(function(){});
 }
 
-function onPaymentMethodChange(id){
-  var method = document.getElementById('dp-method-'+id).value;
-  var paidWrap = document.getElementById('dp-paid-wrap-'+id);
-  paidWrap.style.display = (method==='Installment') ? 'block' : 'none';
-  calcBalance(id);
+function openDeviceSettings(){
+  showScreen('screen-settings');
+  var statusEl = document.getElementById('set-status');
+  statusEl.textContent='Loading current amount…';
+  setVal('set-device-amount','');
+  fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.amount){
+        setVal('set-device-amount', data.amount);
+        statusEl.textContent='Current default: KES '+Number(data.amount).toLocaleString();
+      } else {
+        statusEl.textContent='No default amount set yet.';
+      }
+    })
+    .catch(function(){ statusEl.textContent='Failed to load current amount.'; });
 }
 
-function calcBalance(id){
-  var price = parseFloat(document.getElementById('dp-price-'+id).value) || 0;
-  var paidEl = document.getElementById('dp-paid-'+id);
-  var paid = paidEl ? (parseFloat(paidEl.value) || 0) : price;
-  var method = document.getElementById('dp-method-'+id).value;
-  var balEl = document.getElementById('dp-balance-'+id);
-  if(!price){ balEl.style.display='none'; calcProgress('d'); return; }
-  if(method==='Installment'){
-    var balance = Math.max(price - paid, 0);
-    var nextDate = new Date(); nextDate.setDate(nextDate.getDate()+3);
-    var nextDateStr = nextDate.toLocaleDateString('en-KE',{weekday:'short',day:'numeric',month:'short'});
-    balEl.style.display='block';
-    balEl.innerHTML = balance>0
-      ? '💰 Balance: <strong>KES '+balance.toLocaleString()+'</strong> &nbsp;·&nbsp; ⏰ Next payment reminder: <strong>'+nextDateStr+'</strong> (in 3 days)'
-      : '✅ Fully paid off';
-  } else {
-    balEl.style.display='block';
-    balEl.innerHTML = '✅ Paid in full (Cash) — KES '+price.toLocaleString();
+function saveDeviceAmountSetting(){
+  var amount = v('set-device-amount');
+  var statusEl = document.getElementById('set-status');
+  if(!amount || isNaN(parseFloat(amount)) || parseFloat(amount)<=0){
+    statusEl.textContent='Enter a valid amount first.';
+    return;
   }
-  calcProgress('d');
+  statusEl.textContent='Saving…';
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    body: JSON.stringify({ formType:'setDefaultDeviceAmount', amount: amount, requestedBy: session.email, requestedByRole: session.role })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    statusEl.textContent = data.status==='success'
+      ? '✅ Saved. Default amount is now KES '+Number(amount).toLocaleString()+'.'
+      : (data.message || 'Failed to save.');
+  })
+  .catch(function(){ statusEl.textContent='Network error — please try again.'; });
 }
 
-function removePayment(n){
-  var el=document.getElementById('payment-'+n);
-  if(el) el.remove();
-  calcProgress('d');
+function deleteDeviceAmountSetting(){
+  var statusEl = document.getElementById('set-status');
+  statusEl.textContent='Clearing…';
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    body: JSON.stringify({ formType:'setDefaultDeviceAmount', amount:'', requestedBy: session.email, requestedByRole: session.role })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.status==='success'){
+      setVal('set-device-amount','');
+      statusEl.textContent='✅ Default amount cleared. Trainers will need to enter it manually.';
+    } else {
+      statusEl.textContent = data.message || 'Failed to clear.';
+    }
+  })
+  .catch(function(){ statusEl.textContent='Network error — please try again.'; });
 }
 
 // ── CREDIT REPAYMENT (search existing shop, top up balance) ────
@@ -1063,6 +1125,7 @@ function searchCreditShops(){
   var resultsEl = document.getElementById('cr-results');
   resultsEl.innerHTML='';
   document.getElementById('cr-selected').style.display='none';
+  document.getElementById('cr-no-match').style.display='none';
   crSelectedPaymentId=null;
   if(!q){ statusEl.textContent='Enter a Shop ID or Shop Name to search.'; return; }
   statusEl.textContent='Searching…';
@@ -1074,6 +1137,7 @@ function searchCreditShops(){
     var matches = data.matches || [];
     if(!matches.length){
       statusEl.textContent='No shop with an outstanding balance matches "'+q+'".';
+      document.getElementById('cr-no-match').style.display='block';
       return;
     }
     statusEl.textContent = matches.length + ' match(es) found — tap one to select:';
@@ -1097,6 +1161,7 @@ function selectCreditShop(mJsonStr){
     'Location: '+(m.location||'')+'<br>'+
     'Outstanding balance: <strong style="color:#b91c1c">KES '+Number(m.balance||0).toLocaleString()+'</strong>';
   document.getElementById('cr-selected').style.display='block';
+  document.getElementById('cr-no-match').style.display='none';
   document.getElementById('cr-results').innerHTML='';
   document.getElementById('cr-search-status').textContent='Shop selected.';
   setVal('cr-amount',''); setVal('cr-mpesa-msg',''); clearPhoto('cr-mpesa');
@@ -1153,19 +1218,220 @@ function submitCreditRepayment(){
   });
 }
 
-// ── DEVICE REQUEST TOGGLE ───────────────────────────────────────
-function toggleDeviceRequest(){
-  var on = document.getElementById('d-req-toggle').checked;
-  document.getElementById('d-req-fields').style.display = on ? 'block' : 'none';
-  if(on){
+// ── DEVICE PAYMENT REPORT — PURPOSE SELECTOR ────────────────────
+var deviceSettings = {};
+
+function loadDeviceSettings(){
+  var url = APPS_SCRIPT_URL + '?action=getSettings';
+  fetch(url).then(function(r){return r.json();}).then(function(data){
+    deviceSettings = data.settings || {};
+    applyDefaultDeviceAmount();
+  }).catch(function(){});
+}
+
+function applyDefaultDeviceAmount(){
+  var amountEl = document.getElementById('d-req-amount');
+  var hintEl = document.getElementById('d-req-amount-hint');
+  if(!amountEl) return;
+  if(deviceSettings.defaultDeviceAmount && !v('d-req-amount')){
+    setVal('d-req-amount', deviceSettings.defaultDeviceAmount);
+    hintEl.style.display='block';
+  }
+}
+
+function onPurposeChange(){
+  var purpose = document.getElementById('d-purpose').value;
+  document.getElementById('purpose-repayment').style.display = purpose==='repayment' ? 'block' : 'none';
+  document.getElementById('purpose-request').style.display = purpose==='request' ? 'block' : 'none';
+
+  if(purpose==='request'){
     setVal('d-req-name', session ? session.name : '');
     if(!v('d-req-shipping')) setVal('d-req-shipping', session ? session.county : '');
     var savedPhone = '';
     try{ savedPhone = localStorage.getItem('ipos_trainer_phone')||''; }catch(e){}
     if(savedPhone && !v('d-req-phone')) setVal('d-req-phone', savedPhone);
+    loadDeviceSettings();
   }
-  calcProgress('d');
 }
+
+function resetPurposeUI(){
+  document.getElementById('d-purpose').value='';
+  document.getElementById('purpose-repayment').style.display='none';
+  document.getElementById('purpose-request').style.display='none';
+  // repayment sub-widgets
+  setVal('cr-search',''); document.getElementById('cr-results').innerHTML='';
+  document.getElementById('cr-search-status').textContent='';
+  document.getElementById('cr-no-match').style.display='none';
+  document.getElementById('cr-selected').style.display='none';
+  setVal('cr-amount',''); setVal('cr-mpesa-msg',''); clearPhoto('cr-mpesa');
+  crSelectedPaymentId=null;
+  document.getElementById('ns-fields').style.display='none';
+  ['ns-custname','ns-phone','ns-shopid','ns-shopname','ns-location','ns-price','ns-paid'].forEach(function(id){ setVal(id,''); });
+  document.getElementById('ns-method').value='';
+  document.getElementById('ns-paid-wrap').style.display='none';
+  document.getElementById('ns-balance').style.display='none';
+  // request sub-widgets
+  ['d-req-email','d-req-cc','d-req-amount','d-req-mpesa-msg','d-req-location','d-req-shipping','d-req-start','d-req-end','d-req-message'].forEach(function(id){ setVal(id,''); });
+  document.getElementById('d-req-paytype').value='';
+  clearPhoto('d-req-mpesa');
+  document.getElementById('d-req-amount-hint').style.display='none';
+}
+
+// ── CREDIT REPAYMENT — NEW SALE FALLBACK (shop not found) ──────
+function startNewSaleFromSearch(){
+  document.getElementById('ns-fields').style.display='block';
+  setVal('ns-shopid', v('cr-search'));
+  var countySel = document.getElementById('ns-county');
+  if(!countySel.innerHTML) countySel.innerHTML = countyOptionsHTML(session ? session.county : '');
+}
+
+function onNewSaleMethodChange(){
+  var method = document.getElementById('ns-method').value;
+  document.getElementById('ns-paid-wrap').style.display = (method==='Installment') ? 'block' : 'none';
+  calcNewSaleBalance();
+}
+
+function calcNewSaleBalance(){
+  var price = parseFloat(v('ns-price')) || 0;
+  var method = document.getElementById('ns-method').value;
+  var paid = method==='Installment' ? (parseFloat(v('ns-paid'))||0) : price;
+  var balEl = document.getElementById('ns-balance');
+  if(!price){ balEl.style.display='none'; return; }
+  if(method==='Installment'){
+    var balance = Math.max(price-paid,0);
+    var nd=new Date(); nd.setDate(nd.getDate()+3);
+    var nextStr = nd.toLocaleDateString('en-KE',{weekday:'short',day:'numeric',month:'short'});
+    balEl.style.display='block';
+    balEl.innerHTML = balance>0
+      ? '💰 Balance: <strong>KES '+balance.toLocaleString()+'</strong> &nbsp;·&nbsp; ⏰ Next payment reminder: <strong>'+nextStr+'</strong> (in 3 days)'
+      : '✅ Fully paid off';
+  } else {
+    balEl.style.display='block';
+    balEl.innerHTML = '✅ Paid in full (Cash) — KES '+price.toLocaleString();
+  }
+}
+
+function submitNewSale(){
+  var errEl = document.getElementById('ns-error');
+  errEl.style.display='none';
+  var method = document.getElementById('ns-method').value;
+  var custName=v('ns-custname'), phone=v('ns-phone'), shopId=v('ns-shopid'), shopName=v('ns-shopname'), loc=v('ns-location');
+  var county = document.getElementById('ns-county').value;
+  var price = parseFloat(v('ns-price'))||0;
+  var paid = method==='Installment' ? (parseFloat(v('ns-paid'))||0) : price;
+  var balance = Math.max(price-paid,0);
+
+  var missing=[];
+  if(!method) missing.push('Payment method');
+  if(!custName) missing.push('Customer name');
+  if(!phone) missing.push('Customer phone');
+  if(!shopId) missing.push('Shop ID');
+  if(!shopName) missing.push('Shop name');
+  if(!loc) missing.push('Location');
+  if(missing.length){ errEl.textContent='Missing: '+missing.join(', '); errEl.style.display='block'; return; }
+
+  var nextPaymentDate='';
+  if(method==='Installment' && balance>0){
+    var nd=new Date(); nd.setDate(nd.getDate()+3);
+    nextPaymentDate = nd.toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'});
+  }
+
+  document.getElementById('ns-submit').style.display='none';
+  document.getElementById('ns-spinner').style.display='block';
+
+  var payload = {
+    formType:'devicepay',
+    trainerName: session.name, trainerEmail: session.email, county: session.county,
+    managerEmail: session.managerEmail, managerName: session.managerName,
+    date: new Date().toLocaleString('en-KE'),
+    payments: [{
+      method:method, customerName:custName, phone:phone, shopId:shopId, shopName:shopName,
+      location:loc, county:county, devicePrice:price, amountPaid:paid, balance:balance,
+      nextPaymentDate:nextPaymentDate, status: balance>0 ? 'Balance Due' : 'Paid'
+    }]
+  };
+
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    document.getElementById('ns-spinner').style.display='none';
+    document.getElementById('ns-submit').style.display='flex';
+    if(data.status==='success'){
+      document.getElementById('ns-success').textContent='✅ New device sale recorded.';
+      document.getElementById('ns-success').style.display='block';
+      setTimeout(function(){ resetForm('devicepay'); }, 1800);
+    } else {
+      errEl.textContent = data.message || 'Failed to submit.';
+      errEl.style.display='block';
+    }
+  })
+  .catch(function(){
+    document.getElementById('ns-spinner').style.display='none';
+    document.getElementById('ns-submit').style.display='flex';
+    errEl.textContent='Network error — please try again.';
+    errEl.style.display='block';
+  });
+}
+
+// ── DEVICE REQUEST SUBMIT ───────────────────────────────────────
+function submitDeviceRequest(){
+  var errEl = document.getElementById('d-error');
+  errEl.style.display='none';
+  var reqEmail=v('d-req-email'), reqAmount=v('d-req-amount'), reqPaytype=document.getElementById('d-req-paytype').value;
+  var reqLocation=v('d-req-location'), reqPhone=v('d-req-phone'), reqShipping=v('d-req-shipping'), reqStart=v('d-req-start');
+
+  var missing=[];
+  if(!reqEmail) missing.push('Send-to email');
+  if(!reqAmount) missing.push('Device amount');
+  if(!reqPaytype) missing.push('Payment type');
+  if(!reqLocation) missing.push('Location');
+  if(!reqPhone) missing.push('Trainer phone');
+  if(!reqShipping) missing.push('Shipping location');
+  if(!reqStart) missing.push('Start date');
+  if(missing.length){ errEl.textContent='Missing: '+missing.join(', '); errEl.style.display='block'; return; }
+
+  try{ localStorage.setItem('ipos_trainer_phone', reqPhone); }catch(e){}
+
+  document.getElementById('d-submit').style.display='none';
+  document.getElementById('d-spinner').style.display='block';
+
+  var payload = {
+    formType:'devicepay',
+    trainerName: session.name, trainerEmail: session.email, county: session.county,
+    managerEmail: session.managerEmail, managerName: session.managerName,
+    date: new Date().toLocaleString('en-KE'),
+    payments: [],
+    deviceRequest: {
+      toEmail:reqEmail, cc:v('d-req-cc'), amount:reqAmount, paymentType:reqPaytype,
+      mpesaMessage:v('d-req-mpesa-msg'), mpesaPhoto:photos['d-req-mpesa']||'',
+      location:reqLocation, trainerName:session.name, trainerPhone:reqPhone,
+      shippingLocation:reqShipping, startDate:reqStart, endDate:v('d-req-end'),
+      message:v('d-req-message')
+    }
+  };
+
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    document.getElementById('d-spinner').style.display='none';
+    if(data.status==='success'){
+      document.getElementById('d-submit').style.display='none';
+      document.getElementById('d-meta').innerHTML = '📧 Sent to: <strong>'+reqEmail+'</strong><br>💰 Amount: KES '+reqAmount+'<br>📍 '+reqLocation;
+      document.getElementById('d-success').style.display='block';
+    } else {
+      document.getElementById('d-submit').style.display='flex';
+      errEl.textContent = data.message || 'Failed to submit.';
+      errEl.style.display='block';
+    }
+  })
+  .catch(function(){
+    document.getElementById('d-spinner').style.display='none';
+    document.getElementById('d-submit').style.display='flex';
+    errEl.textContent='Network error — please try again.';
+    errEl.style.display='block';
+  });
+}
+
 
 // ── PHOTOS ───────────────────────────────────────────────────
 var photos={};
@@ -1178,7 +1444,7 @@ function previewPhoto(input,key,prefix){
     document.getElementById(key+'-img').src=ev.target.result;
     document.getElementById(key+'-ph').style.display='none';
     document.getElementById(key+'-preview').style.display='block';
-    calcProgress(prefix);
+    if(prefix) calcProgress(prefix);
   };
   reader.readAsDataURL(file);
 }
@@ -1193,6 +1459,8 @@ function clearPhoto(key){
 
 // ── PROGRESS ─────────────────────────────────────────────────
 function calcProgress(prefix){
+  var fillEl = document.getElementById(prefix+'-fill');
+  if(!fillEl) return; // no progress bar for this screen (e.g. devicepay)
   var fields=[];
   if(prefix==='r'){
     fields=[v('r-trainer'),v('r-county')];
@@ -1200,22 +1468,13 @@ function calcProgress(prefix){
       var id=row.id.split('-')[1];
       fields.push(v('v-purpose-'+id), v('v-name-'+id));
     });
-  } else if(prefix==='d'){
-    fields=[v('d-trainer'),v('d-county')];
-    document.querySelectorAll('#payments-container .visit-row').forEach(function(row){
-      var id=row.id.split('-')[1];
-      fields.push(document.getElementById('dp-method-'+id).value, v('dp-cust-'+id), v('dp-phone-'+id), v('dp-shopid-'+id), v('dp-shopname-'+id), v('dp-loc-'+id));
-    });
-    if(document.getElementById('d-req-toggle').checked){
-      fields.push(v('d-req-email'), v('d-req-amount'), document.getElementById('d-req-paytype').value, v('d-req-location'), v('d-req-phone'), v('d-req-shipping'), v('d-req-start'));
-    }
   } else if(prefix==='s'){
     fields=[v('s-trainer'),v('s-county'),v('s-shopname'),v('s-shopid'),v('s-owner'),v('s-location'),v('s-phone'),v('s-transactions'),photos['s-owner']||''];
   } else if(prefix==='i'){
     fields=[v('i-trainer'),v('i-county'),v('i-shopname'),v('i-location'),photos['i-ext']||'',photos['i-int']||''];
   }
   var pct=fields.length?Math.round(fields.filter(function(f){return f&&f!=='';}).length/fields.length*100):0;
-  document.getElementById(prefix+'-fill').style.width=pct+'%';
+  fillEl.style.width=pct+'%';
   document.getElementById(prefix+'-pct').textContent=pct+'%';
 }
 
@@ -1252,57 +1511,6 @@ function submitForm(type){
     });
     if(!visits.length) missing.push('At least one visit');
     payload.visits=visits;
-  }
-  else if(type==='devicepay'){
-    var payments=[];
-    document.querySelectorAll('#payments-container .visit-row').forEach(function(row){
-      var id=row.id.split('-')[1];
-      var method=document.getElementById('dp-method-'+id).value;
-      var customerName=v('dp-cust-'+id), phone=v('dp-phone-'+id), shopId=v('dp-shopid-'+id), shopName=v('dp-shopname-'+id), loc=v('dp-loc-'+id);
-      var county=document.getElementById('dp-county-'+id).value;
-      var price=parseFloat(document.getElementById('dp-price-'+id).value)||0;
-      var paidEl=document.getElementById('dp-paid-'+id);
-      var amountPaid = method==='Installment' ? (parseFloat(paidEl.value)||0) : price;
-      var balance = Math.max(price-amountPaid,0);
-      var nextPaymentDate='';
-      if(method==='Installment' && balance>0){
-        var nd=new Date(); nd.setDate(nd.getDate()+3);
-        nextPaymentDate = nd.toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'});
-      }
-      if(!method) missing.push('Payment '+id+' method');
-      if(!customerName) missing.push('Payment '+id+' customer name');
-      if(!phone) missing.push('Payment '+id+' customer phone');
-      if(!shopId) missing.push('Payment '+id+' shop ID');
-      if(!shopName) missing.push('Payment '+id+' shop name');
-      if(!loc) missing.push('Payment '+id+' location');
-      payments.push({
-        method:method, customerName:customerName, phone:phone, shopId:shopId, shopName:shopName,
-        location:loc, county:county, devicePrice:price, amountPaid:amountPaid, balance:balance,
-        nextPaymentDate:nextPaymentDate, status: balance>0 ? 'Balance Due' : 'Paid'
-      });
-    });
-    if(!payments.length) missing.push('At least one payment record');
-    payload.payments=payments;
-
-    if(document.getElementById('d-req-toggle').checked){
-      var reqEmail=v('d-req-email'), reqAmount=v('d-req-amount'), reqPaytype=document.getElementById('d-req-paytype').value;
-      var reqLocation=v('d-req-location'), reqPhone=v('d-req-phone'), reqShipping=v('d-req-shipping'), reqStart=v('d-req-start');
-      if(!reqEmail) missing.push('Device request email');
-      if(!reqAmount) missing.push('Device request payment amount');
-      if(!reqPaytype) missing.push('Device request payment type');
-      if(!reqLocation) missing.push('Device request location');
-      if(!reqPhone) missing.push('Device request trainer phone');
-      if(!reqShipping) missing.push('Device request shipping location');
-      if(!reqStart) missing.push('Device request start date');
-      try{ localStorage.setItem('ipos_trainer_phone', reqPhone); }catch(e){}
-      payload.deviceRequest = {
-        toEmail:reqEmail, cc:v('d-req-cc'), amount:reqAmount, paymentType:reqPaytype,
-        mpesaMessage:v('d-req-mpesa-msg'), mpesaPhoto:photos['d-req-mpesa']||'',
-        location:reqLocation, trainerName:session.name, trainerPhone:reqPhone,
-        shippingLocation:reqShipping, startDate:reqStart, endDate:v('d-req-end'),
-        message:v('d-req-message')
-      };
-    }
   }
   else if(type==='survey'){
     payload.shopName=v('s-shopname'); payload.shopId=v('s-shopid'); payload.ownerName=v('s-owner');
@@ -1387,19 +1595,7 @@ function resetForm(type){
   document.getElementById(p+'-success').style.display='none';
   document.getElementById(p+'-submit').style.display='flex';
   if(type==='devicepay'){
-    document.getElementById('payments-container').innerHTML='';
-    document.getElementById('d-req-toggle').checked=false;
-    document.getElementById('d-req-fields').style.display='none';
-    ['d-req-email','d-req-cc','d-req-amount','d-req-mpesa-msg','d-req-location','d-req-phone','d-req-shipping','d-req-start','d-req-end','d-req-message'].forEach(function(id){ setVal(id,''); });
-    document.getElementById('d-req-paytype').value='';
-    clearPhoto('d-req-mpesa');
-    addPayment();
-    setVal('cr-search',''); setVal('cr-amount',''); setVal('cr-mpesa-msg','');
-    clearPhoto('cr-mpesa');
-    crSelectedPaymentId=null;
-    document.getElementById('cr-results').innerHTML='';
-    document.getElementById('cr-search-status').textContent='';
-    document.getElementById('cr-selected').style.display='none';
+    resetPurposeUI();
   }
   goHome();
 }
@@ -1904,7 +2100,7 @@ function deleteUser(email, btnEl){
 
 // ── INIT ─────────────────────────────────────────────────────
 if(loadSession()){ goHome(); } else { showScreen('screen-login'); }
-addVisit(); addPayment();
+addVisit();
 </script>
 <script>
 if('serviceWorker' in navigator){
