@@ -553,11 +553,11 @@ input[type=file]{display:none}
       </div>
       <div class="two-col">
         <div class="field"><label for="d-req-amount">Device amount (KES)<span class="req">*</span></label>
-          <input type="text" id="d-req-amount" inputmode="numeric" placeholder="e.g. 4500">
-          <small id="d-req-amount-hint" style="display:none;color:var(--text-m);font-size:11px">Prefilled with the area's default device price — you can change it.</small>
+          <input type="text" id="d-req-amount" inputmode="numeric" placeholder="e.g. 4500" oninput="deviceAmountEdited=true">
+          <small id="d-req-amount-hint" style="display:none;color:var(--text-m);font-size:11px">Prefilled with the area's default — you can change it.</small>
         </div>
         <div class="field"><label for="d-req-paytype">Payment type<span class="req">*</span></label>
-          <select id="d-req-paytype">
+          <select id="d-req-paytype" onchange="applyDefaultDeviceAmount()">
             <option value="">Select…</option>
             <option value="Cash">Cash</option>
             <option value="Credit">Credit</option>
@@ -617,21 +617,34 @@ input[type=file]{display:none}
 <!-- ══════════════════════════ MANAGER: DEVICE SETTINGS -->
 <div class="screen" id="screen-settings">
   <div class="app-header">
-    <div><h1>Device Settings</h1><p>Default device request amount</p></div>
+    <div><h1>Device Settings</h1><p>Default device request amounts</p></div>
     <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
   </div>
   <div class="form-body">
     <div class="section">
-      <div class="section-title">⚙️ Default Device Amount</div>
-      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">This amount auto-fills the "Device amount" field on every trainer's Device Request form. Trainers can still edit it per request.</p>
-      <div class="field"><label for="set-device-amount">Amount (KES)</label>
-        <input type="text" id="set-device-amount" inputmode="numeric" placeholder="e.g. 4500">
+      <div class="section-title">💵 Default Amount — Cash</div>
+      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Auto-fills "Device amount" when a trainer selects <strong>Cash</strong> as the payment type on their Device Request form. Trainers can still edit it per request.</p>
+      <div class="field"><label for="set-device-amount-cash">Amount (KES)</label>
+        <input type="text" id="set-device-amount-cash" inputmode="numeric" placeholder="e.g. 4500">
       </div>
       <div style="display:flex;gap:10px">
-        <button type="button" onclick="saveDeviceAmountSetting()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">💾 Save</button>
-        <button type="button" onclick="deleteDeviceAmountSetting()" style="flex:1;padding:12px;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;font-weight:600;cursor:pointer">🗑️ Clear</button>
+        <button type="button" onclick="saveDeviceAmountSetting('cash')" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">💾 Save</button>
+        <button type="button" onclick="deleteDeviceAmountSetting('cash')" style="flex:1;padding:12px;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;font-weight:600;cursor:pointer">🗑️ Clear</button>
       </div>
-      <div id="set-status" style="font-size:12px;color:var(--text-m);margin-top:10px"></div>
+      <div id="set-status-cash" style="font-size:12px;color:var(--text-m);margin-top:10px"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📇 Default Amount — Credit</div>
+      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Auto-fills "Device amount" when a trainer selects <strong>Credit</strong> as the payment type on their Device Request form.</p>
+      <div class="field"><label for="set-device-amount-credit">Amount (KES)</label>
+        <input type="text" id="set-device-amount-credit" inputmode="numeric" placeholder="e.g. 4500">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button type="button" onclick="saveDeviceAmountSetting('credit')" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">💾 Save</button>
+        <button type="button" onclick="deleteDeviceAmountSetting('credit')" style="flex:1;padding:12px;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;font-weight:600;cursor:pointer">🗑️ Clear</button>
+      </div>
+      <div id="set-status-credit" style="font-size:12px;color:var(--text-m);margin-top:10px"></div>
     </div>
   </div>
 </div>
@@ -1045,42 +1058,54 @@ function removeVisit(n){
   calcProgress('r');
 }
 
-// ── DEVICE SETTINGS (default device amount) ─────────────────────
+// ── DEVICE SETTINGS (default device amount — separate for Cash/Credit) ──
+var deviceAmountDefaults = { cash:'', credit:'' };
+var deviceAmountEdited = false;
+
 function loadDeviceSettings(){
-  // Prefill the trainer's Device Request amount field with the area's default (only if empty)
-  if(v('d-req-amount')) return;
   fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount')
     .then(function(r){return r.json();})
     .then(function(data){
-      if(data.amount && !v('d-req-amount')){
-        setVal('d-req-amount', data.amount);
-        document.getElementById('d-req-amount-hint').style.display='block';
-      }
+      deviceAmountDefaults.cash = data.cash || '';
+      deviceAmountDefaults.credit = data.credit || '';
+      applyDefaultDeviceAmount();
     })
     .catch(function(){});
 }
 
+function applyDefaultDeviceAmount(){
+  if(deviceAmountEdited) return;
+  var pt = document.getElementById('d-req-paytype').value;
+  var val = pt==='Cash' ? deviceAmountDefaults.cash : pt==='Credit' ? deviceAmountDefaults.credit : '';
+  var hintEl = document.getElementById('d-req-amount-hint');
+  if(val){
+    setVal('d-req-amount', val);
+    hintEl.style.display='block';
+  } else {
+    hintEl.style.display='none';
+  }
+}
+
 function openDeviceSettings(){
   showScreen('screen-settings');
-  var statusEl = document.getElementById('set-status');
-  statusEl.textContent='Loading current amount…';
-  setVal('set-device-amount','');
+  var cashStatus = document.getElementById('set-status-cash');
+  var creditStatus = document.getElementById('set-status-credit');
+  cashStatus.textContent='Loading…'; creditStatus.textContent='Loading…';
+  setVal('set-device-amount-cash',''); setVal('set-device-amount-credit','');
   fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount')
     .then(function(r){return r.json();})
     .then(function(data){
-      if(data.amount){
-        setVal('set-device-amount', data.amount);
-        statusEl.textContent='Current default: KES '+Number(data.amount).toLocaleString();
-      } else {
-        statusEl.textContent='No default amount set yet.';
-      }
+      if(data.cash){ setVal('set-device-amount-cash', data.cash); cashStatus.textContent='Current default: KES '+Number(data.cash).toLocaleString(); }
+      else { cashStatus.textContent='No default set yet.'; }
+      if(data.credit){ setVal('set-device-amount-credit', data.credit); creditStatus.textContent='Current default: KES '+Number(data.credit).toLocaleString(); }
+      else { creditStatus.textContent='No default set yet.'; }
     })
-    .catch(function(){ statusEl.textContent='Failed to load current amount.'; });
+    .catch(function(){ cashStatus.textContent='Failed to load.'; creditStatus.textContent='Failed to load.'; });
 }
 
-function saveDeviceAmountSetting(){
-  var amount = v('set-device-amount');
-  var statusEl = document.getElementById('set-status');
+function saveDeviceAmountSetting(kind){
+  var amount = v('set-device-amount-'+kind);
+  var statusEl = document.getElementById('set-status-'+kind);
   if(!amount || isNaN(parseFloat(amount)) || parseFloat(amount)<=0){
     statusEl.textContent='Enter a valid amount first.';
     return;
@@ -1088,29 +1113,29 @@ function saveDeviceAmountSetting(){
   statusEl.textContent='Saving…';
   fetch(APPS_SCRIPT_URL,{
     method:'POST',
-    body: JSON.stringify({ formType:'setDefaultDeviceAmount', amount: amount, requestedBy: session.email, requestedByRole: session.role })
+    body: JSON.stringify({ formType:'setDefaultDeviceAmount', kind:kind, amount: amount, requestedBy: session.email, requestedByRole: session.role })
   })
   .then(function(r){return r.json();})
   .then(function(data){
     statusEl.textContent = data.status==='success'
-      ? '✅ Saved. Default amount is now KES '+Number(amount).toLocaleString()+'.'
+      ? '✅ Saved. Default '+kind+' amount is now KES '+Number(amount).toLocaleString()+'.'
       : (data.message || 'Failed to save.');
   })
   .catch(function(){ statusEl.textContent='Network error — please try again.'; });
 }
 
-function deleteDeviceAmountSetting(){
-  var statusEl = document.getElementById('set-status');
+function deleteDeviceAmountSetting(kind){
+  var statusEl = document.getElementById('set-status-'+kind);
   statusEl.textContent='Clearing…';
   fetch(APPS_SCRIPT_URL,{
     method:'POST',
-    body: JSON.stringify({ formType:'setDefaultDeviceAmount', amount:'', requestedBy: session.email, requestedByRole: session.role })
+    body: JSON.stringify({ formType:'setDefaultDeviceAmount', kind:kind, amount:'', requestedBy: session.email, requestedByRole: session.role })
   })
   .then(function(r){return r.json();})
   .then(function(data){
     if(data.status==='success'){
-      setVal('set-device-amount','');
-      statusEl.textContent='✅ Default amount cleared. Trainers will need to enter it manually.';
+      setVal('set-device-amount-'+kind,'');
+      statusEl.textContent='✅ Cleared. Trainers will need to enter the '+kind+' amount manually.';
     } else {
       statusEl.textContent = data.message || 'Failed to clear.';
     }
@@ -1240,26 +1265,6 @@ function submitCreditRepayment(){
 }
 
 // ── DEVICE PAYMENT REPORT — PURPOSE SELECTOR ────────────────────
-var deviceSettings = {};
-
-function loadDeviceSettings(){
-  var url = APPS_SCRIPT_URL + '?action=getSettings';
-  fetch(url).then(function(r){return r.json();}).then(function(data){
-    deviceSettings = data.settings || {};
-    applyDefaultDeviceAmount();
-  }).catch(function(){});
-}
-
-function applyDefaultDeviceAmount(){
-  var amountEl = document.getElementById('d-req-amount');
-  var hintEl = document.getElementById('d-req-amount-hint');
-  if(!amountEl) return;
-  if(deviceSettings.defaultDeviceAmount && !v('d-req-amount')){
-    setVal('d-req-amount', deviceSettings.defaultDeviceAmount);
-    hintEl.style.display='block';
-  }
-}
-
 function onPurposeChange(){
   var purpose = document.getElementById('d-purpose').value;
   document.getElementById('purpose-repayment').style.display = purpose==='repayment' ? 'block' : 'none';
@@ -1298,6 +1303,8 @@ function resetPurposeUI(){
   document.getElementById('d-req-paytype').value='';
   clearPhoto('d-req-mpesa');
   document.getElementById('d-req-amount-hint').style.display='none';
+  deviceAmountEdited=false;
+  deviceAmountDefaults={cash:'',credit:''};
 }
 
 // ── CREDIT REPAYMENT — NEW SALE FALLBACK (shop not found) ──────
