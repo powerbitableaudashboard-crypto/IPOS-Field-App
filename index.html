@@ -292,6 +292,9 @@ input[type=file]{display:none}
       <button class="back-btn" style="margin:0 0 1rem 0;background:var(--surface-2);color:var(--text-s)" onclick="backToDashMenu()">← Back to menu</button>
 
       <div id="dash-filters" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px">
+        <div class="field" id="dash-shop-filter-wrap" style="display:none;margin-bottom:0"><label>Search Shop ID / Shop Name</label>
+          <input type="text" id="dash-shop-filter" placeholder="e.g. 123456 or Kamau General Store" oninput="renderDashList()">
+        </div>
         <div class="two-col">
           <div class="field" style="margin-bottom:0"><label>Trainer</label>
             <select id="dash-trainer-filter" onchange="renderDashList()"><option value="">All trainers</option></select>
@@ -444,6 +447,42 @@ input[type=file]{display:none}
       <div class="section-title">💳 Device Payment Record</div>
       <div id="payments-container"></div>
       <button class="add-visit-btn" onclick="addPayment()">+ Add payment record</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔍 Record a Credit Repayment</div>
+      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Search an existing shop with an outstanding balance to log a top-up payment — the balance updates automatically.</p>
+      <div class="field">
+        <label for="cr-search">Search by Shop ID or Shop Name</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="cr-search" placeholder="e.g. 123456 or Kamau General Store" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();searchCreditShops();}">
+          <button type="button" onclick="searchCreditShops()" style="padding:0 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;white-space:nowrap">Search</button>
+        </div>
+      </div>
+      <div id="cr-search-status" style="font-size:12px;color:var(--text-m);margin-bottom:6px"></div>
+      <div id="cr-results"></div>
+
+      <div id="cr-selected" style="display:none;margin-top:12px">
+        <div id="cr-selected-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px"></div>
+        <div class="field"><label for="cr-amount">Repayment amount (KES)<span class="req">*</span></label>
+          <input type="text" id="cr-amount" inputmode="numeric" placeholder="e.g. 1000">
+        </div>
+        <div class="field"><label for="cr-mpesa-msg">M-Pesa message</label>
+          <textarea id="cr-mpesa-msg" style="min-height:60px" placeholder="Paste M-Pesa confirmation text..."></textarea>
+        </div>
+        <div class="field"><label>M-Pesa screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
+          <div class="photo-box" onclick="document.getElementById('cr-mpesa-file').click()">
+            <div class="photo-ph" id="cr-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa confirmation screenshot</small></div>
+            <div class="photo-preview" id="cr-mpesa-preview"><img id="cr-mpesa-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('cr-mpesa')">↺ Retake</button></div>
+          </div>
+          <input type="file" id="cr-mpesa-file" accept="image/*" onchange="previewPhoto(this,'cr-mpesa','d')">
+        </div>
+        <button type="button" class="submit-btn green-btn" id="cr-submit" onclick="submitCreditRepayment()">
+          <div class="spinner" id="cr-spinner"></div><span id="cr-btn">Submit Repayment</span>
+        </button>
+        <div class="error-msg" id="cr-error"></div>
+        <div id="cr-success" style="display:none;background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:14px;margin-top:10px;text-align:center;color:#166534;font-weight:600"></div>
+      </div>
     </div>
 
     <div class="section">
@@ -1015,6 +1054,105 @@ function removePayment(n){
   calcProgress('d');
 }
 
+// ── CREDIT REPAYMENT (search existing shop, top up balance) ────
+var crSelectedPaymentId = null;
+
+function searchCreditShops(){
+  var q = v('cr-search');
+  var statusEl = document.getElementById('cr-search-status');
+  var resultsEl = document.getElementById('cr-results');
+  resultsEl.innerHTML='';
+  document.getElementById('cr-selected').style.display='none';
+  crSelectedPaymentId=null;
+  if(!q){ statusEl.textContent='Enter a Shop ID or Shop Name to search.'; return; }
+  statusEl.textContent='Searching…';
+
+  var url = APPS_SCRIPT_URL + '?action=searchShop&query=' + encodeURIComponent(q) +
+    '&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+
+  fetch(url).then(function(r){return r.json();}).then(function(data){
+    var matches = data.matches || [];
+    if(!matches.length){
+      statusEl.textContent='No shop with an outstanding balance matches "'+q+'".';
+      return;
+    }
+    statusEl.textContent = matches.length + ' match(es) found — tap one to select:';
+    resultsEl.innerHTML = matches.map(function(m,i){
+      return '<div onclick=\'selectCreditShop('+JSON.stringify(JSON.stringify(m))+')\' style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:start">'+
+        '<div><strong>'+(m.shopName||'—')+'</strong> <span style="color:var(--text-m);font-size:12px">(ID: '+(m.shopId||'—')+')</span><br>'+
+        '<span style="font-size:12px;color:var(--text-m)">'+(m.customerName||'')+' · '+(m.customerPhone||'')+'</span></div>'+
+        '<div style="text-align:right;color:#b91c1c;font-weight:700">KES '+Number(m.balance||0).toLocaleString()+'<div style="font-size:10px;color:var(--text-m);font-weight:400">balance</div></div>'+
+        '</div></div>';
+    }).join('');
+  }).catch(function(){ statusEl.textContent='Search failed — check your connection and try again.'; });
+}
+
+function selectCreditShop(mJsonStr){
+  var m = JSON.parse(mJsonStr);
+  crSelectedPaymentId = m.paymentId;
+  document.getElementById('cr-selected-card').innerHTML =
+    '<strong>'+(m.shopName||'—')+'</strong> <span style="color:var(--text-m)">(ID: '+(m.shopId||'—')+')</span><br>'+
+    'Customer: '+(m.customerName||'')+' · '+(m.customerPhone||'')+'<br>'+
+    'Location: '+(m.location||'')+'<br>'+
+    'Outstanding balance: <strong style="color:#b91c1c">KES '+Number(m.balance||0).toLocaleString()+'</strong>';
+  document.getElementById('cr-selected').style.display='block';
+  document.getElementById('cr-results').innerHTML='';
+  document.getElementById('cr-search-status').textContent='Shop selected.';
+  setVal('cr-amount',''); setVal('cr-mpesa-msg',''); clearPhoto('cr-mpesa');
+  document.getElementById('cr-error').style.display='none';
+  document.getElementById('cr-success').style.display='none';
+}
+
+function submitCreditRepayment(){
+  var amount = v('cr-amount');
+  var errEl = document.getElementById('cr-error');
+  errEl.style.display='none';
+  if(!crSelectedPaymentId){ errEl.textContent='Select a shop first.'; errEl.style.display='block'; return; }
+  if(!amount || isNaN(parseFloat(amount)) || parseFloat(amount)<=0){ errEl.textContent='Enter a valid repayment amount.'; errEl.style.display='block'; return; }
+
+  document.getElementById('cr-submit').style.display='none';
+  document.getElementById('cr-spinner').style.display='block';
+
+  var payload = {
+    formType:'creditRepayment',
+    paymentId: crSelectedPaymentId,
+    amount: parseFloat(amount),
+    mpesaMessage: v('cr-mpesa-msg'),
+    mpesaPhoto: photos['cr-mpesa']||'',
+    trainerName: session.name,
+    trainerEmail: session.email,
+    county: session.county,
+    date: new Date().toLocaleDateString('en-KE')
+  };
+
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    document.getElementById('cr-spinner').style.display='none';
+    document.getElementById('cr-submit').style.display='flex';
+    if(data.status==='success'){
+      var bal = (data.balance!==undefined) ? Number(data.balance) : null;
+      document.getElementById('cr-success').innerHTML = '✅ Repayment recorded.' + (bal!==null ? (bal>0 ? ' New balance: KES '+bal.toLocaleString()+'.' : ' Fully paid off! 🎉') : '');
+      document.getElementById('cr-success').style.display='block';
+      crSelectedPaymentId=null;
+      setVal('cr-search',''); setVal('cr-amount',''); setVal('cr-mpesa-msg',''); clearPhoto('cr-mpesa');
+      document.getElementById('cr-results').innerHTML='';
+      document.getElementById('cr-search-status').textContent='';
+      setTimeout(function(){ document.getElementById('cr-selected').style.display='none'; document.getElementById('cr-success').style.display='none'; }, 3500);
+    } else {
+      errEl.textContent = data.message || 'Failed to record repayment.';
+      errEl.style.display='block';
+    }
+  })
+  .catch(function(){
+    document.getElementById('cr-spinner').style.display='none';
+    document.getElementById('cr-submit').style.display='flex';
+    errEl.textContent='Network error — please try again.';
+    errEl.style.display='block';
+  });
+}
+
 // ── DEVICE REQUEST TOGGLE ───────────────────────────────────────
 function toggleDeviceRequest(){
   var on = document.getElementById('d-req-toggle').checked;
@@ -1256,6 +1394,12 @@ function resetForm(type){
     document.getElementById('d-req-paytype').value='';
     clearPhoto('d-req-mpesa');
     addPayment();
+    setVal('cr-search',''); setVal('cr-amount',''); setVal('cr-mpesa-msg','');
+    clearPhoto('cr-mpesa');
+    crSelectedPaymentId=null;
+    document.getElementById('cr-results').innerHTML='';
+    document.getElementById('cr-search-status').textContent='';
+    document.getElementById('cr-selected').style.display='none';
   }
   goHome();
 }
@@ -1341,6 +1485,7 @@ function setFormType(type){
   document.getElementById('dash-detail').style.display='block';
   document.getElementById('install-status-tabs').style.display = (type==='install') ? 'flex' : 'none';
   document.getElementById('dash-devicepay-summary').style.display = (type==='devicepay') ? 'block' : 'none';
+  document.getElementById('dash-shop-filter-wrap').style.display = (type==='devicepay') ? 'block' : 'none';
   document.getElementById('dash-filters').style.display = (type==='users') ? 'none' : 'flex';
   document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
   document.getElementById('dash-trainer-filter').value='';
@@ -1459,9 +1604,11 @@ function num(x){ var n=parseFloat(String(x).replace(/[^0-9.\-]/g,'')); return is
 function renderDevicePaySummary(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
+  var shopFilter = (document.getElementById('dash-shop-filter').value||'').trim().toLowerCase();
   var filtered = dashAllItems.filter(function(x){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
+      (!shopFilter || String(x['Shop ID']||'').toLowerCase().indexOf(shopFilter)!==-1 || String(x['Shop Name']||'').toLowerCase().indexOf(shopFilter)!==-1) &&
       dateMatches(x['Date']);
   });
 
@@ -1575,9 +1722,11 @@ function renderInstallList(){
 function renderGenericList(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
+  var shopFilter = dashFormType==='devicepay' ? (document.getElementById('dash-shop-filter').value||'').trim().toLowerCase() : '';
   var filtered = dashAllItems.filter(function(x){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
+      (!shopFilter || String(x['Shop ID']||'').toLowerCase().indexOf(shopFilter)!==-1 || String(x['Shop Name']||'').toLowerCase().indexOf(shopFilter)!==-1) &&
       dateMatches(x['Date']);
   });
   var listEl = document.getElementById('dash-list');
