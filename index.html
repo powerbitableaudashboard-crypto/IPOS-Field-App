@@ -474,22 +474,24 @@ input[type=file]{display:none}
       <!-- Existing shop → top-up repayment -->
       <div id="cr-selected" style="display:none;margin-top:12px">
         <div id="cr-selected-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px"></div>
-        <div class="field"><label for="cr-amount">Repayment amount (KES)<span class="req">*</span></label>
-          <input type="text" id="cr-amount" inputmode="numeric" placeholder="e.g. 1000">
-        </div>
-        <div class="field"><label for="cr-mpesa-msg">M-Pesa message</label>
-          <textarea id="cr-mpesa-msg" style="min-height:60px" placeholder="Paste M-Pesa confirmation text..."></textarea>
-        </div>
-        <div class="field"><label>M-Pesa screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
-          <div class="photo-box" onclick="document.getElementById('cr-mpesa-file').click()">
-            <div class="photo-ph" id="cr-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa confirmation screenshot</small></div>
-            <div class="photo-preview" id="cr-mpesa-preview"><img id="cr-mpesa-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('cr-mpesa')">↺ Retake</button></div>
+        <div id="cr-repay-fields">
+          <div class="field"><label for="cr-amount">Repayment amount (KES)<span class="req">*</span></label>
+            <input type="text" id="cr-amount" inputmode="numeric" placeholder="e.g. 1000">
           </div>
-          <input type="file" id="cr-mpesa-file" accept="image/*" onchange="previewPhoto(this,'cr-mpesa')">
+          <div class="field"><label for="cr-mpesa-msg">M-Pesa message</label>
+            <textarea id="cr-mpesa-msg" style="min-height:60px" placeholder="Paste M-Pesa confirmation text..."></textarea>
+          </div>
+          <div class="field"><label>M-Pesa screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
+            <div class="photo-box" onclick="document.getElementById('cr-mpesa-file').click()">
+              <div class="photo-ph" id="cr-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa confirmation screenshot</small></div>
+              <div class="photo-preview" id="cr-mpesa-preview"><img id="cr-mpesa-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('cr-mpesa')">↺ Retake</button></div>
+            </div>
+            <input type="file" id="cr-mpesa-file" accept="image/*" onchange="previewPhoto(this,'cr-mpesa')">
+          </div>
+          <button type="button" class="submit-btn green-btn" id="cr-submit" onclick="submitCreditRepayment()">
+            <div class="spinner" id="cr-spinner"></div><span id="cr-btn">Submit Repayment</span>
+          </button>
         </div>
-        <button type="button" class="submit-btn green-btn" id="cr-submit" onclick="submitCreditRepayment()">
-          <div class="spinner" id="cr-spinner"></div><span id="cr-btn">Submit Repayment</span>
-        </button>
         <div class="error-msg" id="cr-error"></div>
         <div id="cr-success" style="display:none;background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:14px;margin-top:10px;text-align:center;color:#166534;font-weight:600"></div>
       </div>
@@ -1119,6 +1121,8 @@ function deleteDeviceAmountSetting(){
 // ── CREDIT REPAYMENT (search existing shop, top up balance) ────
 var crSelectedPaymentId = null;
 
+var crMatches = [];
+
 function searchCreditShops(){
   var q = v('cr-search');
   var statusEl = document.getElementById('cr-search-status');
@@ -1127,6 +1131,7 @@ function searchCreditShops(){
   document.getElementById('cr-selected').style.display='none';
   document.getElementById('cr-no-match').style.display='none';
   crSelectedPaymentId=null;
+  crMatches=[];
   if(!q){ statusEl.textContent='Enter a Shop ID or Shop Name to search.'; return; }
   statusEl.textContent='Searching…';
 
@@ -1135,6 +1140,7 @@ function searchCreditShops(){
 
   fetch(url).then(function(r){return r.json();}).then(function(data){
     var matches = data.matches || [];
+    crMatches = matches;
     if(!matches.length){
       statusEl.textContent='No shop with an outstanding balance matches "'+q+'".';
       document.getElementById('cr-no-match').style.display='block';
@@ -1142,7 +1148,7 @@ function searchCreditShops(){
     }
     statusEl.textContent = matches.length + ' match(es) found — tap one to select:';
     resultsEl.innerHTML = matches.map(function(m,i){
-      return '<div onclick=\'selectCreditShop('+JSON.stringify(JSON.stringify(m))+')\' style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">'+
+      return '<div onclick="selectCreditShop('+i+')" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">'+
         '<div style="display:flex;justify-content:space-between;align-items:start">'+
         '<div><strong>'+(m.shopName||'—')+'</strong> <span style="color:var(--text-m);font-size:12px">(ID: '+(m.shopId||'—')+')</span><br>'+
         '<span style="font-size:12px;color:var(--text-m)">'+(m.customerName||'')+' · '+(m.customerPhone||'')+'</span></div>'+
@@ -1152,21 +1158,36 @@ function searchCreditShops(){
   }).catch(function(){ statusEl.textContent='Search failed — check your connection and try again.'; });
 }
 
-function selectCreditShop(mJsonStr){
-  var m = JSON.parse(mJsonStr);
+function selectCreditShop(i){
+  var m = crMatches[i];
+  if(!m) return;
+  document.getElementById('cr-no-match').style.display='none';
+  document.getElementById('cr-results').innerHTML='';
+  document.getElementById('cr-error').style.display='none';
+  document.getElementById('cr-success').style.display='none';
+
+  if(!m.paymentId){
+    // Record predates repayment tracking (created before Payment ID support) — can't be matched back safely.
+    crSelectedPaymentId = null;
+    document.getElementById('cr-selected-card').innerHTML =
+      '<strong>'+(m.shopName||'—')+'</strong> <span style="color:var(--text-m)">(ID: '+(m.shopId||'—')+')</span><br>'+
+      '<span style="color:#b91c1c">⚠️ This record was created before repayment tracking was added, so it can\'t be topped up here. Ask your manager to update the balance directly in the sheet, or record it fresh as a new device sale.</span>';
+    document.getElementById('cr-repay-fields').style.display='none';
+    document.getElementById('cr-selected').style.display='block';
+    document.getElementById('cr-search-status').textContent='';
+    return;
+  }
+
   crSelectedPaymentId = m.paymentId;
   document.getElementById('cr-selected-card').innerHTML =
     '<strong>'+(m.shopName||'—')+'</strong> <span style="color:var(--text-m)">(ID: '+(m.shopId||'—')+')</span><br>'+
     'Customer: '+(m.customerName||'')+' · '+(m.customerPhone||'')+'<br>'+
     'Location: '+(m.location||'')+'<br>'+
     'Outstanding balance: <strong style="color:#b91c1c">KES '+Number(m.balance||0).toLocaleString()+'</strong>';
+  document.getElementById('cr-repay-fields').style.display='block';
   document.getElementById('cr-selected').style.display='block';
-  document.getElementById('cr-no-match').style.display='none';
-  document.getElementById('cr-results').innerHTML='';
   document.getElementById('cr-search-status').textContent='Shop selected.';
   setVal('cr-amount',''); setVal('cr-mpesa-msg',''); clearPhoto('cr-mpesa');
-  document.getElementById('cr-error').style.display='none';
-  document.getElementById('cr-success').style.display='none';
 }
 
 function submitCreditRepayment(){
@@ -1263,8 +1284,10 @@ function resetPurposeUI(){
   document.getElementById('cr-search-status').textContent='';
   document.getElementById('cr-no-match').style.display='none';
   document.getElementById('cr-selected').style.display='none';
+  document.getElementById('cr-repay-fields').style.display='block';
   setVal('cr-amount',''); setVal('cr-mpesa-msg',''); clearPhoto('cr-mpesa');
   crSelectedPaymentId=null;
+  crMatches=[];
   document.getElementById('ns-fields').style.display='none';
   ['ns-custname','ns-phone','ns-shopid','ns-shopname','ns-location','ns-price','ns-paid'].forEach(function(id){ setVal(id,''); });
   document.getElementById('ns-method').value='';
