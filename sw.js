@@ -1,4 +1,5 @@
-// iPOS Survey Service Worker
+
+});// iPOS Survey Service Worker
 var CACHE_NAME = "ipos-survey-v1";
 var urlsToCache = ["/index.html", "/manifest.json"];
 
