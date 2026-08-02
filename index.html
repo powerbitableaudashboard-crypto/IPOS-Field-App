@@ -647,7 +647,8 @@ input[type=file]{display:none}
         </div>
       </div>
       <div class="field"><label>Signed contract file (PDF or photo, max 3MB)<span class="req">*</span></label>
-        <input type="file" id="ctr-file" accept="application/pdf,image/*">
+        <label for="ctr-file" style="display:block;padding:14px;border:2px dashed var(--border);border-radius:10px;text-align:center;cursor:pointer;color:var(--accent);font-weight:600;background:var(--surface)" id="ctr-file-label">📎 Tap to choose a file</label>
+        <input type="file" id="ctr-file" accept="application/pdf,image/*" onchange="document.getElementById('ctr-file-label').textContent = (this.files[0] ? '📄 '+this.files[0].name : '📎 Tap to choose a file')">
       </div>
       <button type="button" class="submit-btn green-btn" id="ctr-submit" onclick="submitSignedContract()">
         <div class="spinner" id="ctr-spinner"></div><span>Upload Signed Contract</span>
@@ -718,6 +719,7 @@ input[type=file]{display:none}
       <div class="section-title">📄 Contract Template</div>
       <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Upload the master contract (PDF, max 3MB) — every trainer can download it from the Contracts section.</p>
       <div id="contract-template-current" style="font-size:12px;color:var(--text-m);margin-bottom:10px"></div>
+      <label for="contract-template-file" style="display:block;padding:14px;border:2px dashed var(--border);border-radius:10px;text-align:center;cursor:pointer;color:var(--accent);font-weight:600;background:var(--surface)" id="contract-template-file-label">📎 Tap to choose a PDF</label>
       <input type="file" id="contract-template-file" accept="application/pdf" onchange="uploadContractTemplate(this)">
       <div id="set-status-contract" style="font-size:12px;color:var(--text-m);margin-top:10px"></div>
     </div>
@@ -1390,8 +1392,10 @@ function saveCreditFacilitySetting(){
 function uploadContractTemplate(input){
   var file = input.files && input.files[0];
   var statusEl = document.getElementById('set-status-contract');
+  var labelEl = document.getElementById('contract-template-file-label');
   if(!file) return;
-  if(file.size > 3*1024*1024){ statusEl.textContent='File is larger than 3MB — please choose a smaller PDF.'; input.value=''; return; }
+  labelEl.textContent = '📄 ' + file.name;
+  if(file.size > 3*1024*1024){ statusEl.textContent='File is larger than 3MB — please choose a smaller PDF.'; input.value=''; labelEl.textContent='📎 Tap to choose a PDF'; return; }
   statusEl.textContent='Uploading…';
   var reader = new FileReader();
   reader.onload = function(){
@@ -1408,8 +1412,9 @@ function uploadContractTemplate(input){
         statusEl.textContent = data.message || 'Upload failed.';
       }
       input.value='';
+      labelEl.textContent='📎 Tap to choose a PDF';
     })
-    .catch(function(){ statusEl.textContent='Network error — please try again.'; input.value=''; });
+    .catch(function(){ statusEl.textContent='Network error — please try again.'; input.value=''; labelEl.textContent='📎 Tap to choose a PDF'; });
   };
   reader.readAsDataURL(file);
 }
@@ -1690,6 +1695,7 @@ function resetPurposeUI(){
   // contract sub-widgets
   setVal('ctr-shopname',''); setVal('ctr-shopid','');
   var ctrFile=document.getElementById('ctr-file'); if(ctrFile) ctrFile.value='';
+  var ctrFileLabel=document.getElementById('ctr-file-label'); if(ctrFileLabel) ctrFileLabel.textContent='📎 Tap to choose a file';
   document.getElementById('ctr-submit').style.display='flex';
   document.getElementById('ctr-success').style.display='none';
   document.getElementById('ctr-error').style.display='none';
