@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>iPOS Field App</title>
+<title>IPOS Field App</title>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -908,6 +908,14 @@ input[type=file]{display:none}
       <div class="field"><label for="i-location">Shop location<span class="req">*</span></label>
         <input type="text" id="i-location" placeholder="e.g. Nakuru Town, Kenyatta Ave" oninput="calcProgress('i')">
       </div>
+      <div class="field"><label for="i-devicetype">Device type<span class="req">*</span></label>
+        <select id="i-devicetype" onchange="onInstallDeviceTypeChange()">
+          <option value="">Select…</option>
+          <option value="Desktop">Desktop</option>
+          <option value="Tablet">Tablet</option>
+          <option value="H10">H10</option>
+        </select>
+      </div>
       <div class="field"><label for="i-notes">Installation notes</label>
         <textarea id="i-notes" placeholder="Any notes about the installation..."></textarea>
       </div>
@@ -927,6 +935,20 @@ input[type=file]{display:none}
           <div class="photo-preview" id="i-int-preview"><img id="i-int-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-int')">↺ Retake</button></div>
         </div>
         <input type="file" id="i-int-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-int','i')">
+      </div>
+      <div class="field" style="margin-top:1rem"><label>Device photo<span class="req">*</span></label>
+        <div class="photo-box" onclick="document.getElementById('i-device-file').click()">
+          <div class="photo-ph" id="i-device-ph"><span class="photo-ph-icon">📱</span><span>Tap to photograph</span><small>The installed device itself</small></div>
+          <div class="photo-preview" id="i-device-preview"><img id="i-device-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-device')">↺ Retake</button></div>
+        </div>
+        <input type="file" id="i-device-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-device','i')">
+      </div>
+      <div class="field" id="i-router-field" style="margin-top:1rem;display:none"><label>Router / WiFi photo<span class="req">*</span></label>
+        <div class="photo-box" onclick="document.getElementById('i-router-file').click()">
+          <div class="photo-ph" id="i-router-ph"><span class="photo-ph-icon">📶</span><span>Tap to photograph</span><small>Required for Desktop installs</small></div>
+          <div class="photo-preview" id="i-router-preview"><img id="i-router-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-router')">↺ Retake</button></div>
+        </div>
+        <input type="file" id="i-router-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-router','i')">
       </div>
     </div>
     <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;font-size:12px;color:#92400e;margin-top:.5rem">
@@ -1995,6 +2017,12 @@ function submitDeviceRequest(){
 // ── PHOTOS ───────────────────────────────────────────────────
 var photos={};
 
+function onInstallDeviceTypeChange(){
+  var type = document.getElementById('i-devicetype').value;
+  document.getElementById('i-router-field').style.display = (type==='Desktop') ? 'block' : 'none';
+  calcProgress('i');
+}
+
 function previewPhoto(input,key,prefix){
   var file=input.files[0]; if(!file) return;
   var reader=new FileReader();
@@ -2030,7 +2058,8 @@ function calcProgress(prefix){
   } else if(prefix==='s'){
     fields=[v('s-trainer'),v('s-county'),v('s-shopname'),v('s-shopid'),v('s-owner'),v('s-location'),v('s-phone'),v('s-transactions'),photos['s-owner']||''];
   } else if(prefix==='i'){
-    fields=[v('i-trainer'),v('i-county'),v('i-shopname'),v('i-location'),photos['i-ext']||'',photos['i-int']||''];
+    fields=[v('i-trainer'),v('i-county'),v('i-shopname'),v('i-location'),document.getElementById('i-devicetype').value,photos['i-ext']||'',photos['i-int']||'',photos['i-device']||''];
+    if(document.getElementById('i-devicetype').value==='Desktop') fields.push(photos['i-router']||'');
   }
   var pct=fields.length?Math.round(fields.filter(function(f){return f&&f!=='';}).length/fields.length*100):0;
   fillEl.style.width=pct+'%';
@@ -2087,14 +2116,19 @@ function submitForm(type){
   else if(type==='install'){
     payload.shopName=v('i-shopname'); payload.ownerName=v('i-ownername'); payload.ownerPhone=v('i-ownerphone');
     payload.shopLocation=v('i-location');
+    payload.deviceType=document.getElementById('i-devicetype').value;
     payload.notes=v('i-notes');
     payload.exteriorImage=photos['i-ext']||''; payload.interiorImage=photos['i-int']||'';
+    payload.deviceImage=photos['i-device']||''; payload.routerImage=photos['i-router']||'';
     if(!payload.shopName) missing.push('Shop name');
     if(!payload.ownerName) missing.push('Shop owner name');
     if(!payload.ownerPhone) missing.push('Shop owner phone');
     if(!payload.shopLocation) missing.push('Shop location');
+    if(!payload.deviceType) missing.push('Device type');
     if(!payload.exteriorImage) missing.push('Exterior photo');
     if(!payload.interiorImage) missing.push('Interior photo');
+    if(!payload.deviceImage) missing.push('Device photo');
+    if(payload.deviceType==='Desktop' && !payload.routerImage) missing.push('Router/WiFi photo');
     payload.installId='INST-'+Date.now().toString(36).toUpperCase();
   }
 
@@ -2209,8 +2243,10 @@ function resetInstallForm(){
   document.getElementById('i-ownername').value='';
   document.getElementById('i-ownerphone').value='';
   document.getElementById('i-location').value='';
+  document.getElementById('i-devicetype').value='';
+  document.getElementById('i-router-field').style.display='none';
   document.getElementById('i-notes').value='';
-  clearPhoto('i-ext'); clearPhoto('i-int');
+  clearPhoto('i-ext'); clearPhoto('i-int'); clearPhoto('i-device'); clearPhoto('i-router');
   calcProgress('i');
   showScreen('screen-install');
 }
@@ -2446,6 +2482,8 @@ function renderInstallList(){
     var photosHtml='';
     if(item.exteriorUrl) photosHtml += '<a href="'+item.exteriorUrl+'" target="_blank"><img src="'+item.exteriorUrl+'" alt="Exterior"></a>';
     if(item.interiorUrl) photosHtml += '<a href="'+item.interiorUrl+'" target="_blank"><img src="'+item.interiorUrl+'" alt="Interior"></a>';
+    if(item.deviceUrl) photosHtml += '<a href="'+item.deviceUrl+'" target="_blank"><img src="'+item.deviceUrl+'" alt="Device"></a>';
+    if(item.routerUrl) photosHtml += '<a href="'+item.routerUrl+'" target="_blank"><img src="'+item.routerUrl+'" alt="Router"></a>';
 
     var actionsHtml='';
     if(item.status==='PENDING'){
@@ -2465,6 +2503,7 @@ function renderInstallList(){
       '<div class="dash-item-body">' +
         '👤 '+(item.trainerName||'')+' · 📍 '+(item.county?item.county+' · ':'')+(item.shopLocation||'')+'<br>'+
         (item.ownerName ? '👨 Owner: '+item.ownerName+' · 📞 '+(item.ownerPhone||'')+'<br>' : '') +
+        (item.deviceType ? '📱 Device: '+item.deviceType+'<br>' : '') +
         '🕐 '+(item.date||item.submittedAt||'')+
         (item.notes ? '<br>📝 '+item.notes : '') +
       '</div>' +
