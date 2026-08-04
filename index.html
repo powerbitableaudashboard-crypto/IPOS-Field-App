@@ -34,6 +34,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .app-header p{font-size:12px;opacity:.8;margin-top:1px}
 .back-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;margin-left:auto;white-space:nowrap}
 .user-chip{margin-left:auto;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;cursor:pointer}
+.header-icon-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:10px;width:38px;height:38px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px}
+
+/* BOTTOM TAB BAR */
+.bottom-tabbar{position:fixed;left:0;right:0;bottom:0;z-index:200;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:stretch;box-shadow:0 -2px 10px rgba(0,0,0,.06);padding-bottom:env(safe-area-inset-bottom)}
+.bottom-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 2px 7px;background:none;border:none;cursor:pointer;font-family:inherit;color:var(--text-m);font-size:10.5px;font-weight:600}
+.bottom-tab-icon{font-size:19px;line-height:1}
+.bottom-tab.active{color:var(--accent)}
+.bottom-tab.active .bottom-tab-icon{transform:translateY(-1px)}
+.has-tabbar{padding-bottom:78px}
 
 /* LOGIN SCREEN */
 .login-wrap{max-width:420px;margin:0 auto;padding:2rem 1rem}
@@ -252,9 +261,10 @@ input[type=file]{display:none}
   <div class="app-header">
     <div class="app-header-icon" style="background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px">📊</div>
     <div><h1 id="dash-header-title">Manager Dashboard</h1><p id="dash-sub">Select a form to view</p></div>
+    <button class="header-icon-btn" title="Settings" onclick="openDeviceSettings()">⚙️</button>
     <button class="back-btn" id="dash-back-btn" onclick="showScreen('screen-home')">← Home</button>
   </div>
-  <div class="form-body">
+  <div class="form-body has-tabbar">
 
     <!-- STEP 1: Menu of forms -->
     <div id="dash-menu">
@@ -279,26 +289,21 @@ input[type=file]{display:none}
           <div class="form-card-title">Shop Surveys</div>
           <div class="form-card-desc">View onboarded shops</div>
         </div>
-      </div>
-      <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb;margin-top:4px" onclick="setFormType('users')">
-        <div class="form-card-icon">👥</div>
-        <div class="form-card-title">Manage Users</div>
-        <div class="form-card-desc">Register, edit or remove trainers</div>
-      </div>
-      <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb;margin-top:10px" onclick="openManageShops()">
-        <div class="form-card-icon">🏬</div>
-        <div class="form-card-title">Manage Shops</div>
-        <div class="form-card-desc">View, edit, or delete shop records</div>
-      </div>
-      <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb;margin-top:10px" onclick="openSignedContracts()">
-        <div class="form-card-icon">📑</div>
-        <div class="form-card-title">Signed Contracts</div>
-        <div class="form-card-desc">View &amp; download uploaded contracts</div>
-      </div>
-      <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb;margin-top:10px" onclick="openDeviceSettings()">
-        <div class="form-card-icon">⚙️</div>
-        <div class="form-card-title">Device Settings</div>
-        <div class="form-card-desc">Set the default device request amount</div>
+        <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb" onclick="setFormType('users')">
+          <div class="form-card-icon">👥</div>
+          <div class="form-card-title">Manage Users</div>
+          <div class="form-card-desc">Register, edit or remove trainers</div>
+        </div>
+        <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb" onclick="openManageShops()">
+          <div class="form-card-icon">🏬</div>
+          <div class="form-card-title">Manage Shops</div>
+          <div class="form-card-desc">View, edit, or delete shop records</div>
+        </div>
+        <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb" onclick="openSignedContracts()">
+          <div class="form-card-icon">📑</div>
+          <div class="form-card-title">Signed Contracts</div>
+          <div class="form-card-desc">View &amp; download uploaded contracts</div>
+        </div>
       </div>
     </div>
 
@@ -380,6 +385,14 @@ input[type=file]{display:none}
       <div id="dash-list"></div>
     </div>
 
+  </div>
+
+  <div class="bottom-tabbar">
+    <button class="bottom-tab active" id="tab-home" onclick="dashTabGo('home')"><span class="bottom-tab-icon">🏠</span>Home</button>
+    <button class="bottom-tab" id="tab-install" onclick="dashTabGo('install')"><span class="bottom-tab-icon">🔧</span>Installs</button>
+    <button class="bottom-tab" id="tab-payments" onclick="dashTabGo('payments')"><span class="bottom-tab-icon">💳</span>Payments</button>
+    <button class="bottom-tab" id="tab-shops" onclick="dashTabGo('shops')"><span class="bottom-tab-icon">🏬</span>Shops</button>
+    <button class="bottom-tab" id="tab-users" onclick="dashTabGo('users')"><span class="bottom-tab-icon">👥</span>Users</button>
   </div>
 </div>
 
@@ -472,7 +485,7 @@ input[type=file]{display:none}
       <div class="field">
         <label for="cr-search">Search by Shop ID or Shop Name</label>
         <div style="display:flex;gap:8px">
-          <input type="text" id="cr-search" placeholder="e.g. 123456 or Kamau General Store" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();searchCreditShops();}">
+          <input type="text" id="cr-search" placeholder="e.g. 1236 or Kamau General Store" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();searchCreditShops();}">
           <button type="button" onclick="searchCreditShops()" style="padding:0 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;white-space:nowrap">Search</button>
         </div>
       </div>
@@ -487,7 +500,7 @@ input[type=file]{display:none}
         <div id="cr-selected-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px"></div>
         <div id="cr-repay-fields">
           <div class="field"><label for="cr-amount">Repayment amount (KES)<span class="req">*</span></label>
-            <input type="text" id="cr-amount" inputmode="numeric" placeholder="e.g. Ksh 10,O00">
+            <input type="text" id="cr-amount" inputmode="numeric" placeholder="e.g.Ksh 10,000">
           </div>
           <div class="field"><label for="cr-mpesa-msg">M-Pesa message<span class="req">*</span></label>
             <textarea id="cr-mpesa-msg" style="min-height:60px" placeholder="Paste M-Pesa confirmation text..."></textarea>
@@ -515,7 +528,7 @@ input[type=file]{display:none}
             <option value="Cash">Cash</option><option value="Installment">Installment (Credit)</option></select>
           </div>
           <div class="field"><label for="ns-price">Device price (KES)</label>
-            <input type="text" id="ns-price" inputmode="numeric" placeholder="e.g. Ksh 23,620" oninput="calcNewSaleBalance()">
+            <input type="text" id="ns-price" inputmode="numeric" placeholder="e.g. Ksh 18,200" oninput="calcNewSaleBalance()">
           </div>
         </div>
         <div class="field"><label for="ns-custname">Customer name<span class="req">*</span></label>
@@ -541,7 +554,7 @@ input[type=file]{display:none}
           </div>
         </div>
         <div class="field" id="ns-paid-wrap" style="display:none"><label for="ns-paid">Amount paid now (KES)</label>
-          <input type="text" id="ns-paid" inputmode="numeric" placeholder="e.g. Ksh 8,500" oninput="calcNewSaleBalance()">
+          <input type="text" id="ns-paid" inputmode="numeric" placeholder="e.g.Ksh 7,500" oninput="calcNewSaleBalance()">
         </div>
         <div id="ns-balance" style="display:none;font-size:12px;color:var(--text-s);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:6px"></div>
 
@@ -561,7 +574,7 @@ input[type=file]{display:none}
           <input type="text" id="d-req-shopname" placeholder="e.g. Kamau General Store">
         </div>
         <div class="field"><label for="d-req-shopid">Shop ID <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
-          <input type="text" id="d-req-shopid" placeholder="e.g. 356">
+          <input type="text" id="d-req-shopid" placeholder="e.g. 556">
         </div>
       </div>
       <div class="two-col">
@@ -595,12 +608,12 @@ input[type=file]{display:none}
         </div>
       </div>
       <div id="d-req-deposit-wrap" style="display:none" class="field"><label for="d-req-deposit">Deposit amount (KES)</label>
-        <input type="text" id="d-req-deposit" inputmode="numeric" placeholder="e.g. Ksh 9,500" oninput="depositAmountEdited=true">
+        <input type="text" id="d-req-deposit" inputmode="numeric" placeholder="e.g.Ksh7,500" oninput="depositAmountEdited=true">
         <small style="color:var(--text-m);font-size:11px">Prefilled with the area's default deposit — you can change it. This is deducted from the balance owed.</small>
       </div>
       <div id="d-req-facility-info" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:1rem;font-size:12.5px;color:var(--text-m)"></div>
       <div class="field"><label for="d-req-mpesa-msg">M-Pesa message <span style="font-size:11px;color:#9ca3af;font-weight:400">(paste confirmation text)</span></label>
-        <textarea id="d-req-mpesa-msg" placeholder="e.g. Confirmed. You have received Ksh 18,200.00 from..." style="min-height:60px"></textarea>
+        <textarea id="d-req-mpesa-msg" placeholder="e.g. Confirmed. You have received KSH 23,620.00 from..." style="min-height:60px"></textarea>
       </div>
       <div class="field"><label>M-Pesa screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
         <div class="photo-box" onclick="document.getElementById('d-req-mpesa-file').click()">
@@ -658,7 +671,7 @@ input[type=file]{display:none}
           <input type="text" id="ctr-shopname" placeholder="e.g. Kamau General Store">
         </div>
         <div class="field"><label for="ctr-shopid">Shop ID<span class="req">*</span></label>
-          <input type="text" id="ctr-shopid" placeholder="e.g. 1356">
+          <input type="text" id="ctr-shopid" placeholder="e.g. 356">
         </div>
       </div>
       <div class="field"><label>Signed contract file (PDF or photo, max 3MB)<span class="req">*</span></label>
@@ -689,7 +702,7 @@ input[type=file]{display:none}
       <div class="section-title">💵 Default Amount — Cash</div>
       <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Auto-fills "Device amount" when a trainer selects <strong>Cash</strong> as the payment type on their Device Request form. Trainers can still edit it per request.</p>
       <div class="field"><label for="set-device-amount-cash">Amount (KES)</label>
-        <input type="text" id="set-device-amount-cash" inputmode="numeric" placeholder="e.g. Ksh 8,500">
+        <input type="text" id="set-device-amount-cash" inputmode="numeric" placeholder="e.g. Ksh 7,500">
       </div>
       <div style="display:flex;gap:10px">
         <button type="button" onclick="saveDeviceAmountSetting('cash')" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">💾 Save</button>
@@ -702,7 +715,7 @@ input[type=file]{display:none}
       <div class="section-title">📇 Default Amount — Credit</div>
       <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Auto-fills "Device amount" when a trainer selects <strong>Credit</strong> as the payment type on their Device Request form.</p>
       <div class="field"><label for="set-device-amount-credit">Amount (KES)</label>
-        <input type="text" id="set-device-amount-credit" inputmode="numeric" placeholder="e.g.Ksh 7,500">
+        <input type="text" id="set-device-amount-credit" inputmode="numeric" placeholder="e.g. 23620">
       </div>
       <div style="display:flex;gap:10px">
         <button type="button" onclick="saveDeviceAmountSetting('credit')" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">💾 Save</button>
@@ -718,13 +731,13 @@ input[type=file]{display:none}
         <div class="field"><label for="set-deposit">Deposit (KES)</label>
           <input type="text" id="set-deposit" inputmode="numeric" placeholder="e.g. Ksh 7,500"></div>
         <div class="field"><label for="set-facility">Facility amount (KES)</label>
-          <input type="text" id="set-facility" inputmode="numeric" placeholder="e.g.Ksh 23,620"></div>
+          <input type="text" id="set-facility" inputmode="numeric" placeholder="e.g. Ksh 23,620"></div>
       </div>
       <div class="two-col">
         <div class="field"><label for="set-installment-amount">Installment amount (KES)</label>
           <input type="text" id="set-installment-amount" inputmode="numeric" placeholder="e.g. Ksh 4,070"></div>
         <div class="field"><label for="set-installment-count"># of installments</label>
-          <input type="text" id="set-installment-count" inputmode="numeric" placeholder="e.g. 34"></div>
+          <input type="text" id="set-installment-count" inputmode="numeric" placeholder="e.g. 40"></div>
       </div>
       <button type="button" onclick="saveCreditFacilitySetting()" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">💾 Save Facility Terms</button>
       <div id="set-status-facility" style="font-size:12px;color:var(--text-m);margin-top:10px"></div>
@@ -744,7 +757,7 @@ input[type=file]{display:none}
       <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Devices trainers can pick from on the Device Request form. Starts with H10 — add more as new devices become available.</p>
       <div id="device-types-list" style="margin-bottom:12px"></div>
       <div style="display:flex;gap:8px">
-        <input type="text" id="device-type-new" placeholder="e.g. H50,C30,Telpo M10" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border)">
+        <input type="text" id="device-type-new" placeholder="e.g. H50" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border)">
         <button type="button" onclick="addDeviceTypeSetting()" style="padding:0 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">Add</button>
       </div>
       <div id="set-status-devicetypes" style="font-size:12px;color:var(--text-m);margin-top:10px"></div>
@@ -2424,15 +2437,33 @@ function openDashboard(){
   backToDashMenu();
 }
 
+function dashTabGo(tab){
+  document.querySelectorAll('.bottom-tab').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.getElementById('tab-'+tab);
+  if(btn) btn.classList.add('active');
+
+  if(tab==='home') backToDashMenu();
+  else if(tab==='install') setFormType('install');
+  else if(tab==='payments') setFormType('devicepay');
+  else if(tab==='shops') openManageShops();
+  else if(tab==='users') setFormType('users');
+}
+
 function backToDashMenu(){
   document.getElementById('dash-menu').style.display='block';
   document.getElementById('dash-detail').style.display='none';
   document.getElementById('dash-sub').textContent = 'Select a form to view';
   closeUserForm();
+  var homeTab = document.getElementById('tab-home');
+  if(homeTab){ document.querySelectorAll('.bottom-tab').forEach(function(b){ b.classList.remove('active'); }); homeTab.classList.add('active'); }
 }
 
 function setFormType(type){
   dashFormType = type;
+  document.querySelectorAll('.bottom-tab').forEach(function(b){ b.classList.remove('active'); });
+  var tabMap = { install:'tab-install', devicepay:'tab-payments', users:'tab-users' };
+  var activeTabId = tabMap[type];
+  if(activeTabId){ var t=document.getElementById(activeTabId); if(t) t.classList.add('active'); }
   document.getElementById('dash-menu').style.display='none';
   document.getElementById('dash-detail').style.display='block';
   document.getElementById('install-status-tabs').style.display = (type==='install') ? 'flex' : 'none';
