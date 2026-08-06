@@ -5,7 +5,7 @@
   "start_url": "/IPOS-Field-App/index.html",
   "scope": "/IPOS-Field-App/",
   "display": "standalone",
-  "background_color": "#f0f4f8",
+  "background_color": "#f0f4f8", 
   "theme_color": "#2563eb",
   "orientation": "portrait",
   "lang": "en",
