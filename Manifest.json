@@ -1,4 +1,27 @@
-app: { "name": "IPOS Field App", "short_name": "IPOS", "description": "Field data collection for iPOS Trainers",
-"start_url": "/index.html", "display": "standalone", "background_color": "#ffffff", "theme_color": "#1a73e8", 
-"icons": [ { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }, 
-{ "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" } ] }
+{
+  "name": "iPOS Field App",
+  "short_name": "iPOS Field",
+  "description": "iPOS field trainer app for route plans, device payments, shop surveys and installations",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f0f4f8",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "lang": "en",
+  "categories": ["business", "utilities"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
