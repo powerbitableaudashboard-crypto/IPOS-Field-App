@@ -2548,6 +2548,20 @@ function hideErr(type){
   var map={route:'r',devicepay:'d',survey:'s',install:'i'};
   document.getElementById(map[type]+'-error').style.display='none';
 }
+function clearRouteFields(){
+  // Clear every visit row + its photos so the next visit starts blank
+  document.getElementById('visits-container').innerHTML='';
+  Object.keys(photos).forEach(function(k){ if(k.indexOf('v-photo-')===0) delete photos[k]; });
+  visitCount=0;
+  addVisit();
+  gpsStore['r']=null;
+}
+function clearSurveyFields(){
+  ['s-shopname','s-shopid','s-owner','s-location','s-phone','s-transactions'].forEach(function(id){ setVal(id,''); });
+  clearPhoto('s-owner');
+  calcProgress('s');
+  gpsStore['s']=null;
+}
 function showSuccess(type,payload){
   var map={route:'r',devicepay:'d',survey:'s',install:'i'};
   var p=map[type];
@@ -2562,15 +2576,23 @@ function showSuccess(type,payload){
     var reqNote=document.getElementById('d-success-req-note');
     reqNote.textContent = payload.deviceRequest ? ' — device request emailed to '+payload.deviceRequest.toEmail : '';
   }
+  // Clear the entered data right away so the form is ready for a fresh
+  // entry even if the user doesn't tap "Back to Home" first.
+  if(type==='route') clearRouteFields();
+  else if(type==='survey') clearSurveyFields();
+  else if(type==='devicepay') resetPurposeUI();
 }
 function resetForm(type){
   var map={route:'r',devicepay:'d',survey:'s',install:'i'};
   var p=map[type];
   document.getElementById(p+'-success').style.display='none';
   document.getElementById(p+'-submit').style.display='flex';
-  if(type==='devicepay'){
-    resetPurposeUI();
-  }
+
+  // Fields are already cleared in showSuccess right after submission;
+  // this is just a safety net in case resetForm is ever reached another way.
+  if(type==='route' && !document.getElementById('visits-container').children.length) clearRouteFields();
+  else if(type==='devicepay') resetPurposeUI();
+
   goHome();
 }
 
