@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IPOS Field App</title>
@@ -448,6 +448,7 @@ input[type=file]{display:none}
       <div class="success-icon">✅</div><h2>Clients Engagement Submitted!</h2>
       <p>Saved to Google Sheets and your manager has been notified.</p>
       <div class="success-meta" id="r-meta"></div>
+      <button class="home-btn" onclick="submitAnotherRoute()" style="background:var(--accent);color:#fff">➕ Submit Another Visit</button>
       <button class="home-btn" onclick="resetForm('route')">← Back to Home</button>
     </div>
   </div>
@@ -930,6 +931,7 @@ input[type=file]{display:none}
       <div class="success-icon">✅</div><h2>Survey Submitted!</h2>
       <p>Saved to Google Sheets.</p>
       <div class="success-meta" id="s-meta"></div>
+      <button class="home-btn" onclick="submitAnotherSurvey()" style="background:var(--accent);color:#fff">➕ Submit Another Survey</button>
       <button class="home-btn" onclick="resetForm('survey')">← Back to Home</button>
     </div>
   </div>
@@ -2576,11 +2578,23 @@ function showSuccess(type,payload){
     var reqNote=document.getElementById('d-success-req-note');
     reqNote.textContent = payload.deviceRequest ? ' — device request emailed to '+payload.deviceRequest.toEmail : '';
   }
-  // Clear the entered data right away so the form is ready for a fresh
-  // entry even if the user doesn't tap "Back to Home" first.
-  if(type==='route') clearRouteFields();
-  else if(type==='survey') clearSurveyFields();
-  else if(type==='devicepay') resetPurposeUI();
+}
+// Trainer taps "➕ Submit Another Visit" — stays on the form, clears the
+// just-submitted visit(s), and re-captures GPS for the next entry.
+function submitAnotherRoute(){
+  clearRouteFields();
+  document.getElementById('r-success').style.display='none';
+  document.getElementById('r-submit').style.display='flex';
+  initGPS('r');
+  showScreen('screen-route');
+}
+// Trainer taps "➕ Submit Another Survey" — same idea for Shop Survey.
+function submitAnotherSurvey(){
+  clearSurveyFields();
+  document.getElementById('s-success').style.display='none';
+  document.getElementById('s-submit').style.display='flex';
+  initGPS('s');
+  showScreen('screen-survey');
 }
 function resetForm(type){
   var map={route:'r',devicepay:'d',survey:'s',install:'i'};
@@ -2588,9 +2602,8 @@ function resetForm(type){
   document.getElementById(p+'-success').style.display='none';
   document.getElementById(p+'-submit').style.display='flex';
 
-  // Fields are already cleared in showSuccess right after submission;
-  // this is just a safety net in case resetForm is ever reached another way.
-  if(type==='route' && !document.getElementById('visits-container').children.length) clearRouteFields();
+  if(type==='route') clearRouteFields();
+  else if(type==='survey') clearSurveyFields();
   else if(type==='devicepay') resetPurposeUI();
 
   goHome();
