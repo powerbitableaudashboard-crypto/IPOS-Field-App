@@ -112,6 +112,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .dash-reject-btn{flex:1;padding:9px;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .dash-approve-btn:disabled,.dash-reject-btn:disabled{opacity:.5;cursor:not-allowed}
 
+/* PAYMENT HISTORY MODAL */
+.ph-overlay{position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.ph-modal{background:#fff;width:100%;max-width:480px;max-height:88vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden}
+.ph-modal-head{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-shrink:0}
+.ph-modal-title{font-size:15px;font-weight:700;color:var(--text)}
+.ph-modal-sub{font-size:11.5px;color:var(--text-m);margin-top:2px}
+.ph-modal-close{background:var(--surface-2);border:none;border-radius:8px;width:30px;height:30px;font-size:15px;cursor:pointer;flex-shrink:0}
+.ph-modal-body{overflow-y:auto;padding:1rem 1.25rem 1.5rem}
+.ph-sale-card{border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden}
+.ph-sale-head{background:var(--surface-1);padding:10px 14px;font-size:12.5px;line-height:1.8}
+.ph-timeline{padding:12px 14px}
+.ph-tl-item{position:relative;padding-left:20px;padding-bottom:14px;border-left:2px solid var(--border)}
+.ph-tl-item:last-child{padding-bottom:0;border-left:2px solid transparent}
+.ph-tl-dot{position:absolute;left:-7px;top:0;width:12px;height:12px;border-radius:50%;border:2px solid #fff}
+.ph-tl-dot.cash{background:#22c55e}
+.ph-tl-dot.credit{background:#f97316}
+.ph-tl-row-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px}
+.ph-tl-type{font-weight:700;color:var(--text)}
+.ph-tl-amount{font-weight:700}
+.ph-tl-meta{font-size:11px;color:var(--text-m);margin-top:2px;line-height:1.6}
+.ph-empty{text-align:center;padding:2rem 1rem;color:#9ca3af;font-size:13px}
+
 /* AUTO FIELD */
 .auto-field{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius)}
 .auto-val{font-size:13px;color:var(--text);flex:1;word-break:break-all}
@@ -3003,11 +3025,91 @@ function renderGenericList(){
         bodyRows += '<div><strong>'+k+':</strong> '+val+'</div>';
       }
     });
+    var historyBtn = '';
+    if(dashFormType==='devicepay' && row['Shop ID']){
+      historyBtn = '<div class="dash-item-actions">' +
+        '<button class="dash-approve-btn" style="background:var(--accent)" onclick=\'openPaymentHistory('+JSON.stringify(String(row['Shop ID']))+','+JSON.stringify(String(row['Shop Name']||''))+')\'>📜 Full Repayment History</button>' +
+      '</div>';
+    }
     div.innerHTML =
       '<div class="dash-item-top"><div class="dash-item-shop">'+dot+'📄 '+titleField+'</div></div>' +
-      '<div class="dash-item-body" style="line-height:2">'+bodyRows+'</div>';
+      '<div class="dash-item-body" style="line-height:2">'+bodyRows+'</div>' +
+      historyBtn;
     listEl.appendChild(div);
   });
+}
+
+// ── PAYMENT HISTORY DRILL-DOWN (Manager/Admin — search & view a
+//    shop's entire repayment history: deposit, every cash/credit
+//    payment, and which installment each one was) ─────────────────
+function openPaymentHistory(shopId, shopName){
+  var overlay = document.createElement('div');
+  overlay.className = 'ph-overlay';
+  overlay.id = 'ph-overlay';
+  overlay.onclick = function(e){ if(e.target===overlay) closePaymentHistory(); };
+  overlay.innerHTML =
+    '<div class="ph-modal">' +
+      '<div class="ph-modal-head">' +
+        '<div><div class="ph-modal-title">📜 Repayment History</div><div class="ph-modal-sub">'+(shopName||'Shop')+' &middot; ID: '+shopId+'</div></div>' +
+        '<button class="ph-modal-close" onclick="closePaymentHistory()">✕</button>' +
+      '</div>' +
+      '<div class="ph-modal-body" id="ph-modal-body"><div class="ph-empty">Loading…</div></div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  var url = APPS_SCRIPT_URL + '?action=getPaymentHistory&shopId=' + encodeURIComponent(shopId) +
+    '&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  fetch(url).then(function(r){return r.json();}).then(function(data){
+    renderPaymentHistory(data.sales || []);
+  }).catch(function(){
+    var body = document.getElementById('ph-modal-body');
+    if(body) body.innerHTML = '<div class="ph-empty">Failed to load history — check your connection.</div>';
+  });
+}
+
+function closePaymentHistory(){
+  var el = document.getElementById('ph-overlay');
+  if(el) el.remove();
+}
+
+function renderPaymentHistory(sales){
+  var body = document.getElementById('ph-modal-body');
+  if(!body) return;
+  if(!sales.length){
+    body.innerHTML = '<div class="ph-empty">No repayment history found for this shop.</div>';
+    return;
+  }
+
+  body.innerHTML = sales.map(function(sale){
+    var isCash = sale.paymentMethod === 'Cash';
+    var head =
+      '<div class="ph-sale-head">' +
+        '<strong>'+(sale.shopName||'—')+'</strong> <span style="color:var(--text-m)">(ID: '+sale.shopId+')</span><br>' +
+        '👤 '+(sale.trainerName||'')+' &middot; 📍 '+(sale.county||'')+'<br>' +
+        (sale.customerName ? ('Customer: '+sale.customerName+(sale.customerPhone?(' · '+sale.customerPhone):'')+'<br>') : '') +
+        '💰 Device price: <strong>KES '+num(sale.devicePrice).toLocaleString()+'</strong> &middot; Method: <strong>'+(isCash?'Cash':'Credit')+'</strong><br>' +
+        'Total paid: <strong style="color:#16a34a">KES '+num(sale.totalPaid).toLocaleString()+'</strong> &middot; ' +
+        'Balance: <strong style="color:'+(sale.currentBalance>0?'#b91c1c':'#16a34a')+'">KES '+num(sale.currentBalance).toLocaleString()+'</strong>' +
+        (sale.currentBalance>0 && sale.nextPaymentDate ? ('<br>⏰ Next payment due: '+sale.nextPaymentDate) : '') +
+      '</div>';
+
+    var tl = sale.timeline.map(function(t, idx){
+      var dotClass = t.method==='Cash' ? 'cash' : 'credit';
+      var isLast = idx === sale.timeline.length - 1;
+      return '<div class="ph-tl-item" style="'+(isLast?'border-left-color:transparent':'')+'">' +
+        '<div class="ph-tl-dot '+dotClass+'"></div>' +
+        '<div class="ph-tl-row-top"><span class="ph-tl-type">'+t.type+'</span>' +
+          '<span class="ph-tl-amount" style="color:'+(t.method==='Cash'?'#16a34a':'#c2410c')+'">KES '+num(t.amount).toLocaleString()+'</span></div>' +
+        '<div class="ph-tl-meta">'+
+          '📅 '+(t.date||'—')+'<br>'+
+          'Balance after: KES '+num(t.balanceAfter).toLocaleString()+
+          (t.recordedBy ? (' &middot; Recorded by '+t.recordedBy) : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="ph-sale-card">'+head+'<div class="ph-timeline">'+tl+'</div></div>';
+  }).join('');
 }
 
 function actOnInstall(installId, action, btnEl){
