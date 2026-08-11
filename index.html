@@ -438,7 +438,6 @@ input[type=file]{display:none}
     <div class="section">
       <div class="section-title">🗺️ Shop(S) Visited</div>
       <div id="visits-container"></div>
-      <button class="add-visit-btn" onclick="addVisit()">+ Add another visit</button>
     </div>
     <button class="submit-btn" id="r-submit" onclick="submitForm('route')">
       <div class="spinner" id="r-spinner"></div><span id="r-btn">Submit Recorded Visits</span>
@@ -1297,8 +1296,7 @@ function addVisit(){
   var c=document.getElementById('visits-container');
   var d=document.createElement('div');
   d.className='visit-row'; d.id='visit-'+id;
-  d.innerHTML='<div class="visit-num">Visit '+id+
-    '<button class="remove-btn" onclick="removeVisit('+id+')">✕ Remove</button></div>'+
+  d.innerHTML='<div class="visit-num">Visit '+id+'</div>'+
 
     '<div class="field"><label>Purpose<span class="req">*</span></label>'+
     '<select id="v-purpose-'+id+'" onchange="calcProgress(\'r\')"><option value="">Select purpose…</option>'+
