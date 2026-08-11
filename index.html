@@ -1055,21 +1055,20 @@ input[type=file]{display:none}
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGO_3aw2o5g7UMxBJnZEYxjh2Lt9rOnA0nM0ZRNLWpF-TPE_psWqONiQACqw0LCff9/exec';
 
 // Always produce Kenya EAT timestamps regardless of the device's system timezone
+// Format: "Mon, 10 Aug 2026, 09:04"
 function nowKEFrontend() {
   var d = new Date();
-  var year = d.toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', year: 'numeric' });
-  var month = d.toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', month: '2-digit' });
+  var weekday = d.toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', weekday: 'short' });
   var day = d.toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', day: '2-digit' });
+  var month = d.toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', month: 'short' });
+  var year = d.toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', year: 'numeric' });
   var hour = d.toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', hour: '2-digit', hour12: false });
   var min = d.toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', minute: '2-digit' });
-  var sec = d.toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', second: '2-digit' });
-  // Pad to 2 digits where needed
-  month = month.replace(/^(\d)$/, '0$1');
   day = day.replace(/^(\d)$/, '0$1');
   hour = hour.replace(/^(\d)$/, '0$1');
   min = min.replace(/^(\d)$/, '0$1');
-  sec = sec.replace(/^(\d)$/, '0$1');
-  return year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':' + sec + ' EAT';
+  if (hour === '24') hour = '00';
+  return weekday + ', ' + day + ' ' + month + ' ' + year + ', ' + hour + ':' + min;
 }
 
 var KENYA_COUNTIES = ['Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa','Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa',"Murang'a",'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans-Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot'];
@@ -1303,9 +1302,9 @@ function addVisit(){
 
     '<div class="field"><label>Purpose<span class="req">*</span></label>'+
     '<select id="v-purpose-'+id+'" onchange="calcProgress(\'r\')"><option value="">Select purpose…</option>'+
-    '<option>System Maintainance</option><option>Leads Generation/Pitching</option><option>Follow-up visit(Leads)</option>'+
-    '<option>Retention/Churn Clients Follow-Up</option><option>Training</option>'+
-    '<option>Device Repayment Follow-Up</option><option>Other</option></select></div>'+
+    '<option>System Maintainance</option><option>Leads Generation/Pitching</option><option>Follow-up visit</option>'+
+    '<option>Churn/Retention Follow-Up</option><option>Training</option>'+
+    '<option>Issue resolution</option><option>Other</option></select></div>'+
 
     '<div class="field"><label>Shop Name<span class="req">*</span></label>'+
     '<input type="text" id="v-name-'+id+'" placeholder="Shop name" oninput="calcProgress(\'r\')"></div>'+
