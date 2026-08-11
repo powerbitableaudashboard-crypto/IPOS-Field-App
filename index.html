@@ -2845,6 +2845,12 @@ function renderDashList(){
 
 function num(x){ var n=parseFloat(String(x).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
 
+function escapeHtml(str){
+  return String(str||'').replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
 function renderDevicePaySummary(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
@@ -3104,6 +3110,8 @@ function renderPaymentHistory(sales){
           '📅 '+(t.date||'—')+'<br>'+
           'Balance after: KES '+num(t.balanceAfter).toLocaleString()+
           (t.recordedBy ? (' &middot; Recorded by '+t.recordedBy) : '') +
+          (t.mpesaMessage ? ('<br>💬 M-Pesa: '+escapeHtml(t.mpesaMessage)) : '') +
+          (t.mpesaPhotoUrl ? ('<br>📎 <a href="'+t.mpesaPhotoUrl+'" target="_blank">View M-Pesa screenshot</a>') : '') +
         '</div>' +
       '</div>';
     }).join('');
