@@ -1329,9 +1329,9 @@ function addVisit(){
     '<div class="field"><label>Shop Name<span class="req">*</span></label>'+
     '<input type="text" id="v-name-'+id+'" placeholder="Shop name" oninput="calcProgress(\'r\')"></div>'+
 
-    '<div class="field"><label>Location</label><input type="text" id="v-loc-'+id+'" placeholder="Centers/Town" oninput="calcProgress(\'r\')"></div>'+
+    '<div class="field"><label>Location<span class="req">*</span></label><input type="text" id="v-loc-'+id+'" placeholder="Centers/Town" oninput="calcProgress(\'r\')"></div>'+
 
-    '<div class="field"><label>Shop owner phone number</label>'+
+    '<div class="field"><label>Shop owner phone number<span class="req">*</span></label>'+
     '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" oninput="calcProgress(\'r\')"></div>'+
 
     '<div class="field"><label>Front shop picture <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>'+
@@ -1341,7 +1341,7 @@ function addVisit(){
     '<button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto(\'v-photo-'+id+'\')">↺ Retake</button></div></div>'+
     '<input type="file" id="v-photo-'+id+'-file" accept="image/*" capture="environment" onchange="previewPhoto(this,\'v-photo-'+id+'\',\'r\')"></div>'+
 
-    '<div class="field"><label>Client feedback <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>'+
+    '<div class="field"><label>Client feedback<span class="req">*</span></label>'+
     '<textarea id="v-feedback-'+id+'" placeholder="Any expected feedback or notes for this visit..." style="min-height:60px"></textarea></div>';
   c.appendChild(d);
   calcProgress('r');
@@ -2470,7 +2470,7 @@ function calcProgress(prefix){
     fields=[v('r-trainer'),v('r-county')];
     document.querySelectorAll('#visits-container .visit-row').forEach(function(row){
       var id=row.id.split('-')[1];
-      fields.push(v('v-purpose-'+id), v('v-name-'+id));
+      fields.push(v('v-purpose-'+id), v('v-name-'+id), v('v-loc-'+id), v('v-phone-'+id), v('v-feedback-'+id));
     });
   } else if(prefix==='s'){
     fields=[v('s-trainer'),v('s-county'),v('s-shopname'),v('s-shopid'),v('s-owner'),v('s-location'),v('s-phone'),v('s-transactions'),photos['s-owner']||''];
@@ -2522,17 +2522,21 @@ function submitForm(type){
       var id=row.id.split('-')[1];
       var purpose=v('v-purpose-'+id);
       var name=v('v-name-'+id), loc=v('v-loc-'+id);
+      var phone=v('v-phone-'+id), feedback=v('v-feedback-'+id);
 
       if(!purpose) missing.push('Visit '+id+' purpose');
       if(!name) missing.push('Visit '+id+' name');
+      if(!loc) missing.push('Visit '+id+' location');
+      if(!phone) missing.push('Visit '+id+' shop owner phone number');
+      if(!feedback) missing.push('Visit '+id+' client feedback');
 
       visits.push({
         name:name,
         location:loc,
-        phone:v('v-phone-'+id),
+        phone:phone,
         purpose:purpose,
         photo:photos['v-photo-'+id]||'',
-        feedback:v('v-feedback-'+id)
+        feedback:feedback
       });
     });
     if(!visits.length) missing.push('At least one visit');
