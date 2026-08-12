@@ -372,6 +372,9 @@ input[type=file]{display:none}
             <input type="date" id="dash-date-to" onchange="renderDashList()">
           </div>
         </div>
+        <div id="dash-export-pdf-wrap" style="display:none">
+          <button class="submit-btn" id="dash-export-pdf-btn" style="margin-top:0;background:#7c3aed" onclick="exportDashPdf()">📄 Export PDF (current filters)</button>
+        </div>
       </div>
 
       <button class="submit-btn" id="add-user-btn" onclick="openUserForm(null)" style="display:none;margin-top:0;margin-bottom:1rem">➕ Register New User</button>
@@ -432,6 +435,7 @@ input[type=file]{display:none}
   <div class="app-header">
     <div class="app-header-icon"><img src="data:image/jpeg;base64,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" alt="iPOS"></div>
     <div><h1>Clients Engagement Tracker</h1><p>Record today's visits</p></div>
+    <button class="header-icon-btn" title="My Visit History" onclick="openMyVisits()">📊</button>
     <button class="back-btn" onclick="showScreen('screen-home')">← Home</button>
   </div>
   <div class="form-body">
@@ -749,10 +753,45 @@ input[type=file]{display:none}
           <input type="date" id="my-date-to" onchange="renderMyPayments()">
         </div>
       </div>
+      <button class="submit-btn" id="my-payments-export-pdf-btn" style="margin-top:10px;background:#7c3aed" onclick="exportMyPaymentsPdf()">📄 Export PDF (current filters)</button>
     </div>
 
     <div id="my-payments-status" style="text-align:center;padding:1rem;color:#9ca3af;font-size:13px">Loading…</div>
     <div id="my-payments-summary"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ TRAINER: MY VISIT HISTORY -->
+<div class="screen" id="screen-my-visits">
+  <div class="app-header">
+    <div class="app-header-icon" style="background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px">📋</div>
+    <div><h1>My Visit History</h1><p>Your own recorded client visits</p></div>
+    <button class="back-btn" onclick="showScreen('screen-route')">← Back</button>
+  </div>
+  <div class="form-body">
+    <div class="section">
+      <div class="section-title">📅 Date Range</div>
+      <select id="mv-range-filter" onchange="onMyVisitsRangeFilterChange()">
+        <option value="all">All time</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+        <option value="year">This Year</option>
+        <option value="custom">Custom range…</option>
+      </select>
+      <div class="two-col" id="mv-custom-range-wrap" style="display:none;margin-top:10px">
+        <div class="field" style="margin-bottom:0"><label>From</label>
+          <input type="date" id="mv-date-from" onchange="renderMyVisits()">
+        </div>
+        <div class="field" style="margin-bottom:0"><label>To</label>
+          <input type="date" id="mv-date-to" onchange="renderMyVisits()">
+        </div>
+      </div>
+      <button class="submit-btn" style="margin-top:10px;background:#7c3aed" onclick="exportMyVisitsPdf()">📄 Export PDF (current filters)</button>
+    </div>
+
+    <div id="my-visits-status" style="text-align:center;padding:1rem;color:#9ca3af;font-size:13px">Loading…</div>
+    <div id="my-visits-summary"></div>
   </div>
 </div>
 
@@ -1485,6 +1524,85 @@ function renderMyPayments(){
     '<div class="section" style="margin-bottom:10px"><div class="section-title">⏰ 3-Day Credit Follow-ups</div>'+dueSoonHtml+'</div>' +
     '<div class="section"><div class="section-title">✅ Completed Accounts ('+completed.length+')</div>'+completedHtml+'</div>';
 }
+
+// ── TRAINER: MY VISIT HISTORY (Clients Engagement Tracker) ──────
+var myVisitsData = [];
+
+function openMyVisits(){
+  showScreen('screen-my-visits');
+  document.getElementById('mv-range-filter').value='all';
+  document.getElementById('mv-custom-range-wrap').style.display='none';
+  var statusEl = document.getElementById('my-visits-status');
+  statusEl.style.display='block';
+  statusEl.textContent='Loading…';
+  document.getElementById('my-visits-summary').innerHTML='';
+
+  var url = APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent('Route Plans') +
+    '&email=' + encodeURIComponent(session.email) + '&role=Trainer';
+  fetch(url).then(function(r){return r.json();}).then(function(data){
+    myVisitsData = data.rows || [];
+    statusEl.style.display='none';
+    renderMyVisits();
+  }).catch(function(){ statusEl.textContent='Failed to load your visit history.'; });
+}
+
+function onMyVisitsRangeFilterChange(){
+  var range = document.getElementById('mv-range-filter').value;
+  document.getElementById('mv-custom-range-wrap').style.display = (range==='custom') ? 'grid' : 'none';
+  renderMyVisits();
+}
+
+function myVisitsDateMatches(itemDateStr){
+  var range = document.getElementById('mv-range-filter').value;
+  if(range==='all') return true;
+  if(!itemDateStr) return false;
+  var d = parseAppDate(itemDateStr);
+  if(!d) return true;
+
+  var now = new Date();
+  if(range==='today') return d.toDateString() === now.toDateString();
+  if(range==='week'){
+    var startOfWeek = new Date(now); startOfWeek.setDate(now.getDate()-now.getDay()); startOfWeek.setHours(0,0,0,0);
+    var endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate()+7);
+    return d >= startOfWeek && d < endOfWeek;
+  }
+  if(range==='month') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+  if(range==='year') return d.getFullYear()===now.getFullYear();
+  if(range==='custom'){
+    var fromVal = document.getElementById('mv-date-from').value;
+    var toVal = document.getElementById('mv-date-to').value;
+    var itemIso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(fromVal && itemIso < fromVal) return false;
+    if(toVal && itemIso > toVal) return false;
+    return true;
+  }
+  return true;
+}
+
+function getFilteredMyVisits(){
+  return myVisitsData.filter(function(r){ return myVisitsDateMatches(r['Date']); });
+}
+
+function renderMyVisits(){
+  var filtered = getFilteredMyVisits();
+  var el = document.getElementById('my-visits-summary');
+  if(!filtered.length){
+    el.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:10px 0">No visits recorded for this range.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="section"><div class="section-title">📋 Visits ('+filtered.length+')</div>' +
+    filtered.map(function(r){
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:12.5px;line-height:1.8">'+
+        '<strong>'+(r['Shop Name']||'—')+'</strong><br>'+
+        '<span style="color:var(--text-m)">📅 '+(r['Date']||'')+' · 📍 '+(r['Location']||'')+'</span><br>'+
+        (r['Shop Owner Phone'] ? ('☎️ '+r['Shop Owner Phone']+'<br>') : '') +
+        (r['Purpose'] ? ('🎯 '+r['Purpose']+'<br>') : '') +
+        (r['Client Feedback'] ? ('💬 '+r['Client Feedback']) : '') +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
 
 function statusDot(status){
   var color = status==='overdue' ? '#dc2626' : status==='credit' ? '#f59e0b' : status==='pending' ? '#2563eb' : '#16a34a';
@@ -2778,6 +2896,7 @@ function setFormType(type){
   document.getElementById('install-status-tabs').style.display = (type==='install') ? 'flex' : 'none';
   document.getElementById('dash-devicepay-summary').style.display = (type==='devicepay') ? 'block' : 'none';
   document.getElementById('dash-shop-filter-wrap').style.display = (type==='devicepay') ? 'block' : 'none';
+  document.getElementById('dash-export-pdf-wrap').style.display = (type==='devicepay' || type==='route') ? 'block' : 'none';
   document.getElementById('dash-filters').style.display = (type==='users') ? 'none' : 'flex';
   document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
   document.getElementById('dash-trainer-filter').value='';
@@ -3082,16 +3201,20 @@ function paymentStatusDot(row){
   return '';
 }
 
-function renderGenericList(){
+function getFilteredDashItems(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
   var shopFilter = dashFormType==='devicepay' ? (document.getElementById('dash-shop-filter').value||'').trim().toLowerCase() : '';
-  var filtered = dashAllItems.filter(function(x){
+  return dashAllItems.filter(function(x){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
       (!shopFilter || String(x['Shop ID']||'').toLowerCase().indexOf(shopFilter)!==-1 || String(x['Shop Name']||'').toLowerCase().indexOf(shopFilter)!==-1) &&
       dateMatches(x['Date']);
   });
+}
+
+function renderGenericList(){
+  var filtered = getFilteredDashItems();
   var listEl = document.getElementById('dash-list');
   listEl.innerHTML='';
   document.getElementById('dash-empty').style.display = filtered.length ? 'none' : 'block';
@@ -3358,6 +3481,218 @@ function deleteUser(email, btnEl){
   .catch(function(){ alert('Network error.'); row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); });
 }
 
+// ── PDF EXPORT (shared engine) ───────────────────────────────────
+function todayStamp(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// opts: { title, subtitle, columns:[{header,dataKey}], rows:[obj...], filename, extraSections:[{heading,columns,rows}] }
+function exportPdfReport(opts){
+  var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+  if(!jsPDFCtor){ alert('PDF library failed to load — check your internet connection and try again.'); return; }
+
+  var doc = new jsPDFCtor({orientation:'landscape', unit:'pt', format:'a4'});
+  var pageWidth = doc.internal.pageSize.getWidth();
+  var pageHeight = doc.internal.pageSize.getHeight();
+
+  doc.setFontSize(16); doc.setFont(undefined,'bold');
+  doc.text(opts.title, 40, 40);
+  doc.setFontSize(9); doc.setFont(undefined,'normal'); doc.setTextColor(107,114,128);
+  doc.text(opts.subtitle||'', 40, 58);
+  doc.text('Generated: ' + new Date().toLocaleString('en-KE'), pageWidth-40, 40, {align:'right'});
+  doc.setTextColor(17,24,39);
+
+  var startY = 75;
+  if(opts.rows && opts.rows.length){
+    doc.autoTable({
+      startY: startY,
+      head: [opts.columns.map(function(c){return c.header;})],
+      body: opts.rows.map(function(r){ return opts.columns.map(function(c){ var v=r[c.dataKey]; return (v!==undefined && v!==null && v!=='') ? String(v) : '—'; }); }),
+      styles:{fontSize:8, cellPadding:4, overflow:'linebreak'},
+      headStyles:{fillColor:[37,99,235], textColor:255},
+      alternateRowStyles:{fillColor:[249,250,251]},
+      margin:{left:40,right:40}
+    });
+    startY = doc.lastAutoTable.finalY + 24;
+  } else {
+    doc.setFontSize(11);
+    doc.text('No records found for the selected filters.', 40, startY);
+    startY += 20;
+  }
+
+  (opts.extraSections||[]).forEach(function(sec){
+    if(startY > pageHeight-100){ doc.addPage(); startY = 40; }
+    doc.setFontSize(11); doc.setFont(undefined,'bold'); doc.setTextColor(17,24,39);
+    var heading = doc.splitTextToSize(sec.heading, pageWidth-80);
+    doc.text(heading, 40, startY);
+    startY += heading.length*13 + 6;
+    doc.setFont(undefined,'normal');
+
+    if(sec.rows && sec.rows.length){
+      doc.autoTable({
+        startY:startY,
+        head:[sec.columns.map(function(c){return c.header;})],
+        body:sec.rows.map(function(r){return sec.columns.map(function(c){ var v=r[c.dataKey]; return (v!==undefined && v!==null && v!=='') ? String(v) : '—'; });}),
+        styles:{fontSize:7.5, cellPadding:3, overflow:'linebreak'},
+        headStyles:{fillColor:[22,163,74], textColor:255},
+        margin:{left:40,right:40}
+      });
+      startY = doc.lastAutoTable.finalY + 20;
+    } else {
+      doc.setFontSize(9); doc.setTextColor(107,114,128);
+      doc.text('No repayment history recorded.', 40, startY);
+      doc.setTextColor(17,24,39);
+      startY += 20;
+    }
+  });
+
+  doc.save(opts.filename);
+}
+
+function getDashRangeLabel(rangeSelId, fromId, toId){
+  var range = document.getElementById(rangeSelId).value;
+  var labels = {all:'All time', today:'Today', week:'This Week', month:'This Month', year:'This Year'};
+  if(range==='custom'){
+    var f=document.getElementById(fromId).value, t=document.getElementById(toId).value;
+    return 'Custom range: ' + (f||'…') + ' to ' + (t||'…');
+  }
+  return labels[range] || 'All time';
+}
+
+// ── MANAGER DASHBOARD: EXPORT PDF (Device Payment Reports / Clients Engagement Tracker) ──
+function exportDashPdf(){
+  var rows = getFilteredDashItems();
+  if(dashFormType==='route'){
+    exportPdfReport({
+      title: 'Clients Engagement Tracker',
+      subtitle: buildDashSubtitle(rows.length + ' visit(s)'),
+      columns: [
+        {header:'Date', dataKey:'Date'},
+        {header:'Trainer', dataKey:'Trainer Name'},
+        {header:'County', dataKey:'County'},
+        {header:'Shop Name', dataKey:'Shop Name'},
+        {header:'Location', dataKey:'Location'},
+        {header:'Owner Phone', dataKey:'Shop Owner Phone'},
+        {header:'Purpose', dataKey:'Purpose'},
+        {header:'Client Feedback', dataKey:'Client Feedback'}
+      ],
+      rows: rows,
+      filename: 'clients-engagement-tracker_' + todayStamp() + '.pdf'
+    });
+  } else if(dashFormType==='devicepay'){
+    exportDevicePayPdfWithHistory(rows, buildDashSubtitle(rows.length + ' record(s)'), 'device-payment-report_' + todayStamp() + '.pdf', 'dash-export-pdf-btn');
+  }
+}
+
+function buildDashSubtitle(countLabel){
+  var bits = [getDashRangeLabel('dash-range-filter','dash-date-from','dash-date-to')];
+  var trainerFilter = document.getElementById('dash-trainer-filter').value;
+  var countyFilter = document.getElementById('dash-county-filter').value;
+  var shopFilter = document.getElementById('dash-shop-filter') ? document.getElementById('dash-shop-filter').value : '';
+  if(trainerFilter) bits.push('Trainer: '+trainerFilter);
+  if(countyFilter) bits.push('County: '+countyFilter);
+  if(shopFilter) bits.push('Shop search: "'+shopFilter+'"');
+  bits.push(countLabel);
+  return bits.join(' · ');
+}
+
+// Fetches the full repayment history (deposit + every installment/cash
+// payment) for each unique shop among `rows`, scoped down to only the sale
+// records that are actually present in `rows` — so the exported history
+// matches exactly what's on screen under the current filters, not a shop's
+// entire history regardless of date range.
+function exportDevicePayPdfWithHistory(rows, subtitle, filename, btnId){
+  var btn = btnId ? document.getElementById(btnId) : document.activeElement;
+  var origText = btn ? btn.textContent : '';
+  if(btn){ btn.disabled=true; btn.textContent='Preparing PDF…'; }
+
+  var uniqueShopIds = Array.from(new Set(rows.map(function(r){return String(r['Shop ID']||'');}).filter(Boolean)));
+  var filteredPaymentIds = {};
+  rows.forEach(function(r){ if(r['Payment ID']) filteredPaymentIds[String(r['Payment ID'])]=true; });
+
+  Promise.all(uniqueShopIds.map(function(id){
+    var url = APPS_SCRIPT_URL + '?action=getPaymentHistory&shopId=' + encodeURIComponent(id) +
+      '&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){return d.sales||[];}).catch(function(){return [];});
+  })).then(function(results){
+    var allSales = [].concat.apply([], results);
+    var relevantSales = allSales.filter(function(s){ return filteredPaymentIds[String(s.paymentId)]; });
+
+    var extraSections = relevantSales.map(function(sale){
+      return {
+        heading: '📜 ' + (sale.shopName||'Shop') + ' (ID: ' + sale.shopId + ') — ' + (sale.trainerName||'') + ' · ' + (sale.paymentMethod||'') + ' · Balance: KES ' + num(sale.currentBalance).toLocaleString(),
+        columns: [
+          {header:'Type', dataKey:'type'},
+          {header:'Date', dataKey:'date'},
+          {header:'Amount (KES)', dataKey:'amount'},
+          {header:'Balance After (KES)', dataKey:'balanceAfter'},
+          {header:'Recorded By', dataKey:'recordedBy'},
+          {header:'M-Pesa Message', dataKey:'mpesaMessage'}
+        ],
+        rows: (sale.timeline||[]).map(function(t){
+          return {
+            type:t.type, date:t.date,
+            amount:num(t.amount).toLocaleString(),
+            balanceAfter:num(t.balanceAfter).toLocaleString(),
+            recordedBy:t.recordedBy||'', mpesaMessage:t.mpesaMessage||''
+          };
+        })
+      };
+    });
+
+    exportPdfReport({
+      title: 'Device Payment Report',
+      subtitle: subtitle,
+      columns: [
+        {header:'Date', dataKey:'Date'},
+        {header:'Trainer', dataKey:'Trainer Name'},
+        {header:'Shop ID', dataKey:'Shop ID'},
+        {header:'Shop Name', dataKey:'Shop Name'},
+        {header:'Method', dataKey:'Payment Method'},
+        {header:'Device Price', dataKey:'Device Price'},
+        {header:'Amount Paid', dataKey:'Amount Paid'},
+        {header:'Balance', dataKey:'Balance'},
+        {header:'Status', dataKey:'Status'}
+      ],
+      rows: rows,
+      filename: filename,
+      extraSections: extraSections
+    });
+
+    if(btn){ btn.disabled=false; btn.textContent=origText||'📄 Export PDF (current filters)'; }
+  }).catch(function(){
+    if(btn){ btn.disabled=false; btn.textContent=origText||'📄 Export PDF (current filters)'; }
+    alert('Failed to prepare the full repayment history for export. Please check your connection and try again.');
+  });
+}
+
+// ── TRAINER: EXPORT PDF (My Device Payments / My Visit History) ──
+function exportMyPaymentsPdf(){
+  var rows = myPaymentsData.filter(function(r){ return myDateMatches(r['Date']); });
+  var subtitle = getDashRangeLabel('my-range-filter','my-date-from','my-date-to') + ' · ' + rows.length + ' record(s)';
+  exportDevicePayPdfWithHistory(rows, subtitle, 'my-device-payments_' + todayStamp() + '.pdf', 'my-payments-export-pdf-btn');
+}
+
+function exportMyVisitsPdf(){
+  var rows = getFilteredMyVisits();
+  exportPdfReport({
+    title: 'My Visit History — Clients Engagement Tracker',
+    subtitle: getDashRangeLabel('mv-range-filter','mv-date-from','mv-date-to') + ' · ' + rows.length + ' visit(s)',
+    columns: [
+      {header:'Date', dataKey:'Date'},
+      {header:'County', dataKey:'County'},
+      {header:'Shop Name', dataKey:'Shop Name'},
+      {header:'Location', dataKey:'Location'},
+      {header:'Owner Phone', dataKey:'Shop Owner Phone'},
+      {header:'Purpose', dataKey:'Purpose'},
+      {header:'Client Feedback', dataKey:'Client Feedback'}
+    ],
+    rows: rows,
+    filename: 'my-visit-history_' + todayStamp() + '.pdf'
+  });
+}
+
 // ── INIT ─────────────────────────────────────────────────────
 if(loadSession()){ goHome(); } else { showScreen('screen-login'); }
 addVisit();
@@ -3369,5 +3704,7 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </body>
 </html>
