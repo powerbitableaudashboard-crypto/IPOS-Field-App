@@ -1747,7 +1747,7 @@ function openDeviceSettings(){
       if(data.credit){ setVal('set-device-amount-credit', data.credit); creditStatus.textContent='Current default: KES '+Number(data.credit).toLocaleString(); }
       else { creditStatus.textContent='No default set yet.'; }
       setVal('set-deposit', data.depositAmount||'');
-      setVal('set-facility', data.facilityAmount||'');
+      setVal('set-facility', data.facilityAmount||''); 
       setVal('set-installment-amount', data.installmentAmount||'');
       setVal('set-installment-count', data.installmentCount||'');
     })
