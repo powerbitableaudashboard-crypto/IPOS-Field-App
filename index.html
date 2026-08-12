@@ -267,7 +267,7 @@ input[type=file]{display:none}
       <div class="form-card purple" onclick="goForm('screen-survey')">
         <div class="form-card-icon">🏪</div>
         <div class="form-card-title">Shop Survey(Owner's Onboarding)</div>
-        <div class="form-card-desc">Onboard a new shop</div>
+        <div class="form-card-desc">Shop Owners Training</div>
       </div>
       <div class="form-card orange" onclick="goForm('screen-install')">
         <div class="form-card-icon">🔧</div>
@@ -1747,7 +1747,7 @@ function openDeviceSettings(){
       if(data.credit){ setVal('set-device-amount-credit', data.credit); creditStatus.textContent='Current default: KES '+Number(data.credit).toLocaleString(); }
       else { creditStatus.textContent='No default set yet.'; }
       setVal('set-deposit', data.depositAmount||'');
-      setVal('set-facility', data.facilityAmount||''); 
+      setVal('set-facility', data.facilityAmount||'');
       setVal('set-installment-amount', data.installmentAmount||'');
       setVal('set-installment-count', data.installmentCount||'');
     })
