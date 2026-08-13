@@ -890,7 +890,7 @@ input[type=file]{display:none}
 <div class="screen" id="screen-shops">
   <div class="app-header">
     <div><h1>Manage Shops</h1><p>View, edit, or delete shop records</p></div>
-    <button class="header-icon-btn" title="View installed shops" onclick="openManageShops()">👁️</button>
+    <button class="header-icon-btn" title="View installed shops" onclick="openInstalledShops()">🏗️</button>
     <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
   </div>
   <div class="form-body">
@@ -933,6 +933,55 @@ input[type=file]{display:none}
     <button class="submit-btn" id="shops-export-pdf-btn" style="margin-top:0;margin-bottom:12px;background:#7c3aed" onclick="exportShopsPdf()">📄 Export As PDF</button>
     <div id="shops-status" style="font-size:12px;color:var(--text-m);margin-bottom:10px"></div>
     <div id="shops-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ MANAGER/ADMIN: INSTALLED SHOPS (from Installation form) -->
+<div class="screen" id="screen-installed-shops">
+  <div class="app-header">
+    <div><h1>Installed Shops</h1><p>From the Installation form — view, edit, or delete</p></div>
+    <button class="back-btn" onclick="showScreen('screen-shops')">← Back</button>
+  </div>
+  <div class="form-body">
+    <div class="field"><input type="text" id="ishop-search" placeholder="Filter by shop name or ID…" oninput="renderInstalledShopsList()"></div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px">
+      <div class="two-col">
+        <div class="field" style="margin-bottom:0"><label>Trainer</label>
+          <select id="ishop-trainer-filter" onchange="renderInstalledShopsList()"><option value="">All trainers</option></select>
+        </div>
+        <div class="field" style="margin-bottom:0"><label>County</label>
+          <select id="ishop-county-filter" onchange="renderInstalledShopsList()"><option value="">All counties</option></select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0"><label>Installed date range</label>
+        <select id="ishop-range-filter" onchange="onInstalledShopsRangeFilterChange()">
+          <option value="all">All time</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+          <option value="custom">Custom range…</option>
+        </select>
+      </div>
+      <div class="two-col" id="ishop-custom-range-wrap" style="display:none">
+        <div class="field" style="margin-bottom:0"><label>From</label>
+          <input type="date" id="ishop-date-from" onchange="renderInstalledShopsList()">
+        </div>
+        <div class="field" style="margin-bottom:0"><label>To</label>
+          <input type="date" id="ishop-date-to" onchange="renderInstalledShopsList()">
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--text-m);margin-bottom:10px">
+      <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#16a34a;margin-right:4px"></span>Approved&nbsp;&nbsp;
+      <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#f59e0b;margin-right:4px"></span>Pending&nbsp;&nbsp;
+      <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#dc2626;margin-right:4px"></span>Rejected
+    </div>
+    <button class="submit-btn" id="ishop-export-pdf-btn" style="margin-top:0;margin-bottom:12px;background:#7c3aed" onclick="exportInstalledShopsPdf()">📄 Export As PDF</button>
+    <div id="ishop-status" style="font-size:12px;color:var(--text-m);margin-bottom:10px"></div>
+    <div id="ishop-list"></div>
   </div>
 </div>
 
@@ -1065,6 +1114,9 @@ input[type=file]{display:none}
       <div class="section-title">🔧 Installation details</div>
       <div class="field"><label for="i-shopname">Shop name<span class="req">*</span></label>
         <input type="text" id="i-shopname" placeholder="e.g. Kamau General Store" oninput="calcProgress('i')">
+      </div>
+      <div class="field"><label for="i-shopid">Shop ID <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
+        <input type="text" id="i-shopid" placeholder="e.g. 123456">
       </div>
       <div class="field"><label for="i-ownername">Shop owner name<span class="req">*</span></label>
         <input type="text" id="i-ownername" placeholder="e.g. John Kamau" oninput="calcProgress('i')">
@@ -1540,7 +1592,7 @@ function exportShopsPdf(){
   if(btn){ btn.disabled=true; btn.textContent='Preparing PDF…'; }
   try{
     exportPdfReport({
-      title: 'Installed Shops',
+      title: 'Shop Payment Records',
       subtitle: shopsFilterSubtitle(rows.length + ' shop(s)'),
       columns: [
         {header:'Shop ID', dataKey:'shopId'},
@@ -1560,6 +1612,211 @@ function exportShopsPdf(){
         };
       }),
       filename: 'installed-shops_' + todayStamp() + '.pdf'
+    });
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent=origText; }
+  }
+}
+
+// ── MANAGER/ADMIN: INSTALLED SHOPS (from the Installation form) ──
+var allInstalledShops = [];
+
+function openInstalledShops(){
+  showScreen('screen-installed-shops');
+  var statusEl = document.getElementById('ishop-status');
+  statusEl.textContent='Loading…';
+  document.getElementById('ishop-list').innerHTML='';
+  document.getElementById('ishop-search').value='';
+  document.getElementById('ishop-trainer-filter').value='';
+  document.getElementById('ishop-county-filter').value='';
+  document.getElementById('ishop-range-filter').value='all';
+  document.getElementById('ishop-custom-range-wrap').style.display='none';
+  document.getElementById('ishop-date-from').value='';
+  document.getElementById('ishop-date-to').value='';
+  fetch(APPS_SCRIPT_URL + '?action=getInstalls&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
+    .then(function(r){return r.json();})
+    .then(function(data){
+      allInstalledShops = data.installs || [];
+      statusEl.textContent = allInstalledShops.length + ' installed shop(s) on record.';
+      populateInstalledShopsFilters();
+      renderInstalledShopsList();
+    })
+    .catch(function(){ statusEl.textContent='Failed to load installed shops.'; });
+}
+
+function populateInstalledShopsFilters(){
+  var trainerSel = document.getElementById('ishop-trainer-filter');
+  var countySel = document.getElementById('ishop-county-filter');
+  var curTrainer = trainerSel.value, curCounty = countySel.value;
+  var names = [], counties = [];
+  allInstalledShops.forEach(function(s){
+    if(s.trainerName && names.indexOf(s.trainerName)===-1) names.push(s.trainerName);
+    if(s.county && counties.indexOf(s.county)===-1) counties.push(s.county);
+  });
+  names.sort(); counties.sort();
+  trainerSel.innerHTML = '<option value="">All trainers</option>' + names.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('');
+  countySel.innerHTML = '<option value="">All counties</option>' + counties.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  if(names.indexOf(curTrainer)!==-1) trainerSel.value = curTrainer;
+  if(counties.indexOf(curCounty)!==-1) countySel.value = curCounty;
+}
+
+function onInstalledShopsRangeFilterChange(){
+  var range = document.getElementById('ishop-range-filter').value;
+  document.getElementById('ishop-custom-range-wrap').style.display = (range==='custom') ? 'grid' : 'none';
+  renderInstalledShopsList();
+}
+
+function installedShopsDateMatches(s){
+  var range = document.getElementById('ishop-range-filter').value;
+  if(range==='all') return true;
+  if(!s.date) return true; // no date recorded — don't hide it
+  var d = parseAppDate(s.date);
+  if(!d) return true;
+
+  var now = new Date();
+  if(range==='today') return d.toDateString() === now.toDateString();
+  if(range==='week'){
+    var startOfWeek = new Date(now); startOfWeek.setDate(now.getDate()-now.getDay()); startOfWeek.setHours(0,0,0,0);
+    var endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate()+7);
+    return d >= startOfWeek && d < endOfWeek;
+  }
+  if(range==='month') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+  if(range==='year') return d.getFullYear()===now.getFullYear();
+  if(range==='custom'){
+    var fromVal = document.getElementById('ishop-date-from').value;
+    var toVal = document.getElementById('ishop-date-to').value;
+    var itemIso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(fromVal && itemIso < fromVal) return false;
+    if(toVal && itemIso > toVal) return false;
+    return true;
+  }
+  return true;
+}
+
+function getFilteredInstalledShops(){
+  var q = (v('ishop-search')||'').toLowerCase();
+  var trainerFilter = document.getElementById('ishop-trainer-filter').value;
+  var countyFilter = document.getElementById('ishop-county-filter').value;
+  return allInstalledShops.filter(function(s){
+    return (!q || (s.shopName||'').toLowerCase().indexOf(q)!==-1 || String(s.shopId||'').toLowerCase().indexOf(q)!==-1) &&
+      (!trainerFilter || s.trainerName===trainerFilter) &&
+      (!countyFilter || s.county===countyFilter) &&
+      installedShopsDateMatches(s);
+  });
+}
+
+function installedShopsFilterSubtitle(countLabel){
+  var bits = [getDashRangeLabel('ishop-range-filter','ishop-date-from','ishop-date-to')];
+  var trainerFilter = document.getElementById('ishop-trainer-filter').value;
+  var countyFilter = document.getElementById('ishop-county-filter').value;
+  var q = v('ishop-search');
+  if(trainerFilter) bits.push('Trainer: '+trainerFilter);
+  if(countyFilter) bits.push('County: '+countyFilter);
+  if(q) bits.push('Search: "'+q+'"');
+  bits.push(countLabel);
+  return bits.join(' · ');
+}
+
+function installedShopStatusDot(status){
+  var s = (status||'').toUpperCase();
+  if(s==='APPROVED') return '#16a34a';
+  if(s==='REJECTED') return '#dc2626';
+  return '#f59e0b'; // PENDING or anything else
+}
+
+function renderInstalledShopsList(){
+  var filtered = getFilteredInstalledShops();
+  var el = document.getElementById('ishop-list');
+  if(!filtered.length){
+    el.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:10px 0">No installed shops match these filters.</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(function(s, idx){
+    return '<div class="dash-item">' +
+      '<div class="dash-item-top"><div class="dash-item-shop">'+
+        '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+installedShopStatusDot(s.status)+';margin-right:6px"></span>'+
+        '🏗️ '+(s.shopName||'—')+'</div></div>' +
+      '<div class="dash-item-body" style="line-height:2">' +
+        '<strong>Shop ID:</strong> '+(s.shopId||'—')+'<br>' +
+        '<strong>Date:</strong> '+(s.date||'—')+'<br>' +
+        '<strong>Trainer:</strong> '+(s.trainerName||'—')+'<br>' +
+        '<strong>County:</strong> '+(s.county||'—')+'<br>' +
+        '<strong>Owner:</strong> '+(s.ownerName||'—')+' · '+(s.ownerPhone||'—')+'<br>' +
+        '<strong>Location:</strong> '+(s.shopLocation||'—')+'<br>' +
+        '<strong>Device Type:</strong> '+(s.deviceType||'—')+'<br>' +
+        '<strong>Status:</strong> '+(s.status||'—') +
+      '</div>' +
+      '<div class="dash-item-actions">' +
+        '<button class="dash-approve-btn" style="background:var(--accent)" onclick=\'editInstalledShopPrompt('+idx+')\'>✏️ Edit</button>' +
+        '<button class="dash-reject-btn" onclick=\'deleteInstalledShopPrompt('+idx+')\'>🗑️ Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  // stash the currently-filtered array so the index-based prompt handlers below can find the right record
+  window.__ishopFiltered = filtered;
+}
+
+function editInstalledShopPrompt(filteredIndex){
+  var shop = window.__ishopFiltered[filteredIndex];
+  if(!shop) return;
+  var newId = window.prompt('Shop ID:', shop.shopId||'');
+  if(newId===null) return;
+  var newName = window.prompt('Shop Name:', shop.shopName||'');
+  if(newName===null) return;
+
+  fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({
+    formType:'editInstall', installId: shop.installId,
+    newShopId: newId.trim(), newShopName: newName.trim(),
+    requestedBy: session.email, requestedByRole: session.role
+  })})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.status==='success'){ openInstalledShops(); }
+    else { alert('Failed to update: ' + (data.message||'Unknown error')); }
+  })
+  .catch(function(){ alert('Network error — please try again.'); });
+}
+
+function deleteInstalledShopPrompt(filteredIndex){
+  var shop = window.__ishopFiltered[filteredIndex];
+  if(!shop) return;
+  if(!window.confirm('Delete the installation record for "'+(shop.shopName||shop.installId)+'"? This cannot be undone.')) return;
+
+  fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({
+    formType:'deleteInstall', installId: shop.installId,
+    requestedBy: session.email, requestedByRole: session.role
+  })})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.status==='success'){ openInstalledShops(); }
+    else { alert('Failed to delete: ' + (data.message||'Unknown error')); }
+  })
+  .catch(function(){ alert('Network error — please try again.'); });
+}
+
+function exportInstalledShopsPdf(){
+  var rows = getFilteredInstalledShops();
+  var btn = document.getElementById('ishop-export-pdf-btn');
+  var origText = btn ? btn.textContent : '';
+  if(btn){ btn.disabled=true; btn.textContent='Preparing PDF…'; }
+  try{
+    exportPdfReport({
+      title: 'Installed Shops (from Installation Form)',
+      subtitle: installedShopsFilterSubtitle(rows.length + ' shop(s)'),
+      columns: [
+        {header:'Shop ID', dataKey:'shopId'},
+        {header:'Shop Name', dataKey:'shopName'},
+        {header:'Date', dataKey:'date'},
+        {header:'Trainer', dataKey:'trainerName'},
+        {header:'County', dataKey:'county'},
+        {header:'Owner', dataKey:'ownerName'},
+        {header:'Owner Phone', dataKey:'ownerPhone'},
+        {header:'Location', dataKey:'shopLocation'},
+        {header:'Device Type', dataKey:'deviceType'},
+        {header:'Status', dataKey:'status'}
+      ],
+      rows: rows,
+      filename: 'installed-shops-form_' + todayStamp() + '.pdf'
     });
   } finally {
     if(btn){ btn.disabled=false; btn.textContent=origText; }
@@ -2832,7 +3089,7 @@ function submitForm(type){
     if(!payload.ownerImage) missing.push('Owner app photo');
   }
   else if(type==='install'){
-    payload.shopName=v('i-shopname'); payload.ownerName=v('i-ownername'); payload.ownerPhone=v('i-ownerphone');
+    payload.shopName=v('i-shopname'); payload.shopId=v('i-shopid'); payload.ownerName=v('i-ownername'); payload.ownerPhone=v('i-ownerphone');
     payload.shopLocation=v('i-location');
     payload.deviceType=document.getElementById('i-devicetype').value;
     payload.notes=v('i-notes');
@@ -2999,6 +3256,7 @@ function resetInstallForm(){
   document.getElementById('i-rejected').style.display='none';
   document.getElementById('i-submit').style.display='flex';
   document.getElementById('i-shopname').value='';
+  document.getElementById('i-shopid').value='';
   document.getElementById('i-ownername').value='';
   document.getElementById('i-ownerphone').value='';
   document.getElementById('i-location').value='';
@@ -3847,7 +4105,7 @@ function exportMyVisitsPdf(){
       {header:'Client Feedback', dataKey:'Client Feedback'}
     ],
     rows: rows,
-    filename: 'my-visit-history_' + todayStamp() + '.pdf' 
+    filename: 'my-visit-history_' + todayStamp() + '.pdf'
   });
 }
 
