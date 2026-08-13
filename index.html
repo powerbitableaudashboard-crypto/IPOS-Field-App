@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +14,8 @@
 <link rel="apple-touch-icon" href="Icon-192.png">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+/* Global bold text for visibility — overrides all inline/utility font-weight values */
+*,*::before,*::after,input,select,textarea,button,option{font-weight:700!important}
 :root{
   --accent:#2563eb;--accent-dark:#1d4ed8;
   --green:#16a34a;--green-bg:#f0fdf4;--green-border:#bbf7d0;
@@ -887,15 +890,47 @@ input[type=file]{display:none}
 <div class="screen" id="screen-shops">
   <div class="app-header">
     <div><h1>Manage Shops</h1><p>View, edit, or delete shop records</p></div>
+    <button class="header-icon-btn" title="View installed shops" onclick="openManageShops()">👁️</button>
     <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
   </div>
   <div class="form-body">
     <div class="field"><input type="text" id="shops-search" placeholder="Filter by shop name or ID…" oninput="renderShopsList()"></div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px">
+      <div class="two-col">
+        <div class="field" style="margin-bottom:0"><label>Trainer</label>
+          <select id="shops-trainer-filter" onchange="renderShopsList()"><option value="">All trainers</option></select>
+        </div>
+        <div class="field" style="margin-bottom:0"><label>County</label>
+          <select id="shops-county-filter" onchange="renderShopsList()"><option value="">All counties</option></select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0"><label>Installed date range</label>
+        <select id="shops-range-filter" onchange="onShopsRangeFilterChange()">
+          <option value="all">All time</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+          <option value="custom">Custom range…</option>
+        </select>
+      </div>
+      <div class="two-col" id="shops-custom-range-wrap" style="display:none">
+        <div class="field" style="margin-bottom:0"><label>From</label>
+          <input type="date" id="shops-date-from" onchange="renderShopsList()">
+        </div>
+        <div class="field" style="margin-bottom:0"><label>To</label>
+          <input type="date" id="shops-date-to" onchange="renderShopsList()">
+        </div>
+      </div>
+    </div>
+
     <div style="font-size:11px;color:var(--text-m);margin-bottom:10px">
       <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#16a34a;margin-right:4px"></span>Cash&nbsp;&nbsp;
       <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#f59e0b;margin-right:4px"></span>Credit&nbsp;&nbsp;
       <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#dc2626;margin-right:4px"></span>Overdue
     </div>
+    <button class="submit-btn" id="shops-export-pdf-btn" style="margin-top:0;margin-bottom:12px;background:#7c3aed" onclick="exportShopsPdf()">📄 Export As PDF</button>
     <div id="shops-status" style="font-size:12px;color:var(--text-m);margin-bottom:10px"></div>
     <div id="shops-list"></div>
   </div>
@@ -1400,14 +1435,135 @@ function openManageShops(){
   var statusEl = document.getElementById('shops-status');
   statusEl.textContent='Loading…';
   document.getElementById('shops-list').innerHTML='';
+  document.getElementById('shops-search').value='';
+  document.getElementById('shops-trainer-filter').value='';
+  document.getElementById('shops-county-filter').value='';
+  document.getElementById('shops-range-filter').value='all';
+  document.getElementById('shops-custom-range-wrap').style.display='none';
+  document.getElementById('shops-date-from').value='';
+  document.getElementById('shops-date-to').value='';
   fetch(APPS_SCRIPT_URL + '?action=listShops&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
     .then(function(r){return r.json();})
     .then(function(data){
       allShops = data.shops || [];
       statusEl.textContent = allShops.length + ' shop(s) on record.';
+      populateShopsFilters();
       renderShopsList();
     })
     .catch(function(){ statusEl.textContent='Failed to load shops.'; });
+}
+
+function populateShopsFilters(){
+  var trainerSel = document.getElementById('shops-trainer-filter');
+  var countySel = document.getElementById('shops-county-filter');
+  var curTrainer = trainerSel.value, curCounty = countySel.value;
+  var names = [], counties = [];
+  allShops.forEach(function(s){
+    if(s.trainerName && names.indexOf(s.trainerName)===-1) names.push(s.trainerName);
+    if(s.county && counties.indexOf(s.county)===-1) counties.push(s.county);
+  });
+  names.sort(); counties.sort();
+  trainerSel.innerHTML = '<option value="">All trainers</option>' + names.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('');
+  countySel.innerHTML = '<option value="">All counties</option>' + counties.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  if(names.indexOf(curTrainer)!==-1) trainerSel.value = curTrainer;
+  if(counties.indexOf(curCounty)!==-1) countySel.value = curCounty;
+}
+
+function onShopsRangeFilterChange(){
+  var range = document.getElementById('shops-range-filter').value;
+  document.getElementById('shops-custom-range-wrap').style.display = (range==='custom') ? 'grid' : 'none';
+  renderShopsList();
+}
+
+// The shop record's installed date can arrive under a few different keys
+// depending on how the backend built it — try each known one.
+function shopInstalledDate(s){
+  return s.installedDate || s.installDate || s.firstSeenDate || s.firstRecordDate || s.createdAt || s.date || '';
+}
+
+function shopsDateMatches(s){
+  var range = document.getElementById('shops-range-filter').value;
+  if(range==='all') return true;
+  var raw = shopInstalledDate(s);
+  if(!raw) return true; // no date recorded for this shop — don't hide it
+  var d = parseAppDate(raw);
+  if(!d) return true;
+
+  var now = new Date();
+  if(range==='today') return d.toDateString() === now.toDateString();
+  if(range==='week'){
+    var startOfWeek = new Date(now); startOfWeek.setDate(now.getDate()-now.getDay()); startOfWeek.setHours(0,0,0,0);
+    var endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate()+7);
+    return d >= startOfWeek && d < endOfWeek;
+  }
+  if(range==='month') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+  if(range==='year') return d.getFullYear()===now.getFullYear();
+  if(range==='custom'){
+    var fromVal = document.getElementById('shops-date-from').value;
+    var toVal = document.getElementById('shops-date-to').value;
+    var itemIso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(fromVal && itemIso < fromVal) return false;
+    if(toVal && itemIso > toVal) return false;
+    return true;
+  }
+  return true;
+}
+
+function getFilteredShops(){
+  var q = (v('shops-search')||'').toLowerCase();
+  var trainerFilter = document.getElementById('shops-trainer-filter').value;
+  var countyFilter = document.getElementById('shops-county-filter').value;
+  return allShops.filter(function(s){
+    return (!q || (s.shopName||'').toLowerCase().indexOf(q)!==-1 || (s.shopId||'').toLowerCase().indexOf(q)!==-1) &&
+      (!trainerFilter || s.trainerName===trainerFilter) &&
+      (!countyFilter || s.county===countyFilter) &&
+      shopsDateMatches(s);
+  });
+}
+
+function shopsFilterSubtitle(countLabel){
+  var bits = [getDashRangeLabel('shops-range-filter','shops-date-from','shops-date-to')];
+  var trainerFilter = document.getElementById('shops-trainer-filter').value;
+  var countyFilter = document.getElementById('shops-county-filter').value;
+  var q = v('shops-search');
+  if(trainerFilter) bits.push('Trainer: '+trainerFilter);
+  if(countyFilter) bits.push('County: '+countyFilter);
+  if(q) bits.push('Search: "'+q+'"');
+  bits.push(countLabel);
+  return bits.join(' · ');
+}
+
+function exportShopsPdf(){
+  var rows = getFilteredShops();
+  var btn = document.getElementById('shops-export-pdf-btn');
+  var origText = btn ? btn.textContent : '';
+  if(btn){ btn.disabled=true; btn.textContent='Preparing PDF…'; }
+  try{
+    exportPdfReport({
+      title: 'Installed Shops',
+      subtitle: shopsFilterSubtitle(rows.length + ' shop(s)'),
+      columns: [
+        {header:'Shop ID', dataKey:'shopId'},
+        {header:'Shop Name', dataKey:'shopName'},
+        {header:'County', dataKey:'county'},
+        {header:'Trainer', dataKey:'trainerName'},
+        {header:'Status', dataKey:'status'},
+        {header:'Installed Date', dataKey:'installedDateDisplay'},
+        {header:'Records', dataKey:'recordCount'},
+        {header:'Balance (KES)', dataKey:'totalBalanceDisplay'}
+      ],
+      rows: rows.map(function(s){
+        return {
+          shopId: s.shopId, shopName: s.shopName, county: s.county, trainerName: s.trainerName,
+          status: s.status, installedDateDisplay: shopInstalledDate(s), recordCount: s.recordCount,
+          totalBalanceDisplay: s.totalBalance ? Number(s.totalBalance).toLocaleString() : '0'
+        };
+      }),
+      filename: 'installed-shops_' + todayStamp() + '.pdf'
+    });
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent=origText; }
+  }
 }
 
 // ── TRAINER: MY DEVICE PAYMENTS ─────────────────────────────────
@@ -1611,29 +1767,34 @@ function statusDot(status){
 }
 
 function renderShopsList(){
-  var q = (v('shops-search')||'').toLowerCase();
-  var filtered = allShops.filter(function(s){
-    return !q || (s.shopName||'').toLowerCase().indexOf(q)!==-1 || (s.shopId||'').toLowerCase().indexOf(q)!==-1;
-  });
+  var filtered = getFilteredShops();
+  var statusEl = document.getElementById('shops-status');
+  if(statusEl) statusEl.textContent = filtered.length + ' of ' + allShops.length + ' shop(s) shown.';
   var listEl = document.getElementById('shops-list');
   if(!filtered.length){ listEl.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:10px 0">No shops match.</div>'; return; }
   listEl.innerHTML = filtered.map(function(s,i){
+    var installedDate = shopInstalledDate(s);
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">'+
       '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px">'+
       '<div>'+statusDot(s.status)+'<strong>'+(s.shopName||'—')+'</strong> <span style="color:var(--text-m);font-size:12px">(ID: '+(s.shopId||'—')+')</span><br>'+
-      '<span style="font-size:12px;color:var(--text-m);margin-left:15px">'+(s.county||'')+' · '+(s.trainerName||'')+' · '+s.recordCount+' record(s)'+(s.totalBalance>0?' · balance KES '+Number(s.totalBalance).toLocaleString():'')+'</span></div>'+
+      '<span style="font-size:12px;color:var(--text-m);margin-left:15px">'+(s.county||'')+' · '+(s.trainerName||'')+' · '+s.recordCount+' record(s)'+(s.totalBalance>0?' · balance KES '+Number(s.totalBalance).toLocaleString():'')+(installedDate?' · installed '+installedDate:'')+'</span></div>'+
       '<div style="display:flex;gap:6px;flex-shrink:0">'+
+      '<button type="button" onclick="viewShopDetails('+i+')" title="View" style="border:none;background:#eff6ff;color:#1d4ed8;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px">👁️</button>'+
       '<button type="button" onclick="editShopPrompt('+i+')" title="Edit" style="border:none;background:var(--surface-2,#eef2ff);color:var(--accent);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px">✏️</button>'+
       '<button type="button" onclick="deleteShopPrompt('+i+')" title="Delete" style="border:none;background:#fef2f2;color:#b91c1c;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px">🗑️</button>'+
       '</div></div></div>';
   }).join('');
 }
 
+function viewShopDetails(filteredIndex){
+  var filtered = getFilteredShops();
+  var shop = filtered[filteredIndex];
+  if(!shop) return;
+  openPaymentHistory(shop.shopId, shop.shopName);
+}
+
 function editShopPrompt(filteredIndex){
-  var q = (v('shops-search')||'').toLowerCase();
-  var filtered = allShops.filter(function(s){
-    return !q || (s.shopName||'').toLowerCase().indexOf(q)!==-1 || (s.shopId||'').toLowerCase().indexOf(q)!==-1;
-  });
+  var filtered = getFilteredShops();
   var shop = filtered[filteredIndex];
   if(!shop) return;
   var newName = window.prompt('Shop name for ID '+shop.shopId+':', shop.shopName||'');
@@ -1654,10 +1815,7 @@ function editShopPrompt(filteredIndex){
 }
 
 function deleteShopPrompt(filteredIndex){
-  var q = (v('shops-search')||'').toLowerCase();
-  var filtered = allShops.filter(function(s){
-    return !q || (s.shopName||'').toLowerCase().indexOf(q)!==-1 || (s.shopId||'').toLowerCase().indexOf(q)!==-1;
-  });
+  var filtered = getFilteredShops();
   var shop = filtered[filteredIndex];
   if(!shop) return;
   if(!window.confirm('Permanently delete "'+shop.shopName+'" (ID: '+shop.shopId+') and all '+shop.recordCount+' of its payment record(s)? This cannot be undone.')) return;
@@ -3708,3 +3866,4 @@ if('serviceWorker' in navigator){
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </body>
 </html>
+
