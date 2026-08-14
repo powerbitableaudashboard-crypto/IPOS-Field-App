@@ -642,7 +642,7 @@ input[type=file]{display:none}
           <select id="d-req-paytype" onchange="applyDefaultDeviceAmount()">
             <option value="">Select…</option>
             <option value="Cash">Cash</option>
-            <option value="Credit">Credit</option>
+            <option value="Installment">Credit</option>
           </select>
         </div>
       </div>
@@ -2242,7 +2242,7 @@ function applyDefaultDeviceAmount(){
   // delivery, a deposit here just means something was already collected).
   depositWrap.style.display='block';
   var depositHint = document.getElementById('d-req-deposit-hint');
-  if(pt==='Credit'){
+  if(pt==='Installment'){
     if(!depositAmountEdited && deviceAmountDefaults.depositAmount){
       setVal('d-req-deposit', deviceAmountDefaults.depositAmount);
     }
@@ -2253,7 +2253,7 @@ function applyDefaultDeviceAmount(){
     depositHint.textContent = 'Cash is normally collected in full on delivery — only fill this in if something has already been paid upfront.';
   }
 
-  if(pt==='Credit' && (deviceAmountDefaults.depositAmount || deviceAmountDefaults.installmentAmount)){
+  if(pt==='Installment' && (deviceAmountDefaults.depositAmount || deviceAmountDefaults.installmentAmount)){
     var deposit = Number(deviceAmountDefaults.depositAmount)||0;
     var installmentAmt = Number(deviceAmountDefaults.installmentAmount)||0;
     var installmentCount = Number(deviceAmountDefaults.installmentCount)||0;
@@ -3504,7 +3504,7 @@ function renderDevicePaySummary(){
     byTrainer[trainer].balance+=balance;
 
     if(method==='Cash'){ cashCount++; cashTotal+=price; byTrainer[trainer].cash++; }
-    else if(method==='Installment'){ creditCount++; creditTotal+=paid; balanceTotal+=balance; byTrainer[trainer].credit++; }
+    else { creditCount++; creditTotal+=paid; balanceTotal+=balance; byTrainer[trainer].credit++; } // anything not literally 'Cash' is a credit/installment sale — don't require an exact 'Installment' match
 
     if(row['Status']==='Balance Due' && row['Next Payment Date']){
       var due=new Date(row['Next Payment Date']);
