@@ -3655,8 +3655,12 @@ function renderGenericList(){
     Object.keys(row).forEach(function(k){
       if(k==='Row#' || !row[k] || row[k]==='') return;
       var val = String(row[k]);
+      var gpsMatch = val.match(/^(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
       if(/^https?:\/\//.test(val)){
         bodyRows += '<div><strong>'+k+':</strong> <a href="'+val+'" target="_blank">View photo</a></div>';
+      } else if(gpsMatch && /gps/i.test(k)){
+        var mapUrl = 'https://www.google.com/maps?q='+gpsMatch[1]+','+gpsMatch[2];
+        bodyRows += '<div><strong>'+k+':</strong> <a href="'+mapUrl+'" target="_blank">📍 '+val+' (view on map)</a></div>';
       } else {
         bodyRows += '<div><strong>'+k+':</strong> '+val+'</div>';
       }
