@@ -1410,8 +1410,12 @@ function applyGPS(prefix,pos){
 }
 
 function handleGPSErr(prefix,err){
-  var msgs={1:'Location blocked — tap Retry',2:'Go outdoors and tap Retry',3:'Timed out — tap Retry'};
-  setGPS(prefix,msgs[err.code]||'Failed','red');
+  var msgs={
+    1:'Location blocked. Enable it: tap the 🔒/ⓘ icon in your browser address bar → Site settings → Location → Allow, then tap Retry.',
+    2:'Location unavailable — go outdoors or near a window and tap Retry',
+    3:'Timed out — check your connection and tap Retry'
+  };
+  setGPS(prefix,msgs[err.code]||'Failed to get location — tap Retry',err.code===1?'red':'red');
   var rb=document.getElementById(prefix+'-gps-retry');
   if(rb) rb.style.display='block';
 }
@@ -3049,6 +3053,13 @@ function submitForm(type){
   var p=map[type];
   payload.date=window['dateStore_'+p]||nowKEFrontend();
   payload.gps=gpsStr(p);
+
+  // GPS is mandatory — if the trainer blocked location access (or it hasn't
+  // finished capturing yet), block submission entirely rather than letting
+  // "Not captured" silently end up in the report.
+  if(!gpsStore[p]){
+    missing.push('GPS location — tap "Retry GPS" above and allow location access, then try again');
+  }
 
   if(type==='route'){
     var visits=[];
