@@ -553,13 +553,13 @@ input[type=file]{display:none}
       <div id="cr-selected" style="display:none;margin-top:12px">
         <div id="cr-selected-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px"></div>
         <div id="cr-repay-fields">
-          <div class="field"><label for="cr-amount">Amount received (KES)<span class="req">*</span></label>
+          <div class="field"><label for="cr-amount">Amount Received (KES)<span class="req">*</span></label>
             <input type="text" id="cr-amount" inputmode="numeric" placeholder="e.g. Ksh 10,000">
           </div>
-          <div class="field"><label for="cr-mpesa-msg">M-Pesa message<span class="req">*</span></label>
+          <div class="field"><label for="cr-mpesa-msg">M-Pesa Message<span class="req">*</span></label>
             <textarea id="cr-mpesa-msg" style="min-height:60px" placeholder="Paste M-Pesa confirmation text..."></textarea>
           </div>
-          <div class="field"><label>M-Pesa screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
+          <div class="field"><label>M-Pesa Screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
             <div class="photo-box" onclick="document.getElementById('cr-mpesa-file').click()">
               <div class="photo-ph" id="cr-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa confirmation screenshot</small></div>
               <div class="photo-preview" id="cr-mpesa-preview"><img id="cr-mpesa-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('cr-mpesa')">↺ Retake</button></div>
@@ -581,22 +581,22 @@ input[type=file]{display:none}
             <select id="ns-method" onchange="onNewSaleMethodChange()"><option value="">Select…</option>
             <option value="Cash">Cash</option><option value="Installment">Installment (Credit)</option></select>
           </div>
-          <div class="field"><label for="ns-price">Device price (KES)</label>
+          <div class="field"><label for="ns-price">Device Price (KES)</label>
             <input type="text" id="ns-price" inputmode="numeric" placeholder="e.g. Ksh 18,200" oninput="calcNewSaleBalance()">
           </div>
         </div>
-        <div class="field"><label for="ns-custname">Customer name<span class="req">*</span></label>
+        <div class="field"><label for="ns-custname">Customer Name<span class="req">*</span></label>
           <input type="text" id="ns-custname" placeholder="e.g. Jane Wambui">
         </div>
         <div class="two-col">
-          <div class="field"><label for="ns-phone">Customer phone number<span class="req">*</span></label>
+          <div class="field"><label for="ns-phone">Customer Phone Number<span class="req">*</span></label>
             <input type="tel" id="ns-phone" placeholder="0712 345 678">
           </div>
           <div class="field"><label for="ns-shopid">Shop ID<span class="req">*</span></label>
             <input type="text" id="ns-shopid" placeholder="e.g. 456">
           </div>
         </div>
-        <div class="field"><label for="ns-shopname">Shop name<span class="req">*</span></label>
+        <div class="field"><label for="ns-shopname">Shop Name<span class="req">*</span></label>
           <input type="text" id="ns-shopname" placeholder="e.g. Kamau General Store">
         </div>
         <div class="two-col">
@@ -607,7 +607,7 @@ input[type=file]{display:none}
             <select id="ns-county"></select>
           </div>
         </div>
-        <div class="field" id="ns-paid-wrap" style="display:none"><label for="ns-paid">Amount paid now (KES)</label>
+        <div class="field" id="ns-paid-wrap" style="display:none"><label for="ns-paid">Amount Paid Now (KES)</label>
           <input type="text" id="ns-paid" inputmode="numeric" placeholder="e.g. Ksh 8,500" oninput="calcNewSaleBalance()">
         </div>
         <div id="ns-balance" style="display:none;font-size:12px;color:var(--text-s);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:6px"></div>
@@ -624,7 +624,7 @@ input[type=file]{display:none}
     <div class="section" id="purpose-request" style="display:none">
       <div class="section-title">📦 Device Request</div>
       <div class="two-col">
-        <div class="field"><label for="d-req-shopname">Shop name<span class="req">*</span></label>
+        <div class="field"><label for="d-req-shopname">Shop Name<span class="req">*</span></label>
           <input type="text" id="d-req-shopname" placeholder="e.g. Kamau General Store">
         </div>
         <div class="field"><label for="d-req-shopid">Shop ID <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
@@ -632,14 +632,14 @@ input[type=file]{display:none}
         </div>
       </div>
       <div class="two-col">
-        <div class="field"><label for="d-req-custname">Customer name<span class="req">*</span></label>
+        <div class="field"><label for="d-req-custname">Customer Name<span class="req">*</span></label>
           <input type="text" id="d-req-custname" placeholder="e.g. Jane Wambui">
         </div>
-        <div class="field"><label for="d-req-custphone">Customer phone number<span class="req">*</span></label>
+        <div class="field"><label for="d-req-custphone">Customer Phone Number<span class="req">*</span></label>
           <input type="tel" id="d-req-custphone" placeholder="0712 345 678">
         </div>
       </div>
-      <div class="field"><label for="d-req-devicetype">Device type<span class="req">*</span></label>
+      <div class="field"><label for="d-req-devicetype">Device Type<span class="req">*</span></label>
         <select id="d-req-devicetype"><option value="H10">H10</option></select>
       </div>
       <div class="field"><label for="d-req-email">Send request to<span class="req">*</span></label>
@@ -649,11 +649,11 @@ input[type=file]{display:none}
         <div id="d-req-cc-list" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:220px;overflow-y:auto;font-size:13px;color:var(--text-m)">No recipients configured yet.</div>
       </div>
       <div class="two-col">
-        <div class="field"><label for="d-req-amount">Device amount (KES)<span class="req">*</span></label>
+        <div class="field"><label for="d-req-amount">Device Amount (KES)<span class="req">*</span></label>
           <input type="text" id="d-req-amount" inputmode="numeric" placeholder="e.g. Ksh 23,620" oninput="deviceAmountEdited=true">
           <small id="d-req-amount-hint" style="display:none;color:var(--text-m);font-size:11px">Prefilled with the area's default — you can change it.</small>
         </div>
-        <div class="field"><label for="d-req-paytype">Payment type<span class="req">*</span></label>
+        <div class="field"><label for="d-req-paytype">Payment Type<span class="req">*</span></label>
           <select id="d-req-paytype" onchange="applyDefaultDeviceAmount()">
             <option value="">Select…</option>
             <option value="Cash">Cash</option>
@@ -669,7 +669,7 @@ input[type=file]{display:none}
       <div class="field"><label for="d-req-mpesa-msg">M-Pesa message <span style="font-size:11px;color:#9ca3af;font-weight:400">(paste confirmation text)</span></label>
         <textarea id="d-req-mpesa-msg" placeholder="e.g. Confirmed. You have received KES4,500.00 from..." style="min-height:60px"></textarea>
       </div>
-      <div class="field"><label>M-Pesa screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
+      <div class="field"><label>M-Pesa Screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
         <div class="photo-box" onclick="document.getElementById('d-req-mpesa-file').click()">
           <div class="photo-ph" id="d-req-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa confirmation screenshot</small></div>
           <div class="photo-preview" id="d-req-mpesa-preview"><img id="d-req-mpesa-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('d-req-mpesa')">↺ Retake</button></div>
@@ -680,25 +680,25 @@ input[type=file]{display:none}
         <input type="text" id="d-req-location" placeholder="e.g. Nakuru Town">
       </div>
       <div class="two-col">
-        <div class="field"><label>Trainer full name <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
+        <div class="field"><label>Trainer Full Name <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
           <input type="text" id="d-req-name" readonly>
         </div>
-        <div class="field"><label for="d-req-phone">Trainer phone number<span class="req">*</span></label>
+        <div class="field"><label for="d-req-phone">Trainer Phone Number<span class="req">*</span></label>
           <input type="tel" id="d-req-phone" placeholder="0712 345 678">
         </div>
       </div>
-      <div class="field"><label for="d-req-shipping">Shipping location<span class="req">*</span></label>
+      <div class="field"><label for="d-req-shipping">Shipping Location<span class="req">*</span></label>
         <input type="text" id="d-req-shipping" placeholder="e.g. Nakuru — Kenyatta Ave stage">
       </div>
       <div class="two-col">
-        <div class="field"><label for="d-req-start">Start date<span class="req">*</span></label>
+        <div class="field"><label for="d-req-start">Start Date<span class="req">*</span></label>
           <input type="date" id="d-req-start">
         </div>
-        <div class="field"><label for="d-req-end">End date</label>
+        <div class="field"><label for="d-req-end">End Date</label>
           <input type="date" id="d-req-end">
         </div>
       </div>
-      <div class="field"><label for="d-req-message">Short message about request</label>
+      <div class="field"><label for="d-req-message">Short Message About Request</label>
         <textarea id="d-req-message" placeholder="Anything the device team should know..." style="min-height:60px"></textarea>
       </div>
 
@@ -721,7 +721,7 @@ input[type=file]{display:none}
 
       <p style="font-size:12px;color:var(--text-m);margin:0 0 12px">Upload the customer's signed copy for a shop below.</p>
       <div class="two-col">
-        <div class="field"><label for="ctr-shopname">Shop name<span class="req">*</span></label>
+        <div class="field"><label for="ctr-shopname">Shop Name<span class="req">*</span></label>
           <input type="text" id="ctr-shopname" placeholder="e.g. Kamau General Store">
         </div>
         <div class="field"><label for="ctr-shopid">Shop ID<span class="req">*</span></label>
@@ -756,12 +756,12 @@ input[type=file]{display:none}
     <div class="section">
       <div class="section-title">📅 Date Range</div>
       <select id="my-range-filter" onchange="onMyRangeFilterChange()">
-        <option value="all">All time</option>
+        <option value="all">All Time</option>
         <option value="today">Today</option>
         <option value="week">This Week</option>
         <option value="month">This Month</option>
         <option value="year">This Year</option>
-        <option value="custom">Custom range…</option>
+        <option value="custom">Custom Range…</option>
       </select>
       <div class="two-col" id="my-custom-range-wrap" style="display:none;margin-top:10px">
         <div class="field" style="margin-bottom:0"><label>From</label>
@@ -790,12 +790,12 @@ input[type=file]{display:none}
     <div class="section">
       <div class="section-title">📅 Date Range</div>
       <select id="mv-range-filter" onchange="onMyVisitsRangeFilterChange()">
-        <option value="all">All time</option>
+        <option value="all">All Time</option>
         <option value="today">Today</option>
         <option value="week">This Week</option>
         <option value="month">This Month</option>
         <option value="year">This Year</option>
-        <option value="custom">Custom range…</option>
+        <option value="custom">Custom Range…</option>
       </select>
       <div class="two-col" id="mv-custom-range-wrap" style="display:none;margin-top:10px">
         <div class="field" style="margin-bottom:0"><label>From</label>
@@ -852,11 +852,11 @@ input[type=file]{display:none}
       <div class="two-col">
         <div class="field"><label for="set-deposit">Deposit (KES)</label>
           <input type="text" id="set-deposit" inputmode="numeric" placeholder="e.g. Ksh 7,500"></div>
-        <div class="field"><label for="set-facility">Facility amount (KES)</label>
+        <div class="field"><label for="set-facility">Facility Amount (KES)</label>
           <input type="text" id="set-facility" inputmode="numeric" placeholder="e.g. Ksh23,620"></div>
       </div>
       <div class="two-col">
-        <div class="field"><label for="set-installment-amount">Installment amount (KES)</label>
+        <div class="field"><label for="set-installment-amount">Installment Amount (KES)</label>
           <input type="text" id="set-installment-amount" inputmode="numeric" placeholder="e.g. Ksh 4,030"></div>
         <div class="field"><label for="set-installment-count"># of installments</label>
           <input type="text" id="set-installment-count" inputmode="numeric" placeholder="e.g. 4"></div>
@@ -904,7 +904,7 @@ input[type=file]{display:none}
 <!-- ══════════════════════════ MANAGER: MANAGE SHOPS -->
 <div class="screen" id="screen-shops">
   <div class="app-header">
-    <div><h1>Manage Shops</h1><p>View, edit, or delete shop records</p></div>
+    <div><h1>Manage Shops</h1><p>View, Edit, or Delete Shop Records</p></div>
     <button class="header-icon-btn" title="View installed shops" onclick="openInstalledShops()">🏗️</button>
     <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
   </div>
@@ -920,14 +920,14 @@ input[type=file]{display:none}
           <select id="shops-county-filter" onchange="renderShopsList()"><option value="">All counties</option></select>
         </div>
       </div>
-      <div class="field" style="margin-bottom:0"><label>Installed date range</label>
+      <div class="field" style="margin-bottom:0"><label>Installed Date Range</label>
         <select id="shops-range-filter" onchange="onShopsRangeFilterChange()">
-          <option value="all">All time</option>
+          <option value="all">All Time</option>
           <option value="today">Today</option>
           <option value="week">This Week</option>
           <option value="month">This Month</option>
           <option value="year">This Year</option>
-          <option value="custom">Custom range…</option>
+          <option value="custom">Custom Range…</option>
         </select>
       </div>
       <div class="two-col" id="shops-custom-range-wrap" style="display:none">
@@ -969,14 +969,14 @@ input[type=file]{display:none}
           <select id="ishop-county-filter" onchange="renderInstalledShopsList()"><option value="">All counties</option></select>
         </div>
       </div>
-      <div class="field" style="margin-bottom:0"><label>Installed date range</label>
+      <div class="field" style="margin-bottom:0"><label>Installed Date Range</label>
         <select id="ishop-range-filter" onchange="onInstalledShopsRangeFilterChange()">
-          <option value="all">All time</option>
+          <option value="all">All Time</option>
           <option value="today">Today</option>
           <option value="week">This Week</option>
           <option value="month">This Month</option>
           <option value="year">This Year</option>
-          <option value="custom">Custom range…</option>
+          <option value="custom">Custom Range…</option>
         </select>
       </div>
       <div class="two-col" id="ishop-custom-range-wrap" style="display:none">
@@ -1051,23 +1051,23 @@ input[type=file]{display:none}
     </div>
     <div class="section">
       <div class="section-title">🏪 Shop Details</div>
-      <div class="field"><label for="s-shopname">Shop name<span class="req">*</span></label>
+      <div class="field"><label for="s-shopname">Shop Name<span class="req">*</span></label>
         <input type="text" id="s-shopname" placeholder="e.g. Kamau General Store" oninput="calcProgress('s')">
       </div>
       <div class="field"><label for="s-shopid">Shop ID<span class="req">*</span></label>
         <input type="text" id="s-shopid" placeholder="e.g. 456" inputmode="numeric" oninput="calcProgress('s')">
       </div>
-      <div class="field"><label for="s-owner">Owner name<span class="req">*</span></label>
+      <div class="field"><label for="s-owner">Owner Name<span class="req">*</span></label>
         <input type="text" id="s-owner" placeholder="e.g. John Kamau" oninput="calcProgress('s')">
       </div>
-      <div class="field"><label for="s-location">Shop location<span class="req">*</span></label>
+      <div class="field"><label for="s-location">Shop Location<span class="req">*</span></label>
         <input type="text" id="s-location" placeholder="e.g. Nakuru Town, Kenyatta Ave" oninput="calcProgress('s')">
       </div>
       <div class="two-col">
-        <div class="field"><label for="s-phone">Owner phone<span class="req">*</span></label>
+        <div class="field"><label for="s-phone">Owner Phone<span class="req">*</span></label>
           <input type="tel" id="s-phone" placeholder="0712 345 678" oninput="calcProgress('s')">
         </div>
-        <div class="field"><label for="s-transactions">No. of transactions<span class="req">*</span></label>
+        <div class="field"><label for="s-transactions">No. of Transactions<span class="req">*</span></label>
           <input type="text" id="s-transactions" placeholder="e.g. 25" inputmode="numeric" oninput="calcProgress('s')">
         </div>
       </div>
@@ -1109,17 +1109,17 @@ input[type=file]{display:none}
       <div class="progress-bar"><div class="progress-fill" id="i-fill"></div></div>
     </div>
     <div class="section">
-      <div class="section-title">📍 Auto-captured</div>
-      <div class="field"><label>Date &amp; time</label>
+      <div class="section-title">📍 Auto-Captured</div>
+      <div class="field"><label>Date &amp; Time</label>
         <div class="auto-field"><span>📅</span><span class="auto-val" id="i-date">—</span><span class="badge badge-green">Captured</span></div>
       </div>
-      <div class="field"><label>GPS location</label>
+      <div class="field"><label>GPS Location</label>
         <div class="auto-field"><span>📌</span><span class="auto-val" id="i-gps">Getting location…</span><span class="badge badge-yellow" id="i-gps-badge">Pending</span></div>
         <button id="i-gps-retry" onclick="retryGPS('i')" style="display:none;margin-top:8px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">📍 Retry GPS</button>
       </div>
     </div>
     <div class="section">
-      <div class="section-title">👤 Trainer (auto-filled)</div>
+      <div class="section-title">👤 Trainer (Auto-Filled)</div>
       <div class="two-col">
         <div class="field"><label>Name</label><input type="text" id="i-trainer" readonly></div>
         <div class="field"><label>County</label><input type="text" id="i-county" readonly></div>
@@ -1133,21 +1133,23 @@ input[type=file]{display:none}
       <div class="field"><label for="i-shopid">Shop ID <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
         <input type="text" id="i-shopid" placeholder="e.g. 123456">
       </div>
-      <div class="field"><label for="i-ownername">Shop owner name<span class="req">*</span></label>
+      <div class="field"><label for="i-ownername">Shop Owner Name<span class="req">*</span></label>
         <input type="text" id="i-ownername" placeholder="e.g. John Kamau" oninput="calcProgress('i')">
       </div>
-      <div class="field"><label for="i-ownerphone">Shop owner phone<span class="req">*</span></label>
+      <div class="field"><label for="i-ownerphone">Shop Owner Phone<span class="req">*</span></label>
         <input type="tel" id="i-ownerphone" placeholder="0712 345 678" oninput="calcProgress('i')">
       </div>
-      <div class="field"><label for="i-location">Shop location<span class="req">*</span></label>
+      <div class="field"><label for="i-location">Shop Location<span class="req">*</span></label>
         <input type="text" id="i-location" placeholder="e.g. Nakuru Town, Kenyatta Ave" oninput="calcProgress('i')">
       </div>
-      <div class="field"><label for="i-devicetype">Device type<span class="req">*</span></label>
+      <div class="field"><label for="i-devicetype">Device Type<span class="req">*</span></label>
         <select id="i-devicetype" onchange="onInstallDeviceTypeChange()">
           <option value="">Select…</option>
           <option value="Desktop">Desktop</option>
           <option value="Tablet">Tablet</option>
           <option value="H10">H10</option>
+          <option value="CS30">CS30</option>
+          <option value="Sunmi V2 Pro">Sunmi V2 Pro</option>
         </select>
       </div>
       <div class="field"><label for="i-notes">Installation/Reactivation Notes</label>
@@ -1163,23 +1165,23 @@ input[type=file]{display:none}
         </div>
         <input type="file" id="i-ext-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-ext','i')">
       </div>
-      <div class="field" style="margin-top:1rem"><label>Shelve / Interior photo<span class="req">*</span></label>
+      <div class="field" style="margin-top:1rem"><label>Shelve / Interior Photo<span class="req">*</span></label>
         <div class="photo-box" onclick="document.getElementById('i-int-file').click()">
           <div class="photo-ph" id="i-int-ph"><span class="photo-ph-icon">🏠</span><span>Tap to photograph</span><small>Interior shelve setup</small></div>
           <div class="photo-preview" id="i-int-preview"><img id="i-int-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-int')">↺ Retake</button></div>
         </div>
         <input type="file" id="i-int-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-int','i')">
       </div>
-      <div class="field" style="margin-top:1rem"><label>Device photo<span class="req">*</span></label>
+      <div class="field" style="margin-top:1rem"><label>Device Photo<span class="req">*</span></label>
         <div class="photo-box" onclick="document.getElementById('i-device-file').click()">
-          <div class="photo-ph" id="i-device-ph"><span class="photo-ph-icon">📱</span><span>Tap to photograph</span><small>The installed device itself</small></div>
+          <div class="photo-ph" id="i-device-ph"><span class="photo-ph-icon">📱</span><span>Tap to Photograph</span><small>The installed device itself</small></div>
           <div class="photo-preview" id="i-device-preview"><img id="i-device-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-device')">↺ Retake</button></div>
         </div>
         <input type="file" id="i-device-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-device','i')">
       </div>
-      <div class="field" id="i-router-field" style="margin-top:1rem;display:none"><label>Router / WiFi photo<span class="req">*</span></label>
+      <div class="field" id="i-router-field" style="margin-top:1rem;display:none"><label>Router / WiFi Photo<span class="req">*</span></label>
         <div class="photo-box" onclick="document.getElementById('i-router-file').click()">
-          <div class="photo-ph" id="i-router-ph"><span class="photo-ph-icon">📶</span><span>Tap to photograph</span><small>Required for Desktop installs</small></div>
+          <div class="photo-ph" id="i-router-ph"><span class="photo-ph-icon">📶</span><span>Tap to Photograph</span><small>Required for Desktop installs</small></div>
           <div class="photo-preview" id="i-router-preview"><img id="i-router-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-router')">↺ Retake</button></div>
         </div>
         <input type="file" id="i-router-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-router','i')">
@@ -1322,20 +1324,46 @@ var MOTIVATION_MESSAGES = {
   },
   4: { // Thursday — endurance
     top: ["Stay Focused. Stay Selling.", "Push Through — The Weekend Is Near!", "Crush Your Targets Today!", "Every Shop Is An Opportunity"],
-    bottom: ["Every Visit Counts - Keep Selling!", "Great Service = Repeat Sales", "Almost There — Keep Going!", "Check In. Close. Repeat."]
+    bottom: ["Every Visit Brings Us Closer to Our Goal.",
+    "Great Service Strengthens Customer Loyalty.",
+    "Stay Consistent. Finish the Week Strong.",
+    "Connect. Deliver. Achieve."]
   },
   5: { // Friday — finish strong
     top: ["Finish The Week Strong!", "Win The Day - One Customer At A Time", "Your Route, Your Results", "Make Friday Count!"],
-    bottom: ["You're 1 Visit Away From Your Goal", "Every Visit Counts - Keep Selling!", "End The Week On A High Note", "Check In. Close. Repeat."]
-  },
+bottom: [
+    "Every Customer Interaction Moves Us Forward.",
+    "Consistent Engagement Drives Stronger Results.",
+    "Close the Week With Purpose and Momentum.",
+    "Engage. Deliver. Achieve."
+  ],
   6: { // Saturday — weekend hustle
-    top: ["Stay Focused. Stay Selling.", "Weekend Hustle Pays Off", "Crush Your Targets Today!", "Small Steps, Big Wins"],
-    bottom: ["Great Service = Repeat Sales", "Every Visit Counts - Keep Selling!", "Keep The Streak Alive", "Check In. Close. Repeat."]
-  },
-  0: { // Sunday — reflect & prepare
-    top: ["Your Route, Your Results", "Reflect, Recharge, Refocus", "Win The Day - One Customer At A Time", "Plan Today, Win Tomorrow"],
-    bottom: ["You're 1 Visit Away From Your Goal", "Great Service = Repeat Sales", "Rest Well, Sell Better Tomorrow", "Check In. Close. Repeat."]
-  }
+ top: [
+  "Stay Focused. Deliver Results.",
+  "Build Momentum. Lead the Market.",
+  "Turn Targets Into Achievements.",
+  "Consistent Effort. Exceptional Results."
+],
+
+bottom: [
+  "Excellent Service Drives Customer Loyalty.",
+  "Every Customer Interaction Creates Opportunity.",
+  "Maintain Momentum. Deliver Consistently.",
+  "Engage. Deliver. Grow."
+]
+  0:{ // Sunday — reflect, prepare & refocus
+  top: [
+    "Reflect on Progress. Prepare for Success.",
+    "Recharge Today. Refocus for Tomorrow.",
+    "Every Customer Matters. Every Result Counts.",
+    "Plan with Purpose. Perform with Confidence."
+  ],
+  bottom: [
+    "Every Visit Brings Us Closer to Our Goal.",
+    "Exceptional Service Builds Lasting Relationships.",
+    "Recharge, Refocus, and Return Stronger.",
+    "Prepare. Execute. Achieve."
+  ]
 };
 
 var motivationState = { topIdx:0, bottomIdx:0, timer:null, started:false };
