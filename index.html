@@ -43,6 +43,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 /* BOTTOM TAB BAR */
 .bottom-tabbar{position:fixed;left:0;right:0;bottom:0;z-index:200;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:stretch;box-shadow:0 -2px 10px rgba(0,0,0,.06);padding-bottom:env(safe-area-inset-bottom)}
+
+/* MOTIVATION BANNERS — top/bottom rotating messages, trainers only */
+.motivation-banner{position:fixed;left:0;right:0;z-index:9999;display:none;align-items:center;justify-content:center;text-align:center;padding:7px 14px;font-size:12.5px;color:#fff;letter-spacing:.2px;box-shadow:0 0 10px rgba(0,0,0,.12)}
+.motivation-banner.visible{display:flex}
+.motivation-banner span{opacity:1;transition:opacity .6s ease}
+.motivation-banner span.fade-out{opacity:0}
+#motivation-top-banner{top:0;background:linear-gradient(90deg,#2563eb,#7c3aed)}
+#motivation-bottom-banner{bottom:0;background:linear-gradient(90deg,#16a34a,#0d9488)}
+body.has-motivation-banners{padding-top:32px}
+body.has-motivation-banners .bottom-tabbar{bottom:32px}
+body.has-motivation-banners .screen{padding-bottom:calc(3rem + 32px)}
 .bottom-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 2px 7px;background:none;border:none;cursor:pointer;font-family:inherit;color:var(--text-m);font-size:10.5px;font-weight:600}
 .bottom-tab-icon{font-size:19px;line-height:1}
 .bottom-tab.active{color:var(--accent)}
@@ -191,6 +202,9 @@ input[type=file]{display:none}
 </style>
 </head>
 <body>
+
+<div class="motivation-banner" id="motivation-top-banner"><span id="motivation-top-text"></span></div>
+<div class="motivation-banner" id="motivation-bottom-banner"><span id="motivation-bottom-text"></span></div>
 
 <!-- ══════════════════════════ LOGIN SCREEN -->
 <div class="screen active" id="screen-login">
@@ -1291,7 +1305,91 @@ function setLoginLoading(on) {
   document.getElementById('login-btn-label').textContent = on ? 'Verifying…' : 'Sign In';
 }
 
+// ── MOTIVATION BANNERS (trainers only) — rotate every 10-15 min,
+//    different message set per day of the week ──────────────────
+var MOTIVATION_MESSAGES = {
+  1: { // Monday — fresh start
+    top: ["Crush Your Targets Today!", "New Week, New Wins — Let's Go!", "Win The Day - One Customer At A Time", "Monday Momentum Starts With You"],
+    bottom: ["Every Visit Counts - Keep Selling!", "Start Strong, Finish Stronger", "Check In. Close. Repeat.", "You're 1 Visit Away From Your Goal"]
+  },
+  2: { // Tuesday — consistency
+    top: ["Stay Focused. Stay Selling.", "Keep The Momentum Going!", "Your Route, Your Results", "Turn Visits Into Victories"],
+    bottom: ["Great Service = Repeat Sales", "Consistency Builds Champions", "Every Visit Counts - Keep Selling!", "Close One More Before You Stop"]
+  },
+  3: { // Wednesday — midweek push
+    top: ["Midweek Push — Crush Your Targets Today!", "Halfway There — Keep Pushing!", "Win The Day - One Customer At A Time", "Your Route, Your Results"],
+    bottom: ["Check In. Close. Repeat.", "Strong Wednesdays Build Strong Weeks", "You're 1 Visit Away From Your Goal", "Great Service = Repeat Sales"]
+  },
+  4: { // Thursday — endurance
+    top: ["Stay Focused. Stay Selling.", "Push Through — The Weekend Is Near!", "Crush Your Targets Today!", "Every Shop Is An Opportunity"],
+    bottom: ["Every Visit Counts - Keep Selling!", "Great Service = Repeat Sales", "Almost There — Keep Going!", "Check In. Close. Repeat."]
+  },
+  5: { // Friday — finish strong
+    top: ["Finish The Week Strong!", "Win The Day - One Customer At A Time", "Your Route, Your Results", "Make Friday Count!"],
+    bottom: ["You're 1 Visit Away From Your Goal", "Every Visit Counts - Keep Selling!", "End The Week On A High Note", "Check In. Close. Repeat."]
+  },
+  6: { // Saturday — weekend hustle
+    top: ["Stay Focused. Stay Selling.", "Weekend Hustle Pays Off", "Crush Your Targets Today!", "Small Steps, Big Wins"],
+    bottom: ["Great Service = Repeat Sales", "Every Visit Counts - Keep Selling!", "Keep The Streak Alive", "Check In. Close. Repeat."]
+  },
+  0: { // Sunday — reflect & prepare
+    top: ["Your Route, Your Results", "Reflect, Recharge, Refocus", "Win The Day - One Customer At A Time", "Plan Today, Win Tomorrow"],
+    bottom: ["You're 1 Visit Away From Your Goal", "Great Service = Repeat Sales", "Rest Well, Sell Better Tomorrow", "Check In. Close. Repeat."]
+  }
+};
+
+var motivationState = { topIdx:0, bottomIdx:0, timer:null, started:false };
+
+function todaysMotivationSet(){
+  return MOTIVATION_MESSAGES[new Date().getDay()] || MOTIVATION_MESSAGES[1];
+}
+
+function scheduleNextMotivationRotation(){
+  if(motivationState.timer) clearTimeout(motivationState.timer);
+  var minutes = 10 + Math.random()*5; // random 10–15 minute interval
+  motivationState.timer = setTimeout(rotateMotivationMessages, minutes*60*1000);
+}
+
+function rotateMotivationMessages(){
+  var topEl = document.getElementById('motivation-top-text');
+  var bottomEl = document.getElementById('motivation-bottom-text');
+  topEl.classList.add('fade-out');
+  bottomEl.classList.add('fade-out');
+  setTimeout(function(){
+    var set = todaysMotivationSet(); // re-read each time in case the day changed while the app stayed open
+    motivationState.topIdx = (motivationState.topIdx + 1) % set.top.length;
+    motivationState.bottomIdx = (motivationState.bottomIdx + 1) % set.bottom.length;
+    topEl.textContent = set.top[motivationState.topIdx];
+    bottomEl.textContent = set.bottom[motivationState.bottomIdx];
+    topEl.classList.remove('fade-out');
+    bottomEl.classList.remove('fade-out');
+  }, 600);
+  scheduleNextMotivationRotation();
+}
+
+function startMotivationBanners(){
+  document.body.classList.add('has-motivation-banners');
+  document.getElementById('motivation-top-banner').classList.add('visible');
+  document.getElementById('motivation-bottom-banner').classList.add('visible');
+  if(!motivationState.started){
+    motivationState.started = true;
+    var set = todaysMotivationSet();
+    document.getElementById('motivation-top-text').textContent = set.top[0];
+    document.getElementById('motivation-bottom-text').textContent = set.bottom[0];
+    scheduleNextMotivationRotation();
+  }
+}
+
+function stopMotivationBanners(){
+  document.body.classList.remove('has-motivation-banners');
+  document.getElementById('motivation-top-banner').classList.remove('visible');
+  document.getElementById('motivation-bottom-banner').classList.remove('visible');
+  if(motivationState.timer){ clearTimeout(motivationState.timer); motivationState.timer=null; }
+  motivationState.started = false;
+}
+
 function doLogout() {
+  stopMotivationBanners();
   clearSession();
   showScreen('screen-login');
 }
@@ -1316,6 +1414,7 @@ function goHome() {
   document.getElementById('home-bottom-tabbar').style.display = isManagerOrAdmin ? 'none' : 'flex';
   document.querySelector('#screen-home .home-body').classList.toggle('has-tabbar', !isManagerOrAdmin);
   if(isManagerOrAdmin) refreshPendingBadge();
+  if(isManagerOrAdmin){ stopMotivationBanners(); } else { startMotivationBanners(); }
 
   document.querySelectorAll('#home-bottom-tabbar .bottom-tab').forEach(function(b){ b.classList.remove('active'); });
   var homeTabBtn = document.getElementById('home-tab-home');
