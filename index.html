@@ -1632,10 +1632,14 @@ function addVisit(){
   d.innerHTML='<div class="visit-num">Visit '+id+'</div>'+
 
     '<div class="field"><label>Purpose<span class="req">*</span></label>'+
-    '<select id="v-purpose-'+id+'" onchange="calcProgress(\'r\')"><option value="">Select purpose…</option>'+
+    '<select id="v-purpose-'+id+'" onchange="onVisitPurposeChange(\''+id+'\');calcProgress(\'r\')"><option value="">Select purpose…</option>'+
     '<option>System Maintainance</option><option>Leads Generation/Pitching</option><option>Follow-up visit(Leads)</option>'+
     '<option>Churn/Retention Follow-Up</option><option>Training</option>'+
     '<option>Device Repayment Follow-Up</option><option>Other</option></select></div>'+
+
+    '<div class="field" id="v-other-wrap-'+id+'" style="display:none">'+
+    '<label style="font-weight:700">Specify Reason For Visit<span class="req">*</span></label>'+
+    '<input type="text" id="v-other-'+id+'" placeholder="Describe the reason for this visit…" oninput="calcProgress(\'r\')"></div>'+
 
     '<div class="field"><label>Shop Name<span class="req">*</span></label>'+
     '<input type="text" id="v-name-'+id+'" placeholder="Shop name" oninput="calcProgress(\'r\')"></div>'+
@@ -1661,6 +1665,20 @@ function addVisit(){
 function removeVisit(n){
   var el=document.getElementById('visit-'+n);
   if(el) el.remove();
+  calcProgress('r');
+}
+
+function onVisitPurposeChange(id){
+  var purpose = document.getElementById('v-purpose-'+id).value;
+  var wrap = document.getElementById('v-other-wrap-'+id);
+  var inp = document.getElementById('v-other-'+id);
+  if(purpose === 'Other'){
+    wrap.style.display = 'block';
+    inp.focus();
+  } else {
+    wrap.style.display = 'none';
+    inp.value = '';
+  }
   calcProgress('r');
 }
 
@@ -3188,7 +3206,9 @@ function calcProgress(prefix){
     fields=[v('r-trainer'),v('r-county')];
     document.querySelectorAll('#visits-container .visit-row').forEach(function(row){
       var id=row.id.split('-')[1];
-      fields.push(v('v-purpose-'+id), v('v-name-'+id), v('v-loc-'+id), v('v-phone-'+id), v('v-feedback-'+id));
+      var _p = v('v-purpose-'+id);
+      fields.push(_p, v('v-name-'+id), v('v-loc-'+id), v('v-phone-'+id), v('v-feedback-'+id));
+      if(_p === 'Other') fields.push(v('v-other-'+id));
     });
   } else if(prefix==='s'){
     fields=[v('s-trainer'),v('s-county'),v('s-shopname'),v('s-shopid'),v('s-owner'),v('s-location'),v('s-phone'),v('s-transactions'),photos['s-owner']||''];
@@ -3246,20 +3266,24 @@ function submitForm(type){
     document.querySelectorAll('#visits-container .visit-row').forEach(function(row){
       var id=row.id.split('-')[1];
       var purpose=v('v-purpose-'+id);
+      var specifyReason = purpose==='Other' ? v('v-other-'+id) : '';
       var name=v('v-name-'+id), loc=v('v-loc-'+id);
       var phone=v('v-phone-'+id), feedback=v('v-feedback-'+id);
 
-      if(!purpose) missing.push('Visit '+id+' purpose');
+      if(!purpose) missing.push('Visit '+id+' — Purpose is required');
+      if(purpose==='Other' && !specifyReason) missing.push('Visit '+id+' — "Specify Reason For Visit" is required when purpose is Other');
       if(!name) missing.push('Visit '+id+' name');
       if(!loc) missing.push('Visit '+id+' location');
       if(!phone) missing.push('Visit '+id+' shop owner phone number');
       if(!feedback) missing.push('Visit '+id+' client feedback');
 
+      var displayPurpose = (purpose==='Other' && specifyReason) ? 'Other — ' + specifyReason : purpose;
+
       visits.push({
         name:name,
         location:loc,
         phone:phone,
-        purpose:purpose,
+        purpose:displayPurpose,
         photo:photos['v-photo-'+id]||'',
         feedback:feedback
       });
