@@ -3272,6 +3272,14 @@ function submitForm(type){
 
       if(!purpose) missing.push('Visit '+id+' — Purpose is required');
       if(purpose==='Other' && !specifyReason) missing.push('Visit '+id+' — "Specify Reason For Visit" is required when purpose is Other');
+      if(purpose==='Other' && specifyReason){
+        var _blocked = /^(other|others|not specified|n\/a|none|nil|na)$/i;
+        if(_blocked.test(specifyReason.trim())){
+          missing.push('Visit '+id+' — "'+specifyReason+'" is not a valid reason. Please describe the actual purpose of the visit');
+        } else if(specifyReason.trim().length < 15){
+          missing.push('Visit '+id+' — Reason is too short ('+specifyReason.trim().length+' characters). Please give at least 15 characters describing the visit');
+        }
+      }
       if(!name) missing.push('Visit '+id+' name');
       if(!loc) missing.push('Visit '+id+' location');
       if(!phone) missing.push('Visit '+id+' shop owner phone number');
