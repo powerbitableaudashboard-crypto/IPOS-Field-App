@@ -1370,13 +1370,48 @@ var MOTIVATION_MESSAGES = {
 
 var motivationState = { topIdx:0, bottomIdx:0, timer:null, started:false };
 
+// Separate leadership-toned set for Area Managers/Admins — same rotation
+// mechanism, different voice (coaching/oversight rather than field sales).
+var MANAGER_MOTIVATION_MESSAGES = {
+  1: { // Monday — set the tone
+    top: ["Great Teams Start With Great Leaders", "Lead With Purpose This Week", "Your Vision Drives Their Results", "Set The Standard Today"],
+    bottom: ["Empower Your Team, Elevate Your Region", "Strong Starts Build Strong Weeks", "Coach Today, Celebrate Tomorrow", "Your Leadership Multiplies Results"]
+  },
+  2: { // Tuesday — consistency & discipline
+    top: ["Consistency Is The Mark Of True Leadership", "Review. Refine. Repeat.", "Small Corrections, Big Wins", "Data Today, Direction Tomorrow"],
+    bottom: ["Great Managers Build Great Habits", "Check The Numbers, Guide The Team", "Your Insight Shapes Their Success", "Progress Over Perfection"]
+  },
+  3: { // Wednesday — midweek coaching
+    top: ["Halfway There — Check In, Coach Up", "Support Your Team To Success", "Midweek Momentum Starts With You", "Visibility Builds Accountability"],
+    bottom: ["Your Feedback Fuels Growth", "Strong Middles Make Strong Weeks", "Guide With Clarity, Lead With Care", "Every Region Reflects Its Leader"]
+  },
+  4: { // Thursday — performance & analysis
+    top: ["Numbers Tell A Story — Read It Well", "Push Performance, Praise Progress", "Great Leaders Spot Opportunity Early", "Stay Sharp, Stay Strategic"],
+    bottom: ["Turn Insights Into Action", "Recognize Effort, Reward Results", "Your Standards Set The Pace", "Lead The Numbers, Don't Chase Them"]
+  },
+  5: { // Friday — review & close
+    top: ["Finish The Week By Setting Up The Next", "Review Wins, Refine Weaknesses", "Great Leadership Compounds Weekly", "Close The Week With Clarity"],
+    bottom: ["Celebrate The Wins, However Small", "Your Team's Growth Is Your Legacy", "End Strong, Plan Smarter", "Reflect Today, Grow Tomorrow"]
+  },
+  6: { // Saturday — sustained oversight
+    top: ["Great Leaders Never Truly Switch Off", "Steady Oversight, Steady Growth", "Excellence Has No Off-Days", "Keep The Standard High"],
+    bottom: ["Your Presence Builds Trust", "Small Check-Ins Prevent Big Problems", "Consistency Beats Intensity", "Lead By Example, Always"]
+  },
+  0: { // Sunday — reflect & prepare
+    top: ["Reflect On The Week, Plan The Next", "Great Leadership Starts With Self-Reflection", "Rest Well, Lead Better", "Prepare Today, Perform Tomorrow"],
+    bottom: ["Your Team Grows When You Grow", "Recharge For What's Ahead", "Strategic Rest Fuels Strategic Leadership", "New Week, New Opportunities To Lead"]
+  }
+};
+
 function todaysMotivationSet(){
-  return MOTIVATION_MESSAGES[new Date().getDay()] || MOTIVATION_MESSAGES[1];
+  var isManagerOrAdmin = session && (session.role === 'Manager' || session.role === 'Admin');
+  var pool = isManagerOrAdmin ? MANAGER_MOTIVATION_MESSAGES : MOTIVATION_MESSAGES;
+  return pool[new Date().getDay()] || pool[1];
 }
 
 function scheduleNextMotivationRotation(){
   if(motivationState.timer) clearTimeout(motivationState.timer);
-  var minutes = 10 + Math.random()*5; // random 10–15 minute interval
+  var minutes = 1 + Math.random()*2; // random 1–3 minute interval
   motivationState.timer = setTimeout(rotateMotivationMessages, minutes*60*1000);
 }
 
@@ -1447,7 +1482,7 @@ function goHome() {
   document.getElementById('home-bottom-tabbar').style.display = isManagerOrAdmin ? 'none' : 'flex';
   document.querySelector('#screen-home .home-body').classList.toggle('has-tabbar', !isManagerOrAdmin);
   if(isManagerOrAdmin) refreshPendingBadge();
-  if(isManagerOrAdmin){ stopMotivationBanners(); } else { startMotivationBanners(); }
+  startMotivationBanners(); // shown for trainers and managers/admins alike, each with their own tailored message set
 
   document.querySelectorAll('#home-bottom-tabbar .bottom-tab').forEach(function(b){ b.classList.remove('active'); });
   var homeTabBtn = document.getElementById('home-tab-home');
