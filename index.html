@@ -47,7 +47,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 /* MOTIVATION BANNERS — top/bottom rotating messages, trainers only */
 .motivation-banner{position:fixed;left:0;right:0;z-index:9999;display:none;overflow:hidden;white-space:nowrap;padding:7px 0;box-shadow:0 0 10px rgba(0,0,0,.12)}
 .motivation-banner.visible{display:block}
-.motivation-banner .marquee-track{display:inline-block;white-space:nowrap;font-size:12.5px;letter-spacing:.3px;color:#fff;will-change:transform}
+.motivation-banner .marquee-track{display:inline-block;white-space:nowrap;font-size:12.5px;letter-spacing:.3px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);will-change:transform}
 @keyframes marquee-scroll{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
 #motivation-top-banner{top:0;background:linear-gradient(90deg,#2563eb,#7c3aed)}
 #motivation-bottom-banner{bottom:0;background:linear-gradient(90deg,#16a34a,#0d9488)}
@@ -1415,11 +1415,22 @@ function scheduleNextMotivationRotation(){
   motivationState.timer = setTimeout(rotateMotivationMessages, minutes*60*1000);
 }
 
-// Sets the marquee's text and (re)starts its right-to-left scroll from
-// scratch, at a speed proportional to the text length so short and long
-// messages both feel like they're moving at a similar pace.
-function playMarquee(el, text){
+// Bold, high-contrast palettes — a different one per role, and the color
+// itself rotates along with the message, so it's never a single flat white.
+var TRAINER_BANNER_COLORS = ['#fde047','#5eead4','#f472b6','#fb923c','#a5f3fc','#bef264'];
+var MANAGER_BANNER_COLORS = ['#facc15','#93c5fd','#fca5a5','#c4b5fd','#86efac','#fdba74'];
+
+function motivationColors(){
+  var isManagerOrAdmin = session && (session.role === 'Manager' || session.role === 'Admin');
+  return isManagerOrAdmin ? MANAGER_BANNER_COLORS : TRAINER_BANNER_COLORS;
+}
+
+// Sets the marquee's text/color and (re)starts its right-to-left scroll
+// from scratch, at a speed proportional to the text length so short and
+// long messages both feel like they're moving at a similar pace.
+function playMarquee(el, text, color){
   el.textContent = text;
+  if(color) el.style.color = color;
   var duration = Math.max(9, text.length * 0.24);
   el.style.animation = 'none';
   void el.offsetWidth; // force reflow so the restarted animation begins from the right edge again
@@ -1428,10 +1439,11 @@ function playMarquee(el, text){
 
 function rotateMotivationMessages(){
   var set = todaysMotivationSet(); // re-read each time in case the day changed while the app stayed open
+  var colors = motivationColors();
   motivationState.topIdx = (motivationState.topIdx + 1) % set.top.length;
   motivationState.bottomIdx = (motivationState.bottomIdx + 1) % set.bottom.length;
-  playMarquee(document.getElementById('motivation-top-text'), set.top[motivationState.topIdx]);
-  playMarquee(document.getElementById('motivation-bottom-text'), set.bottom[motivationState.bottomIdx]);
+  playMarquee(document.getElementById('motivation-top-text'), set.top[motivationState.topIdx], colors[motivationState.topIdx % colors.length]);
+  playMarquee(document.getElementById('motivation-bottom-text'), set.bottom[motivationState.bottomIdx], colors[(motivationState.bottomIdx + Math.floor(colors.length/2)) % colors.length]);
   scheduleNextMotivationRotation();
 }
 
@@ -1442,8 +1454,9 @@ function startMotivationBanners(){
   if(!motivationState.started){
     motivationState.started = true;
     var set = todaysMotivationSet();
-    playMarquee(document.getElementById('motivation-top-text'), set.top[0]);
-    playMarquee(document.getElementById('motivation-bottom-text'), set.bottom[0]);
+    var colors = motivationColors();
+    playMarquee(document.getElementById('motivation-top-text'), set.top[0], colors[0]);
+    playMarquee(document.getElementById('motivation-bottom-text'), set.bottom[0], colors[Math.floor(colors.length/2)]);
     scheduleNextMotivationRotation();
   }
 }
