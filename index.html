@@ -2135,10 +2135,62 @@ function renderMyPayments(){
     '</div>';
   }).join('') : '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No completed accounts yet.</div>';
 
+  var myShopsHtml = buildMyShopsList(filtered);
+
   document.getElementById('my-payments-summary').innerHTML =
     cardsHtml +
     '<div class="section" style="margin-bottom:10px"><div class="section-title">⏰ 3-Day Credit Follow-ups</div>'+dueSoonHtml+'</div>' +
+    '<div class="section" style="margin-bottom:10px"><div class="section-title">🏪 My Shops</div>'+myShopsHtml+'</div>' +
     '<div class="section"><div class="section-title">✅ Completed Accounts ('+completed.length+')</div>'+completedHtml+'</div>';
+}
+
+// Distinct shops (by Shop ID) among this trainer's own records, each with
+// an "Edit Shop ID" action — trainers may correct their OWN shop's ID
+// (e.g. a typo made at the time of sale) but never its name or any other
+// field; that stays a Manager/Admin-only capability in Manage Shops.
+var myShopsForEdit = [];
+
+function buildMyShopsList(rows){
+  var byId = {};
+  rows.forEach(function(r){
+    var id = String(r['Shop ID']||'').trim();
+    if(!id) return;
+    if(!byId[id]) byId[id] = { shopId:id, shopName:r['Shop Name']||'', county:r['County']||'', count:0 };
+    byId[id].count++;
+    if(r['Shop Name']) byId[id].shopName = r['Shop Name'];
+  });
+  myShopsForEdit = Object.keys(byId).map(function(k){ return byId[k]; })
+    .sort(function(a,b){ return (a.shopName||'').localeCompare(b.shopName||''); });
+
+  if(!myShopsForEdit.length){
+    return '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No shops recorded yet.</div>';
+  }
+  return myShopsForEdit.map(function(s, i){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px">'+
+      '<div><strong>'+(s.shopName||'—')+'</strong><br><span style="color:var(--text-m)">ID: '+s.shopId+' · '+s.count+' record(s)</span></div>'+
+      '<button type="button" onclick="editMyShopIdPrompt('+i+')" title="Edit Shop ID" style="border:none;background:var(--surface-2,#eef2ff);color:var(--accent);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px;flex-shrink:0">✏️</button>'+
+    '</div>';
+  }).join('');
+}
+
+function editMyShopIdPrompt(idx){
+  var shop = myShopsForEdit[idx];
+  if(!shop) return;
+  var newId = window.prompt('New Shop ID for "'+shop.shopName+'" (currently '+shop.shopId+'):\n\nThis updates the ID on all your records for this shop — the shop name stays the same.', shop.shopId);
+  if(newId===null) return;
+  newId = newId.trim();
+  if(!newId || newId===shop.shopId){ return; }
+
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    body: JSON.stringify({ formType:'editShopIdByTrainer', shopId: shop.shopId, newShopId: newId, requestedBy: session.email, requestedByRole: session.role })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.status==='success'){ openMyPayments(); }
+    else { alert(data.message || 'Failed to update Shop ID.'); }
+  })
+  .catch(function(){ alert('Network error — please try again.'); });
 }
 
 // ── TRAINER: MY VISIT HISTORY (Clients Engagement Tracker) ──────
