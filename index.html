@@ -590,7 +590,7 @@ input[type=file]{display:none}
         </div>
         <div class="two-col">
           <div class="field"><label for="ns-phone">Customer Phone Number<span class="req">*</span></label>
-            <input type="tel" id="ns-phone" placeholder="0712 345 678">
+            <input type="tel" id="ns-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
           </div>
           <div class="field"><label for="ns-shopid">Shop ID<span class="req">*</span></label>
             <input type="text" id="ns-shopid" placeholder="e.g. 456">
@@ -636,7 +636,7 @@ input[type=file]{display:none}
           <input type="text" id="d-req-custname" placeholder="e.g. Jane Wambui">
         </div>
         <div class="field"><label for="d-req-custphone">Customer Phone Number<span class="req">*</span></label>
-          <input type="tel" id="d-req-custphone" placeholder="0712 345 678">
+          <input type="tel" id="d-req-custphone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
         </div>
       </div>
       <div class="field"><label for="d-req-devicetype">Device Type<span class="req">*</span></label>
@@ -684,7 +684,7 @@ input[type=file]{display:none}
           <input type="text" id="d-req-name" readonly>
         </div>
         <div class="field"><label for="d-req-phone">Trainer Phone Number<span class="req">*</span></label>
-          <input type="tel" id="d-req-phone" placeholder="0712 345 678">
+          <input type="tel" id="d-req-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
         </div>
       </div>
       <div class="field"><label for="d-req-shipping">Shipping Location<span class="req">*</span></label>
@@ -1065,7 +1065,7 @@ input[type=file]{display:none}
       </div>
       <div class="two-col">
         <div class="field"><label for="s-phone">Owner Phone<span class="req">*</span></label>
-          <input type="tel" id="s-phone" placeholder="0712 345 678" oninput="calcProgress('s')">
+          <input type="tel" id="s-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress('s')">
         </div>
         <div class="field"><label for="s-transactions">No. of Transactions<span class="req">*</span></label>
           <input type="text" id="s-transactions" placeholder="e.g. 25" inputmode="numeric" oninput="calcProgress('s')">
@@ -1137,7 +1137,7 @@ input[type=file]{display:none}
         <input type="text" id="i-ownername" placeholder="e.g. John Kamau" oninput="calcProgress('i')">
       </div>
       <div class="field"><label for="i-ownerphone">Shop Owner Phone<span class="req">*</span></label>
-        <input type="tel" id="i-ownerphone" placeholder="0712 345 678" oninput="calcProgress('i')">
+        <input type="tel" id="i-ownerphone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress('i')">
       </div>
       <div class="field"><label for="i-location">Shop Location<span class="req">*</span></label>
         <input type="text" id="i-location" placeholder="e.g. Nakuru Town, Kenyatta Ave" oninput="calcProgress('i')">
@@ -1647,7 +1647,7 @@ function addVisit(){
     '<div class="field"><label>Location<span class="req">*</span></label><input type="text" id="v-loc-'+id+'" placeholder="Centers/Town" oninput="calcProgress(\'r\')"></div>'+
 
     '<div class="field"><label>Shop owner phone number<span class="req">*</span></label>'+
-    '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" oninput="calcProgress(\'r\')"></div>'+
+    '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" inputmode="tel" pattern="^(\\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress(\'r\')"></div>'+
 
     '<div class="field"><label>Front shop picture <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>'+
     '<div class="photo-box" onclick="document.getElementById(\'v-photo-'+id+'-file\').click()">'+
@@ -3092,6 +3092,7 @@ function submitNewSale(){
   if(!method) missing.push('Payment method');
   if(!custName) missing.push('Customer name');
   if(!phone) missing.push('Customer phone');
+  else if(!isValidKEPhone(phone)) missing.push('Customer phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
   if(!shopId) missing.push('Shop ID');
   if(!shopName) missing.push('Shop name');
   if(!loc) missing.push('Location');
@@ -3158,12 +3159,14 @@ function submitDeviceRequest(){
   if(!reqShopName) missing.push('Shop name');
   if(!reqCustName) missing.push('Customer name');
   if(!reqCustPhone) missing.push('Customer phone');
+  else if(!isValidKEPhone(reqCustPhone)) missing.push('Customer phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
   if(!reqDeviceType) missing.push('Device type');
   if(!reqEmail) missing.push('Send-to email');
   if(!reqAmount) missing.push('Device amount');
   if(!reqPaytype) missing.push('Payment type');
   if(!reqLocation) missing.push('Location');
   if(!reqPhone) missing.push('Trainer phone');
+  else if(!isValidKEPhone(reqPhone)) missing.push('Trainer phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
   if(!reqShipping) missing.push('Shipping location');
   if(!reqStart) missing.push('Start date');
   if(missing.length){ errEl.textContent='Missing: '+missing.join(', '); errEl.style.display='block'; return; }
@@ -3275,6 +3278,23 @@ function calcProgress(prefix){
 
 function v(id){var el=document.getElementById(id);return el?el.value.trim():'';}
 
+// Strips anything that isn't a digit or a leading "+" as the trainer
+// types, so junk like "N/N", commas, semicolons, letters, or spaces can
+// never even land in a phone field — used on every phone input's oninput.
+function sanitizePhoneInput(el){
+  var hasPlus = el.value.charAt(0)==='+';
+  var digits = el.value.replace(/[^0-9]/g,'');
+  el.value = (hasPlus?'+':'') + digits;
+}
+
+// Accepts only +254XXXXXXXXX, 254XXXXXXXXX, or 07XXXXXXXX (digits only
+// after the prefix) — each variant works out to 10+ characters total,
+// matching real Kenyan mobile numbers. Anything else (letters, "N/N",
+// punctuation, too short) is rejected.
+function isValidKEPhone(str){
+  return /^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$/.test(String(str||'').trim());
+}
+
 // ── SUBMIT ────────────────────────────────────────────────────
 // Stable per-form request ID — sent on every attempt of the SAME
 // submission (including retries after a network error), so the backend
@@ -3335,6 +3355,7 @@ function submitForm(type){
       if(!name) missing.push('Visit '+id+' name');
       if(!loc) missing.push('Visit '+id+' location');
       if(!phone) missing.push('Visit '+id+' shop owner phone number');
+      else if(!isValidKEPhone(phone)) missing.push('Visit '+id+' shop owner phone number (use +254712345678, 254712345678, 0712345678, or 0112345678)');
       if(!feedback) missing.push('Visit '+id+' client feedback');
 
       var displayPurpose = (purpose==='Other' && specifyReason) ? 'Other — ' + specifyReason : purpose;
@@ -3361,6 +3382,7 @@ function submitForm(type){
     if(!payload.ownerName) missing.push('Owner name');
     if(!payload.shopLocation) missing.push('Shop location');
     if(!payload.ownerPhone) missing.push('Owner phone');
+    else if(!isValidKEPhone(payload.ownerPhone)) missing.push('Owner phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
     if(!payload.numTransactions) missing.push('No. of transactions');
     if(!payload.ownerImage) missing.push('Owner app photo');
   }
@@ -3374,6 +3396,7 @@ function submitForm(type){
     if(!payload.shopName) missing.push('Shop name');
     if(!payload.ownerName) missing.push('Shop owner name');
     if(!payload.ownerPhone) missing.push('Shop owner phone');
+    else if(!isValidKEPhone(payload.ownerPhone)) missing.push('Shop owner phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
     if(!payload.shopLocation) missing.push('Shop location');
     if(!payload.deviceType) missing.push('Device type');
     if(!payload.exteriorImage) missing.push('Exterior photo');
