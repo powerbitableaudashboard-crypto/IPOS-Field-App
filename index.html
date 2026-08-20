@@ -3701,6 +3701,7 @@ function loadDashboard(){
     if(dashFormType==='install') dashAllItems = data.installs || [];
     else if(dashFormType==='users') dashAllItems = data.users || [];
     else dashAllItems = data.rows || [];
+    anFilledItemsCache = null; // source rows changed — invalidate the forward-fill cache used by analytics
     if(dashFormType!=='users') populateTrainerFilter();
     renderDashList();
     if(dashFormType==='install') updateBadgeCount();
@@ -4488,16 +4489,42 @@ function anOnFilterChange(){
   renderEngagementAnalytics();
 }
 
+// Route Plan submissions with multiple shops visited are saved as several
+// consecutive sheet rows, but only the FIRST row of each submission
+// carries the shared Trainer Name/Email/County/Date/GPS (the sheet
+// displays these as merged cells) — the rest are genuinely blank in the
+// API response. Forward-filling those fields from the nearest row above
+// reconstructs the real trainer for every visit row instead of losing
+// them to an "Unknown" bucket.
+var anFilledItemsCache = null;
+function anForwardFilledItems(){
+  if(anFilledItemsCache) return anFilledItemsCache;
+  var carryFields = ['Trainer Name','Trainer Email','County','Date','GPS'];
+  var last = {};
+  var filled = dashAllItems.map(function(r){
+    var copy = Object.assign({}, r);
+    carryFields.forEach(function(k){
+      var v = (copy[k]!=null ? String(copy[k]).trim() : '');
+      if(v) last[k] = copy[k];
+      else if(last[k]!=null) copy[k] = last[k];
+    });
+    return copy;
+  });
+  anFilledItemsCache = filled;
+  return filled;
+}
+
 function renderEngagementAnalytics(){
   var body = document.getElementById('an-modal-body');
   if(!body) return;
 
+  var sourceItems = anForwardFilledItems();
   anDateListCache = anDateList();
   var counties = [];
-  dashAllItems.forEach(function(r){ var c=r['County']; if(c && counties.indexOf(c)===-1) counties.push(c); });
+  sourceItems.forEach(function(r){ var c=r['County']; if(c && counties.indexOf(c)===-1) counties.push(c); });
   counties.sort();
 
-  var rowsInPeriod = dashAllItems.filter(function(r){
+  var rowsInPeriod = sourceItems.filter(function(r){
     return (!anState.county || r['County']===anState.county) && anRowInPeriod(r);
   });
   // Records with no trainer name attached can't be attributed to anyone,
