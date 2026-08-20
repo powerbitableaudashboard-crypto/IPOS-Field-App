@@ -149,6 +149,49 @@ body.has-motivation-banners .screen{padding-bottom:calc(3rem + 32px)}
 .ph-tl-meta{font-size:11px;color:var(--text-m);margin-top:2px;line-height:1.6}
 .ph-empty{text-align:center;padding:2rem 1rem;color:#9ca3af;font-size:13px}
 
+/* ENGAGEMENT ANALYTICS */
+.analytics-btn{width:100%;padding:12px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(79,70,229,.25)}
+.an-modal{max-width:640px}
+.an-section{margin-bottom:1.5rem}
+.an-section-head{font-size:12px;font-weight:700;color:var(--text);margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+.an-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.an-filters .field{margin-bottom:0}
+.an-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
+.an-summary-card{border-radius:12px;padding:10px 8px;text-align:center}
+.an-summary-num{font-size:19px;font-weight:800}
+.an-summary-lbl{font-size:9.5px;color:var(--text-m);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;font-weight:600}
+.an-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11.5px}
+.an-bar-name{width:92px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-weight:600}
+.an-bar-track{flex:1;background:var(--surface-2);border-radius:6px;height:16px;position:relative;overflow:hidden}
+.an-bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;min-width:22px;transition:width .3s}
+.an-bar-fill span{font-size:9.5px;color:#fff;font-weight:700}
+.an-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--text-m);margin-bottom:10px}
+.an-legend span{display:flex;align-items:center;gap:4px}
+.an-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.an-pie-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.an-pie{width:130px;height:130px;border-radius:50%;flex-shrink:0}
+.an-pie-legend{flex:1;min-width:140px;font-size:11px}
+.an-pie-legend-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;gap:8px}
+.an-pie-legend-row .an-pll-name{display:flex;align-items:center;gap:6px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-pie-legend-row .an-pll-val{font-weight:700;color:var(--text-m);flex-shrink:0}
+.an-matrix-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+.an-matrix{border-collapse:collapse;font-size:10.5px;min-width:100%}
+.an-matrix th,.an-matrix td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap}
+.an-matrix th{background:var(--surface-1);color:var(--text-m);font-weight:700;position:sticky;top:0}
+.an-matrix td.an-mname{text-align:left;font-weight:700;color:var(--text);position:sticky;left:0;background:#fff;border-right:1px solid var(--border)}
+.an-matrix th.an-mname{text-align:left;position:sticky;left:0;background:var(--surface-1);z-index:2}
+.an-cell{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;border-radius:6px;font-weight:700;color:#fff;font-size:10px}
+.an-rank-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:420px){.an-rank-grid{grid-template-columns:1fr}.an-filters{grid-template-columns:1fr}.an-summary-grid{grid-template-columns:1fr 1fr}}
+.an-rank-card{border-radius:10px;padding:10px;border:1px solid var(--border)}
+.an-rank-title{font-size:11px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.an-rank-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--border);font-size:11.5px}
+.an-rank-item:last-child{border-bottom:none}
+.an-rank-item .an-rank-pos{width:18px;flex-shrink:0;font-weight:700;color:var(--text-m)}
+.an-rank-item .an-rank-name{flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-rank-item .an-rank-count{font-weight:800;flex-shrink:0}
+.an-empty-note{text-align:center;padding:1.5rem 1rem;color:#9ca3af;font-size:12.5px}
+
 /* AUTO FIELD */
 .auto-field{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius)}
 .auto-val{font-size:13px;color:var(--text);flex:1;word-break:break-all}
@@ -392,6 +435,9 @@ input[type=file]{display:none}
         </div>
         <div id="dash-export-pdf-wrap" style="display:none">
           <button class="submit-btn" id="dash-export-pdf-btn" style="margin-top:0;background:#7c3aed" onclick="exportDashPdf()">📄 Export As PDF</button>
+        </div>
+        <div id="dash-analytics-wrap" style="display:none">
+          <button class="analytics-btn" id="dash-analytics-btn" onclick="openEngagementAnalytics()">📊 View Engagement Analytics</button>
         </div>
       </div>
 
@@ -3613,6 +3659,7 @@ function setFormType(type){
   document.getElementById('dash-devicepay-summary').style.display = (type==='devicepay') ? 'block' : 'none';
   document.getElementById('dash-shop-filter-wrap').style.display = (type==='devicepay') ? 'block' : 'none';
   document.getElementById('dash-export-pdf-wrap').style.display = (type==='devicepay' || type==='route') ? 'block' : 'none';
+  document.getElementById('dash-analytics-wrap').style.display = (type==='route') ? 'block' : 'none';
   document.getElementById('dash-filters').style.display = (type==='users') ? 'none' : 'flex';
   document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
   document.getElementById('dash-trainer-filter').value='';
@@ -4315,6 +4362,291 @@ function buildDashSubtitle(countLabel){
   if(shopFilter) bits.push('Shop search: "'+shopFilter+'"');
   bits.push(countLabel);
   return bits.join(' · ');
+}
+
+// ── ENGAGEMENT ANALYTICS (Manager/Admin — Clients Engagement Tracker) ──
+// Pure client-side aggregation over the already-fetched `dashAllItems`
+// (no extra network calls, no charting library) so opening/using this
+// never adds load time to the rest of the app. Each row in dashAllItems
+// for the 'route' sheet = one client visit, keyed by 'Trainer Name',
+// 'County' and 'Date'.
+var DAILY_CLIENT_TARGET = 15;
+var anState = { range:'month', dateFrom:'', dateTo:'', county:'' };
+
+function openEngagementAnalytics(){
+  if(dashFormType!=='route') return;
+  // Sync sensible defaults from the main dashboard filters the first time.
+  anState.range = document.getElementById('dash-range-filter').value || 'month';
+  if(anState.range==='all') anState.range='month';
+  anState.dateFrom = document.getElementById('dash-date-from').value || '';
+  anState.dateTo = document.getElementById('dash-date-to').value || '';
+  anState.county = document.getElementById('dash-county-filter').value || '';
+
+  var overlay = document.createElement('div');
+  overlay.className = 'ph-overlay';
+  overlay.id = 'an-overlay';
+  overlay.onclick = function(e){ if(e.target===overlay) closeEngagementAnalytics(); };
+  overlay.innerHTML =
+    '<div class="ph-modal an-modal">' +
+      '<div class="ph-modal-head">' +
+        '<div><div class="ph-modal-title">📊 Clients Engagement Analytics</div><div class="ph-modal-sub">Daily target: '+DAILY_CLIENT_TARGET+' clients/trainer</div></div>' +
+        '<button class="ph-modal-close" onclick="closeEngagementAnalytics()">✕</button>' +
+      '</div>' +
+      '<div class="ph-modal-body" id="an-modal-body"></div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  renderEngagementAnalytics();
+}
+
+function closeEngagementAnalytics(){
+  var el = document.getElementById('an-overlay');
+  if(el) el.remove();
+}
+
+// Counts calendar days "elapsed" in the chosen period (never counting
+// future days), used to size the daily-target bar (target = days * 15).
+function anPeriodDays(){
+  var now = new Date(); now.setHours(0,0,0,0);
+  if(anState.range==='today') return 1;
+  if(anState.range==='week'){
+    var startOfWeek = new Date(now); startOfWeek.setDate(now.getDate()-now.getDay());
+    return Math.floor((now-startOfWeek)/86400000)+1;
+  }
+  if(anState.range==='month'){
+    return now.getDate();
+  }
+  if(anState.range==='year'){
+    var startOfYear = new Date(now.getFullYear(),0,1);
+    return Math.floor((now-startOfYear)/86400000)+1;
+  }
+  if(anState.range==='custom'){
+    if(!anState.dateFrom) return 1;
+    var from = new Date(anState.dateFrom+'T00:00:00');
+    var toRaw = anState.dateTo ? new Date(anState.dateTo+'T00:00:00') : now;
+    var to = toRaw > now ? now : toRaw;
+    var days = Math.floor((to-from)/86400000)+1;
+    return days>0 ? days : 1;
+  }
+  return 30;
+}
+
+function anDateIso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+// Builds the ordered list of ISO day-strings covered by the current
+// period, for the matrix table's columns.
+function anDateList(){
+  var now = new Date(); now.setHours(0,0,0,0);
+  var from, to;
+  if(anState.range==='today'){ from=new Date(now); to=new Date(now); }
+  else if(anState.range==='week'){ from=new Date(now); from.setDate(now.getDate()-now.getDay()); to=new Date(now); }
+  else if(anState.range==='month'){ from=new Date(now.getFullYear(),now.getMonth(),1); to=new Date(now); }
+  else if(anState.range==='year'){ from=new Date(now.getFullYear(),0,1); to=new Date(now); }
+  else if(anState.range==='custom'){
+    from = anState.dateFrom ? new Date(anState.dateFrom+'T00:00:00') : new Date(now.getFullYear(),now.getMonth(),1);
+    to = anState.dateTo ? new Date(anState.dateTo+'T00:00:00') : new Date(now);
+    if(to>now) to=new Date(now);
+  } else { from=new Date(now.getFullYear(),now.getMonth(),1); to=new Date(now); }
+
+  var list=[]; var cur=new Date(from);
+  var guard=0;
+  while(cur<=to && guard<370){ list.push(anDateIso(cur)); cur.setDate(cur.getDate()+1); guard++; }
+  return list;
+}
+
+function anRowInPeriod(row){
+  var d = parseAppDate(row['Date']);
+  if(!d) return true;
+  var dIso = anDateIso(d);
+  var list = anDateListCache;
+  return list.indexOf(dIso)!==-1;
+}
+
+var anDateListCache = [];
+
+function anCellColor(count){
+  if(count<=0) return '#d1d5db';
+  if(count>=DAILY_CLIENT_TARGET) return '#16a34a';
+  if(count>=Math.ceil(DAILY_CLIENT_TARGET/2)) return '#c2410c';
+  return '#dc2626';
+}
+function anBarColor(pct){
+  if(pct>=100) return '#16a34a';
+  if(pct>=50) return '#c2410c';
+  return '#dc2626';
+}
+var anPieColors = ['#2563eb','#7c3aed','#16a34a','#c2410c','#dc2626','#0d9488','#f59e0b','#db2777','#4f46e5','#65a30d'];
+
+function anOnFilterChange(){
+  anState.range = document.getElementById('an-range').value;
+  anState.county = document.getElementById('an-county').value;
+  document.getElementById('an-custom-wrap').style.display = anState.range==='custom' ? 'grid' : 'none';
+  if(anState.range==='custom'){
+    anState.dateFrom = document.getElementById('an-date-from').value;
+    anState.dateTo = document.getElementById('an-date-to').value;
+    if(!anState.dateFrom) return; // wait for a from-date before recomputing
+  }
+  renderEngagementAnalytics();
+}
+
+function renderEngagementAnalytics(){
+  var body = document.getElementById('an-modal-body');
+  if(!body) return;
+
+  anDateListCache = anDateList();
+  var counties = [];
+  dashAllItems.forEach(function(r){ var c=r['County']; if(c && counties.indexOf(c)===-1) counties.push(c); });
+  counties.sort();
+
+  var rows = dashAllItems.filter(function(r){
+    return (!anState.county || r['County']===anState.county) && anRowInPeriod(r);
+  });
+
+  // ── Filter controls (rebuilt each render so selected values persist) ──
+  var filtersHtml =
+    '<div class="an-filters">' +
+      '<div class="field"><label>Period</label><select id="an-range" onchange="anOnFilterChange()">' +
+        ['today:Today','week:This Week','month:This Month','year:This Year','custom:Custom Range…'].map(function(o){
+          var kv=o.split(':'); return '<option value="'+kv[0]+'"'+(anState.range===kv[0]?' selected':'')+'>'+kv[1]+'</option>';
+        }).join('') +
+      '</select></div>' +
+      '<div class="field"><label>County</label><select id="an-county" onchange="anOnFilterChange()">' +
+        '<option value="">All counties</option>' +
+        counties.map(function(c){ return '<option value="'+c+'"'+(anState.county===c?' selected':'')+'>'+c+'</option>'; }).join('') +
+      '</select></div>' +
+    '</div>' +
+    '<div class="an-filters" id="an-custom-wrap" style="display:'+(anState.range==='custom'?'grid':'none')+'">' +
+      '<div class="field"><label>From</label><input type="date" id="an-date-from" value="'+(anState.dateFrom||'')+'" onchange="anOnFilterChange()"></div>' +
+      '<div class="field"><label>To</label><input type="date" id="an-date-to" value="'+(anState.dateTo||'')+'" onchange="anOnFilterChange()"></div>' +
+    '</div>';
+
+  if(!rows.length){
+    body.innerHTML = filtersHtml + '<div class="an-empty-note">📭 No visit records for this period/county.</div>';
+    return;
+  }
+
+  // ── Aggregate per trainer, and per trainer-per-day (for the matrix) ──
+  var byTrainer = {}; // name -> { total, byDay:{iso:count} }
+  rows.forEach(function(r){
+    var name = r['Trainer Name'] || 'Unknown';
+    var d = parseAppDate(r['Date']);
+    var iso = d ? anDateIso(d) : null;
+    if(!byTrainer[name]) byTrainer[name] = { total:0, byDay:{} };
+    byTrainer[name].total++;
+    if(iso) byTrainer[name].byDay[iso] = (byTrainer[name].byDay[iso]||0) + 1;
+  });
+  var trainerNames = Object.keys(byTrainer);
+  var periodDays = anPeriodDays();
+  var target = periodDays * DAILY_CLIENT_TARGET;
+
+  var totalEngagements = rows.length;
+  var trainersOnTarget = trainerNames.filter(function(n){ return byTrainer[n].total >= target; }).length;
+  var avgPerTrainer = trainerNames.length ? Math.round(totalEngagements/trainerNames.length) : 0;
+
+  var summaryHtml =
+    '<div class="an-summary-grid">' +
+      '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:var(--accent)">'+totalEngagements+'</div><div class="an-summary-lbl">Total Visits</div></div>' +
+      '<div class="an-summary-card" style="background:var(--green-bg)"><div class="an-summary-num" style="color:var(--green)">'+trainersOnTarget+' / '+trainerNames.length+'</div><div class="an-summary-lbl">On Target</div></div>' +
+      '<div class="an-summary-card" style="background:var(--purple-bg)"><div class="an-summary-num" style="color:var(--purple)">'+avgPerTrainer+'</div><div class="an-summary-lbl">Avg / Trainer</div></div>' +
+    '</div>';
+
+  // ── Bar chart: total visits per trainer vs. target, color-coded ──
+  var sortedByTotal = trainerNames.slice().sort(function(a,b){ return byTrainer[b].total - byTrainer[a].total; });
+  var maxTotal = Math.max.apply(null, trainerNames.map(function(n){ return byTrainer[n].total; }).concat([target,1]));
+  var barsHtml = sortedByTotal.map(function(n){
+    var total = byTrainer[n].total;
+    var pct = target ? Math.round((total/target)*100) : 0;
+    var widthPct = Math.max(6, Math.round((total/maxTotal)*100));
+    var color = anBarColor(pct);
+    return '<div class="an-bar-row">' +
+      '<div class="an-bar-name" title="'+escapeHtml(n)+'">'+escapeHtml(n)+'</div>' +
+      '<div class="an-bar-track"><div class="an-bar-fill" style="width:'+widthPct+'%;background:'+color+'"><span>'+total+'</span></div></div>' +
+      '<div style="width:38px;text-align:right;color:'+color+';font-weight:700">'+pct+'%</div>' +
+    '</div>';
+  }).join('');
+  var barChartHtml =
+    '<div class="an-section">' +
+      '<div class="an-section-head">📶 Visits per Trainer vs. Target ('+target+' for this period)</div>' +
+      '<div class="an-legend">' +
+        '<span><span class="an-dot" style="background:#16a34a"></span>Met target (≥100%)</span>' +
+        '<span><span class="an-dot" style="background:#c2410c"></span>Behind (50–99%)</span>' +
+        '<span><span class="an-dot" style="background:#dc2626"></span>At risk (&lt;50%)</span>' +
+      '</div>' +
+      barsHtml +
+    '</div>';
+
+  // ── Pie chart: share of total visits per trainer (CSS conic-gradient — no JS math, no library) ──
+  var pieSlices = sortedByTotal.slice(0,8);
+  var others = sortedByTotal.slice(8);
+  var othersTotal = others.reduce(function(s,n){ return s+byTrainer[n].total; }, 0);
+  var pieEntries = pieSlices.map(function(n,i){ return { name:n, val:byTrainer[n].total, color:anPieColors[i%anPieColors.length] }; });
+  if(othersTotal>0) pieEntries.push({ name:'Others ('+others.length+')', val:othersTotal, color:'#9ca3af' });
+
+  var acc=0; var gradientParts=[];
+  pieEntries.forEach(function(e){
+    var startPct = (acc/totalEngagements)*100;
+    acc += e.val;
+    var endPct = (acc/totalEngagements)*100;
+    gradientParts.push(e.color+' '+startPct.toFixed(2)+'% '+endPct.toFixed(2)+'%');
+  });
+  var pieHtml =
+    '<div class="an-section">' +
+      '<div class="an-section-head">🥧 Share of Total Engagement</div>' +
+      '<div class="an-pie-wrap">' +
+        '<div class="an-pie" style="background:conic-gradient('+gradientParts.join(',')+')"></div>' +
+        '<div class="an-pie-legend">' +
+          pieEntries.map(function(e){
+            var pct = Math.round((e.val/totalEngagements)*100);
+            return '<div class="an-pie-legend-row"><span class="an-pll-name"><span class="an-dot" style="background:'+e.color+'"></span>'+escapeHtml(e.name)+'</span><span class="an-pll-val">'+e.val+' ('+pct+'%)</span></div>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // ── Matrix table: trainer × day, each cell color-coded against the daily target ──
+  var days = anDateListCache;
+  var showDays = days.length <= 31 ? days : days.slice(days.length-31); // cap width for very long custom ranges
+  var matrixHtml =
+    '<div class="an-section">' +
+      '<div class="an-section-head">🗓️ Daily Matrix (green ≥'+DAILY_CLIENT_TARGET+', orange ≥'+Math.ceil(DAILY_CLIENT_TARGET/2)+', red &lt;'+Math.ceil(DAILY_CLIENT_TARGET/2)+', grey = no visits)'+(days.length>showDays.length?' — showing last 31 days':'')+'</div>' +
+      '<div class="an-matrix-wrap"><table class="an-matrix"><thead><tr><th class="an-mname">Trainer</th>' +
+        showDays.map(function(d){ return '<th>'+d.slice(5)+'</th>'; }).join('') +
+        '<th>Total</th></tr></thead><tbody>' +
+        sortedByTotal.map(function(n){
+          var t = byTrainer[n];
+          return '<tr><td class="an-mname">'+escapeHtml(n)+'</td>' +
+            showDays.map(function(d){
+              var c = t.byDay[d]||0;
+              return '<td><span class="an-cell" style="background:'+anCellColor(c)+'">'+c+'</span></td>';
+            }).join('') +
+            '<td><strong>'+t.total+'</strong></td></tr>';
+        }).join('') +
+      '</tbody></table></div>' +
+    '</div>';
+
+  // ── Ranking: top 5 / bottom 5 trainers by total engagement in period ──
+  var top5 = sortedByTotal.slice(0,5);
+  var bottom5 = sortedByTotal.slice().reverse().slice(0,5);
+  function anRankList(list, medalSet){
+    return list.map(function(n,i){
+      var total = byTrainer[n].total;
+      var pct = target ? Math.round((total/target)*100) : 0;
+      return '<div class="an-rank-item"><span class="an-rank-pos">'+(medalSet[i]||(i+1))+'</span><span class="an-rank-name" title="'+escapeHtml(n)+'">'+escapeHtml(n)+'</span><span class="an-rank-count" style="color:'+anBarColor(pct)+'">'+total+'</span></div>';
+    }).join('') || '<div style="color:var(--text-m);font-size:11.5px;padding:6px 0">No data.</div>';
+  }
+  var rankingHtml =
+    '<div class="an-section">' +
+      '<div class="an-section-head">🏆 Ranking for This Period</div>' +
+      '<div class="an-rank-grid">' +
+        '<div class="an-rank-card" style="background:var(--green-bg);border-color:var(--green-border)">' +
+          '<div class="an-rank-title" style="color:#166534">🥇 Top 5 Trainers</div>' + anRankList(top5, ['🥇','🥈','🥉','4','5']) +
+        '</div>' +
+        '<div class="an-rank-card" style="background:#fef2f2;border-color:#fecaca">' +
+          '<div class="an-rank-title" style="color:#b91c1c">⚠️ Bottom 5 Trainers</div>' + anRankList(bottom5, ['1','2','3','4','5']) +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  body.innerHTML = filtersHtml + summaryHtml + barChartHtml + pieHtml + rankingHtml + matrixHtml;
 }
 
 // Fetches the full repayment history (deposit + every installment/cash
