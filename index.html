@@ -4226,7 +4226,7 @@ function saveUser(){
   .then(function(r){return r.json();})
   .then(function(data){
     btn.disabled=false; btn.textContent='💾 Save';
-    if(data.status==='success'){ closeUserForm(); loadDashboard(); }
+    if(data.status==='success'){ closeUserForm(); anAllTrainersCache=null; loadDashboard(); }
     else { var el=document.getElementById('uf-error'); el.textContent='⚠️ '+(data.message||'Failed to save.'); el.style.display='block'; }
   })
   .catch(function(){ btn.disabled=false; btn.textContent='💾 Save'; var el=document.getElementById('uf-error'); el.textContent='⚠️ Network error.'; el.style.display='block'; });
@@ -4243,7 +4243,7 @@ function deleteUser(email, btnEl){
   })
   .then(function(r){return r.json();})
   .then(function(data){
-    if(data.status==='success'){ loadDashboard(); }
+    if(data.status==='success'){ anAllTrainersCache=null; loadDashboard(); }
     else { alert('Failed: '+(data.message||'Unknown error')); row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); }
   })
   .catch(function(){ alert('Network error.'); row.querySelectorAll('button').forEach(function(b){ b.disabled=false; }); });
@@ -4373,6 +4373,7 @@ function buildDashSubtitle(countLabel){
 // 'County' and 'Date'.
 var DAILY_CLIENT_TARGET = 15;
 var anState = { range:'month', dateFrom:'', dateTo:'', county:'' };
+var anAllTrainersCache = null; // full registered-trainer roster (role:'Trainer'), so 0-visit trainers still get ranked
 
 function openEngagementAnalytics(){
   if(dashFormType!=='route') return;
@@ -4393,10 +4394,27 @@ function openEngagementAnalytics(){
         '<div><div class="ph-modal-title">📊 Clients Engagement Analytics</div><div class="ph-modal-sub">Daily target: '+DAILY_CLIENT_TARGET+' clients/trainer</div></div>' +
         '<button class="ph-modal-close" onclick="closeEngagementAnalytics()">✕</button>' +
       '</div>' +
-      '<div class="ph-modal-body" id="an-modal-body"></div>' +
+      '<div class="ph-modal-body" id="an-modal-body"><div class="an-empty-note">Loading…</div></div>' +
     '</div>';
   document.body.appendChild(overlay);
-  renderEngagementAnalytics();
+
+  if(anAllTrainersCache){ renderEngagementAnalytics(); }
+  else { anFetchAllTrainers(renderEngagementAnalytics); }
+}
+
+// Fetches the full registered-user list (same endpoint as Manage Users,
+// so it's automatically scoped to what this Manager/Admin is allowed to
+// see) and keeps only Trainer accounts. Cached so re-opening analytics,
+// or switching its filters, doesn't re-hit the network.
+function anFetchAllTrainers(cb){
+  var url = APPS_SCRIPT_URL + '?action=getUsers&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  fetch(url).then(function(r){return r.json();}).then(function(data){
+    anAllTrainersCache = (data.users || []).filter(function(u){ return u.role==='Trainer'; });
+    cb();
+  }).catch(function(){
+    anAllTrainersCache = []; // fall back to whichever trainers already appear in the visit data
+    cb();
+  });
 }
 
 function closeEngagementAnalytics(){
@@ -4556,11 +4574,6 @@ function renderEngagementAnalytics(){
     ? '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:11.5px;color:#92400e;margin-bottom:1rem">⚠️ '+unattributedCount+' visit record(s) in this period have no trainer name attached and are excluded from the charts below. Ask trainers to re-submit or check the source data.</div>'
     : '';
 
-  if(!rows.length){
-    body.innerHTML = filtersHtml + unattributedNote + '<div class="an-empty-note">📭 No visit records for this period/county.</div>';
-    return;
-  }
-
   // ── Aggregate per trainer, and per trainer-per-day (for the matrix) ──
   var byTrainer = {}; // name -> { total, byDay:{iso:count} }
   rows.forEach(function(r){
@@ -4571,7 +4584,24 @@ function renderEngagementAnalytics(){
     byTrainer[name].total++;
     if(iso) byTrainer[name].byDay[iso] = (byTrainer[name].byDay[iso]||0) + 1;
   });
+
+  // Every registered trainer must be ranked, even with zero visits this
+  // period — otherwise a trainer who did nothing simply disappears from
+  // the leaderboard instead of showing up (rightly) at the bottom with 0.
+  (anAllTrainersCache || []).forEach(function(u){
+    var name = (u.name || u.email || '').trim();
+    if(!name) return;
+    if(anState.county && u.county && u.county !== anState.county) return; // trainer isn't assigned to the filtered county
+    if(!byTrainer[name]) byTrainer[name] = { total:0, byDay:{} };
+  });
+
   var trainerNames = Object.keys(byTrainer);
+
+  if(!trainerNames.length){
+    body.innerHTML = filtersHtml + unattributedNote + '<div class="an-empty-note">📭 No trainers found for this period/county.</div>';
+    return;
+  }
+
   var periodDays = anPeriodDays();
   var target = periodDays * DAILY_CLIENT_TARGET;
 
@@ -4612,32 +4642,41 @@ function renderEngagementAnalytics(){
     '</div>';
 
   // ── Pie chart: share of total visits per trainer (CSS conic-gradient — no JS math, no library) ──
-  var pieSlices = sortedByTotal.slice(0,8);
-  var others = sortedByTotal.slice(8);
-  var othersTotal = others.reduce(function(s,n){ return s+byTrainer[n].total; }, 0);
-  var pieEntries = pieSlices.map(function(n,i){ return { name:n, val:byTrainer[n].total, color:anPieColors[i%anPieColors.length] }; });
-  if(othersTotal>0) pieEntries.push({ name:'Others ('+others.length+')', val:othersTotal, color:'#9ca3af' });
+  var pieHtml;
+  if(totalEngagements === 0){
+    pieHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">🥧 Share of Total Engagement</div>' +
+        '<div class="an-empty-note">No visits recorded yet for this period/county.</div>' +
+      '</div>';
+  } else {
+    var pieSlices = sortedByTotal.slice(0,8);
+    var others = sortedByTotal.slice(8);
+    var othersTotal = others.reduce(function(s,n){ return s+byTrainer[n].total; }, 0);
+    var pieEntries = pieSlices.map(function(n,i){ return { name:n, val:byTrainer[n].total, color:anPieColors[i%anPieColors.length] }; }).filter(function(e){ return e.val>0; });
+    if(othersTotal>0) pieEntries.push({ name:'Others ('+others.length+')', val:othersTotal, color:'#9ca3af' });
 
-  var acc=0; var gradientParts=[];
-  pieEntries.forEach(function(e){
-    var startPct = (acc/totalEngagements)*100;
-    acc += e.val;
-    var endPct = (acc/totalEngagements)*100;
-    gradientParts.push(e.color+' '+startPct.toFixed(2)+'% '+endPct.toFixed(2)+'%');
-  });
-  var pieHtml =
-    '<div class="an-section">' +
-      '<div class="an-section-head">🥧 Share of Total Engagement</div>' +
-      '<div class="an-pie-wrap">' +
-        '<div class="an-pie" style="background:conic-gradient('+gradientParts.join(',')+')"></div>' +
-        '<div class="an-pie-legend">' +
-          pieEntries.map(function(e){
-            var pct = Math.round((e.val/totalEngagements)*100);
-            return '<div class="an-pie-legend-row"><span class="an-pll-name"><span class="an-dot" style="background:'+e.color+'"></span>'+escapeHtml(e.name)+'</span><span class="an-pll-val">'+e.val+' ('+pct+'%)</span></div>';
-          }).join('') +
+    var acc=0; var gradientParts=[];
+    pieEntries.forEach(function(e){
+      var startPct = (acc/totalEngagements)*100;
+      acc += e.val;
+      var endPct = (acc/totalEngagements)*100;
+      gradientParts.push(e.color+' '+startPct.toFixed(2)+'% '+endPct.toFixed(2)+'%');
+    });
+    pieHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">🥧 Share of Total Engagement</div>' +
+        '<div class="an-pie-wrap">' +
+          '<div class="an-pie" style="background:conic-gradient('+gradientParts.join(',')+')"></div>' +
+          '<div class="an-pie-legend">' +
+            pieEntries.map(function(e){
+              var pct = Math.round((e.val/totalEngagements)*100);
+              return '<div class="an-pie-legend-row"><span class="an-pll-name"><span class="an-dot" style="background:'+e.color+'"></span>'+escapeHtml(e.name)+'</span><span class="an-pll-val">'+e.val+' ('+pct+'%)</span></div>';
+            }).join('') +
+          '</div>' +
         '</div>' +
-      '</div>' +
-    '</div>';
+      '</div>';
+  }
 
   // ── Matrix table: trainer × day, each cell color-coded against the daily target ──
   var days = anDateListCache;
