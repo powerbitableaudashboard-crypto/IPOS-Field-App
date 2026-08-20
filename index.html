@@ -4497,9 +4497,15 @@ function renderEngagementAnalytics(){
   dashAllItems.forEach(function(r){ var c=r['County']; if(c && counties.indexOf(c)===-1) counties.push(c); });
   counties.sort();
 
-  var rows = dashAllItems.filter(function(r){
+  var rowsInPeriod = dashAllItems.filter(function(r){
     return (!anState.county || r['County']===anState.county) && anRowInPeriod(r);
   });
+  // Records with no trainer name attached can't be attributed to anyone,
+  // so they're excluded from every chart/rank/matrix below rather than
+  // being lumped into a misleading "Unknown" bucket. We still surface the
+  // count so a manager can go fix the underlying data if it's non-trivial.
+  var rows = rowsInPeriod.filter(function(r){ return (r['Trainer Name']||'').toString().trim() !== ''; });
+  var unattributedCount = rowsInPeriod.length - rows.length;
 
   // ── Filter controls (rebuilt each render so selected values persist) ──
   var filtersHtml =
@@ -4519,8 +4525,12 @@ function renderEngagementAnalytics(){
       '<div class="field"><label>To</label><input type="date" id="an-date-to" value="'+(anState.dateTo||'')+'" onchange="anOnFilterChange()"></div>' +
     '</div>';
 
+  var unattributedNote = unattributedCount>0
+    ? '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:11.5px;color:#92400e;margin-bottom:1rem">⚠️ '+unattributedCount+' visit record(s) in this period have no trainer name attached and are excluded from the charts below. Ask trainers to re-submit or check the source data.</div>'
+    : '';
+
   if(!rows.length){
-    body.innerHTML = filtersHtml + '<div class="an-empty-note">📭 No visit records for this period/county.</div>';
+    body.innerHTML = filtersHtml + unattributedNote + '<div class="an-empty-note">📭 No visit records for this period/county.</div>';
     return;
   }
 
@@ -4646,7 +4656,7 @@ function renderEngagementAnalytics(){
       '</div>' +
     '</div>';
 
-  body.innerHTML = filtersHtml + summaryHtml + barChartHtml + pieHtml + rankingHtml + matrixHtml;
+  body.innerHTML = filtersHtml + unattributedNote + summaryHtml + barChartHtml + pieHtml + rankingHtml + matrixHtml;
 }
 
 // Fetches the full repayment history (deposit + every installment/cash
