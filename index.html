@@ -415,6 +415,14 @@ input[type=file]{display:none}
             <select id="dash-county-filter" onchange="renderDashList()"><option value="">All counties</option></select>
           </div>
         </div>
+        <div class="two-col" id="dash-region-manager-wrap" style="display:none">
+          <div class="field" style="margin-bottom:0"><label>Region</label>
+            <select id="dash-region-filter" onchange="renderDashList()"><option value="">All regions</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0"><label>Area Manager</label>
+            <select id="dash-manager-filter" onchange="renderDashList()"><option value="">All managers</option></select>
+          </div>
+        </div>
         <div class="field" style="margin-bottom:0"><label>Date Range</label>
           <select id="dash-range-filter" onchange="onRangeFilterChange()">
             <option value="all">All Time</option>
@@ -3664,6 +3672,11 @@ function setFormType(type){
   document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
   document.getElementById('dash-trainer-filter').value='';
   document.getElementById('dash-county-filter').value='';
+  var showRegionMgr = session.role==='Admin' && (type==='install' || type==='devicepay' || type==='survey');
+  document.getElementById('dash-region-manager-wrap').style.display = showRegionMgr ? 'grid' : 'none';
+  if(showRegionMgr) populateRegionManagerFilters();
+  document.getElementById('dash-region-filter').value='';
+  document.getElementById('dash-manager-filter').value='';
   document.getElementById('dash-range-filter').value='all';
   document.getElementById('dash-custom-range-wrap').style.display='none';
   document.getElementById('dash-date-from').value='';
@@ -3727,6 +3740,32 @@ function populateTrainerFilter(){
   countySel.innerHTML = '<option value="">All counties</option>' + counties.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
   if(names.indexOf(curTrainer)!==-1) trainerSel.value = curTrainer;
   if(counties.indexOf(curCounty)!==-1) countySel.value = curCounty;
+}
+
+// Admin-only Region / Area Manager filters for the Installation, Device
+// Payment Report, and Shop Survey list views — driven by the same
+// static AREA_MANAGERS coverage map used in Engagement Analytics.
+function populateRegionManagerFilters(){
+  var regionSel = document.getElementById('dash-region-filter');
+  var managerSel = document.getElementById('dash-manager-filter');
+  var regionOptions = AREA_MANAGERS.map(function(m){ return m.region; }).filter(function(r,i,arr){ return arr.indexOf(r)===i; });
+  var managerOptions = AREA_MANAGERS.map(function(m){ return m.name; });
+  regionSel.innerHTML = '<option value="">All regions</option>' + regionOptions.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
+  managerSel.innerHTML = '<option value="">All managers</option>' + managerOptions.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('');
+}
+
+// True if `county` passes whatever Region / Area Manager filters are
+// currently set on the main dashboard (Install / Device Payment /
+// Survey list views). Harmless no-op when those dropdowns are hidden
+// or unset, since their values default to ''.
+function dashRegionManagerAllowed(county){
+  var regionEl = document.getElementById('dash-region-filter');
+  var managerEl = document.getElementById('dash-manager-filter');
+  var region = regionEl ? regionEl.value : '';
+  var manager = managerEl ? managerEl.value : '';
+  if(region && AN_COUNTY_TO_REGION[county] !== region) return false;
+  if(manager && AN_COUNTY_TO_MANAGER[county] !== manager) return false;
+  return true;
 }
 
 function onRangeFilterChange(){
@@ -3832,6 +3871,7 @@ function renderDevicePaySummary(){
   var filtered = dashAllItems.filter(function(x){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
+      dashRegionManagerAllowed(x['County']) &&
       (!shopFilter || String(x['Shop ID']||'').toLowerCase().indexOf(shopFilter)!==-1 || String(x['Shop Name']||'').toLowerCase().indexOf(shopFilter)!==-1) &&
       dateMatches(x['Date']);
   });
@@ -3902,6 +3942,7 @@ function renderInstallList(){
     return x.status===dashFilter &&
       (!trainerFilter || x.trainerName===trainerFilter) &&
       (!countyFilter || x.county===countyFilter) &&
+      dashRegionManagerAllowed(x.county) &&
       dateMatches(x.date);
   });
   var listEl = document.getElementById('dash-list');
@@ -3973,6 +4014,7 @@ function getFilteredDashItems(){
   return dashAllItems.filter(function(x){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
+      dashRegionManagerAllowed(x['County']) &&
       (!shopFilter || String(x['Shop ID']||'').toLowerCase().indexOf(shopFilter)!==-1 || String(x['Shop Name']||'').toLowerCase().indexOf(shopFilter)!==-1) &&
       dateMatches(x['Date']);
   });
@@ -4359,8 +4401,14 @@ function buildDashSubtitle(countLabel){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
   var shopFilter = document.getElementById('dash-shop-filter') ? document.getElementById('dash-shop-filter').value : '';
+  var regionEl = document.getElementById('dash-region-filter');
+  var managerEl = document.getElementById('dash-manager-filter');
+  var regionFilter = regionEl ? regionEl.value : '';
+  var managerFilter = managerEl ? managerEl.value : '';
   if(trainerFilter) bits.push('Trainer: '+trainerFilter);
   if(countyFilter) bits.push('County: '+countyFilter);
+  if(regionFilter) bits.push('Region: '+regionFilter);
+  if(managerFilter) bits.push('Area Manager: '+managerFilter);
   if(shopFilter) bits.push('Shop search: "'+shopFilter+'"');
   bits.push(countLabel);
   return bits.join(' · ');
