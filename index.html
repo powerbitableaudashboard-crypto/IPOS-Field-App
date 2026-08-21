@@ -4691,12 +4691,12 @@ function renderEngagementAnalytics(){
         '<div class="field"><label>Region</label><select id="an-region" onchange="anOnFilterChange()">' +
           '<option value="">All regions</option>' +
           regionOptions.map(function(r){ return '<option value="'+r+'"'+(anState.region===r?' selected':'')+'>'+r+'</option>'; }).join('') +
-          '<option value="__unmapped__"'+(anState.region==='__unmapped__'?' selected':'')+'>⚠️ Unmapped / Other counties</option>' +
+          '<option value="__unmapped__"'+(anState.region==='__unmapped__'?' selected':'')+'>⚠️ Other Counties</option>' +
         '</select></div>' +
         '<div class="field"><label>Area Manager</label><select id="an-manager" onchange="anOnFilterChange()">' +
           '<option value="">All managers</option>' +
           managerOptions.map(function(m){ return '<option value="'+m+'"'+(anState.manager===m?' selected':'')+'>'+m+'</option>'; }).join('') +
-          '<option value="__unmapped__"'+(anState.manager==='__unmapped__'?' selected':'')+'>⚠️ Unmapped / Other counties</option>' +
+          '<option value="__unmapped__"'+(anState.manager==='__unmapped__'?' selected':'')+'>⚠️ Other Counties</option>' +
         '</select></div>' +
       '</div>';
   }
