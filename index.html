@@ -156,7 +156,7 @@ body.has-motivation-banners .screen{padding-bottom:calc(3rem + 32px)}
 .an-section-head{font-size:12px;font-weight:700;color:var(--text);margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
 .an-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
 .an-filters .field{margin-bottom:0}
-.an-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
+.an-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
 .an-summary-card{border-radius:12px;padding:10px 8px;text-align:center}
 .an-summary-num{font-size:19px;font-weight:800}
 .an-summary-lbl{font-size:9.5px;color:var(--text-m);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;font-weight:600}
@@ -2020,7 +2020,7 @@ function editInstalledShopPrompt(filteredIndex){
   })})
   .then(function(r){return r.json();})
   .then(function(data){
-    if(data.status==='success'){ openInstalledShops(); }
+    if(data.status==='success'){ openInstalledShops(); anInstallsCache=null; }
     else { alert('Failed to update: ' + (data.message||'Unknown error')); }
   })
   .catch(function(){ alert('Network error — please try again.'); });
@@ -2037,7 +2037,7 @@ function deleteInstalledShopPrompt(filteredIndex){
   })})
   .then(function(r){return r.json();})
   .then(function(data){
-    if(data.status==='success'){ openInstalledShops(); }
+    if(data.status==='success'){ openInstalledShops(); anInstallsCache=null; }
     else { alert('Failed to delete: ' + (data.message||'Unknown error')); }
   })
   .catch(function(){ alert('Network error — please try again.'); });
@@ -3701,6 +3701,7 @@ function loadDashboard(){
     if(dashFormType==='install') dashAllItems = data.installs || [];
     else if(dashFormType==='users') dashAllItems = data.users || [];
     else dashAllItems = data.rows || [];
+    if(dashFormType==='install') anInstallsCache = dashAllItems; // keep analytics' installs cache fresh whenever this loads
     anFilledItemsCache = null; // source rows changed — invalidate the forward-fill cache used by analytics
     if(dashFormType!=='users') populateTrainerFilter();
     renderDashList();
@@ -4372,8 +4373,10 @@ function buildDashSubtitle(countLabel){
 // for the 'route' sheet = one client visit, keyed by 'Trainer Name',
 // 'County' and 'Date'.
 var DAILY_CLIENT_TARGET = 15;
+var LEADS_PURPOSE_LABEL = 'leads generation/pitching'; // matched case-insensitively against the Purpose field
 var anState = { range:'month', dateFrom:'', dateTo:'', county:'' };
 var anAllTrainersCache = null; // full registered-trainer roster (role:'Trainer'), so 0-visit trainers still get ranked
+var anInstallsCache = null; // Installations sheet rows, used to compute lead → install conversion rate
 
 function openEngagementAnalytics(){
   if(dashFormType!=='route') return;
@@ -4398,23 +4401,29 @@ function openEngagementAnalytics(){
     '</div>';
   document.body.appendChild(overlay);
 
-  if(anAllTrainersCache){ renderEngagementAnalytics(); }
-  else { anFetchAllTrainers(renderEngagementAnalytics); }
+  if(anAllTrainersCache && anInstallsCache){ renderEngagementAnalytics(); }
+  else { anFetchAnalyticsData(renderEngagementAnalytics); }
 }
 
-// Fetches the full registered-user list (same endpoint as Manage Users,
-// so it's automatically scoped to what this Manager/Admin is allowed to
-// see) and keeps only Trainer accounts. Cached so re-opening analytics,
-// or switching its filters, doesn't re-hit the network.
-function anFetchAllTrainers(cb){
-  var url = APPS_SCRIPT_URL + '?action=getUsers&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
-  fetch(url).then(function(r){return r.json();}).then(function(data){
-    anAllTrainersCache = (data.users || []).filter(function(u){ return u.role==='Trainer'; });
-    cb();
-  }).catch(function(){
-    anAllTrainersCache = []; // fall back to whichever trainers already appear in the visit data
-    cb();
-  });
+// Fetches whatever of (registered trainers, installations) isn't already
+// cached. Both requests go through the same endpoints as the Manage
+// Users / Installs tabs, so they're automatically scoped to what this
+// Manager/Admin is allowed to see. Cached so re-opening analytics, or
+// changing its filters, never re-hits the network.
+function anFetchAnalyticsData(cb){
+  var trainersP = anAllTrainersCache ? Promise.resolve() :
+    fetch(APPS_SCRIPT_URL + '?action=getUsers&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
+      .then(function(r){return r.json();})
+      .then(function(data){ anAllTrainersCache = (data.users || []).filter(function(u){ return u.role==='Trainer'; }); })
+      .catch(function(){ anAllTrainersCache = []; });
+
+  var installsP = anInstallsCache ? Promise.resolve() :
+    fetch(APPS_SCRIPT_URL + '?action=getInstalls&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
+      .then(function(r){return r.json();})
+      .then(function(data){ anInstallsCache = data.installs || []; })
+      .catch(function(){ anInstallsCache = []; });
+
+  Promise.all([trainersP, installsP]).then(cb);
 }
 
 function closeEngagementAnalytics(){
@@ -4472,12 +4481,14 @@ function anDateList(){
   return list;
 }
 
-function anRowInPeriod(row){
-  var d = parseAppDate(row['Date']);
+function anDateValueInPeriod(dateVal){
+  var d = parseAppDate(dateVal);
   if(!d) return true;
-  var dIso = anDateIso(d);
-  var list = anDateListCache;
-  return list.indexOf(dIso)!==-1;
+  return anDateListCache.indexOf(anDateIso(d)) !== -1;
+}
+
+function anRowInPeriod(row){
+  return anDateValueInPeriod(row['Date']);
 }
 
 var anDateListCache = [];
@@ -4609,11 +4620,49 @@ function renderEngagementAnalytics(){
   var trainersOnTarget = trainerNames.filter(function(n){ return byTrainer[n].total >= target; }).length;
   var avgPerTrainer = trainerNames.length ? Math.round(totalEngagements/trainerNames.length) : 0;
 
+  // ── Lead → Installation conversion, per trainer ──
+  // Leads = visits in this period/county whose Purpose is "Leads
+  // Generation/Pitching". Installs = rows from the Installations sheet
+  // (status APPROVED = actually completed, not just submitted) for the
+  // same trainer, period and county. Conversion = installs / leads.
+  var leadsByTrainer = {};
+  rows.forEach(function(r){
+    var p = (r['Purpose']||'').toString().trim().toLowerCase();
+    if(p !== LEADS_PURPOSE_LABEL) return;
+    var name = r['Trainer Name'] || 'Unknown';
+    leadsByTrainer[name] = (leadsByTrainer[name]||0) + 1;
+  });
+  var filteredInstalls = (anInstallsCache || []).filter(function(x){
+    return x.status==='APPROVED' &&
+      (!anState.county || x.county===anState.county) &&
+      anDateValueInPeriod(x.date);
+  });
+  var installsByTrainer = {};
+  filteredInstalls.forEach(function(x){
+    var name = (x.trainerName||'').toString().trim();
+    if(!name) return;
+    installsByTrainer[name] = (installsByTrainer[name]||0) + 1;
+  });
+  var conversionRows = trainerNames.map(function(n){
+    var leads = leadsByTrainer[n] || 0;
+    var installs = installsByTrainer[n] || 0;
+    return { name:n, leads:leads, installs:installs, rate: leads>0 ? Math.round((installs/leads)*100) : null };
+  }).sort(function(a,b){
+    if(a.rate===null && b.rate===null) return b.leads - a.leads;
+    if(a.rate===null) return 1;
+    if(b.rate===null) return -1;
+    return b.rate - a.rate;
+  });
+  var totalLeadsCount = Object.keys(leadsByTrainer).reduce(function(s,n){ return s+leadsByTrainer[n]; }, 0);
+  var totalInstallsApproved = filteredInstalls.length;
+  var overallConversion = totalLeadsCount>0 ? Math.round((totalInstallsApproved/totalLeadsCount)*100) : null;
+
   var summaryHtml =
     '<div class="an-summary-grid">' +
       '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:var(--accent)">'+totalEngagements+'</div><div class="an-summary-lbl">Total Visits</div></div>' +
       '<div class="an-summary-card" style="background:var(--green-bg)"><div class="an-summary-num" style="color:var(--green)">'+trainersOnTarget+' / '+trainerNames.length+'</div><div class="an-summary-lbl">On Target</div></div>' +
       '<div class="an-summary-card" style="background:var(--purple-bg)"><div class="an-summary-num" style="color:var(--purple)">'+avgPerTrainer+'</div><div class="an-summary-lbl">Avg / Trainer</div></div>' +
+      '<div class="an-summary-card" style="background:#eff6ff"><div class="an-summary-num" style="color:#2563eb">'+(overallConversion===null?'—':overallConversion+'%')+'</div><div class="an-summary-lbl">Lead→Install Rate</div></div>' +
     '</div>';
 
   // ── Bar chart: total visits per trainer vs. target, color-coded ──
@@ -4760,7 +4809,40 @@ function renderEngagementAnalytics(){
       '</div>';
   }
 
-  body.innerHTML = filtersHtml + unattributedNote + summaryHtml + barChartHtml + pieHtml + rankingHtml + purposeHtml + matrixHtml;
+  // ── Lead → Installation Conversion Rate (Ranked) ──
+  // Same ranking format as the trainer leaderboard, but the metric is
+  // "of the leads this trainer pitched, how many became a real,
+  // APPROVED installation" — i.e. actual closing power, not just visit volume.
+  var conversionHtml;
+  if(totalLeadsCount===0){
+    conversionHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">🔁 Lead → Installation Conversion Rate (Ranked)</div>' +
+        '<div class="an-empty-note">No "Leads Generation/Pitching" visits recorded for this period/county yet.</div>' +
+      '</div>';
+  } else {
+    var conversionRowsHtml = conversionRows.map(function(c,i){
+      var color = c.rate===null ? '#9ca3af' : (c.rate>=70 ? '#16a34a' : (c.rate>=40 ? '#c2410c' : '#dc2626'));
+      var widthPct = c.rate===null ? 4 : Math.max(4, Math.min(100, c.rate));
+      var medal = i===0 && c.rate!==null ? '🥇 ' : i===1 && c.rate!==null ? '🥈 ' : i===2 && c.rate!==null ? '🥉 ' : '';
+      var rateLabel = c.rate===null ? 'N/A' : c.rate+'%';
+      return '<div class="an-bar-row">' +
+        '<div class="an-bar-name" title="'+escapeHtml(c.name)+'">'+medal+escapeHtml(c.name)+'</div>' +
+        '<div class="an-bar-track"><div class="an-bar-fill" style="width:'+widthPct+'%;background:'+color+'"><span>'+c.installs+'/'+c.leads+'</span></div></div>' +
+        '<div style="width:38px;text-align:right;color:'+color+';font-weight:700">'+rateLabel+'</div>' +
+      '</div>';
+    }).join('');
+    conversionHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">🔁 Lead → Installation Conversion Rate (Ranked)</div>' +
+        '<div class="an-legend">' +
+          '<span>Bar shows <strong>installs / leads</strong> · overall: '+(overallConversion===null?'—':overallConversion+'%')+'</span>' +
+        '</div>' +
+        conversionRowsHtml +
+      '</div>';
+  }
+
+  body.innerHTML = filtersHtml + unattributedNote + summaryHtml + barChartHtml + pieHtml + rankingHtml + purposeHtml + conversionHtml + matrixHtml;
 }
 
 // Fetches the full repayment history (deposit + every installment/cash
