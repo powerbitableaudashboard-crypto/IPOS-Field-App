@@ -4374,7 +4374,37 @@ function buildDashSubtitle(countLabel){
 // 'County' and 'Date'.
 var DAILY_CLIENT_TARGET = 15;
 var LEADS_PURPOSE_LABEL = 'leads generation/pitching'; // matched case-insensitively against the Purpose field
-var anState = { range:'month', dateFrom:'', dateTo:'', county:'' };
+
+// Area Manager ↔ Region ↔ County coverage map (from the "IPOS Field App
+// Data" reference sheet). Only used to power the Admin-only Region /
+// Area Manager filters in analytics — kept as a small static config
+// here since there's no backend endpoint exposing this sheet yet.
+// Update this list if a manager's county coverage or region changes.
+var AREA_MANAGERS = [
+  { name:'Philip Sam', email:'philipowino47@gmail.com', region:'Western,Nyanza&N.Rift Region',
+    counties:['Kisumu','Siaya','Busia','Kakamega','Bugoma','Uasin Gishu','Tranzoia','Elgeyo-Marakwet'] },
+  { name:'Ben A', email:'awinobenard91@gmail.com', region:'Nyanza&S.Rift',
+    counties:['Kericho','Bomet','Vihiga','Migori','Homabay','Kisii','Nyamira','Nandi'] }
+];
+var AN_COUNTY_TO_REGION = {};
+var AN_COUNTY_TO_MANAGER = {};
+AREA_MANAGERS.forEach(function(m){
+  m.counties.forEach(function(c){ AN_COUNTY_TO_REGION[c] = m.region; AN_COUNTY_TO_MANAGER[c] = m.name; });
+});
+
+var anState = { range:'month', dateFrom:'', dateTo:'', county:'', region:'', manager:'' };
+
+// True if `county` passes the current County + (Admin-only) Region /
+// Area Manager filters. A county not present in AREA_MANAGERS always
+// passes the region/manager checks (so un-mapped counties aren't
+// silently hidden) but is still excluded once a specific Region or
+// Manager is chosen, since it can't be confirmed to belong to it.
+function anCountyAllowed(county){
+  if(anState.county && county !== anState.county) return false;
+  if(session.role==='Admin' && anState.region && AN_COUNTY_TO_REGION[county] !== anState.region) return false;
+  if(session.role==='Admin' && anState.manager && AN_COUNTY_TO_MANAGER[county] !== anState.manager) return false;
+  return true;
+}
 var anAllTrainersCache = null; // full registered-trainer roster (role:'Trainer'), so 0-visit trainers still get ranked
 var anInstallsCache = null; // Installations sheet rows, used to compute lead → install conversion rate
 
@@ -4386,6 +4416,8 @@ function openEngagementAnalytics(){
   anState.dateFrom = document.getElementById('dash-date-from').value || '';
   anState.dateTo = document.getElementById('dash-date-to').value || '';
   anState.county = document.getElementById('dash-county-filter').value || '';
+  anState.region = '';
+  anState.manager = '';
 
   var overlay = document.createElement('div');
   overlay.className = 'ph-overlay';
@@ -4509,6 +4541,10 @@ var anPieColors = ['#2563eb','#7c3aed','#16a34a','#c2410c','#dc2626','#0d9488','
 function anOnFilterChange(){
   anState.range = document.getElementById('an-range').value;
   anState.county = document.getElementById('an-county').value;
+  var regionEl = document.getElementById('an-region');
+  var managerEl = document.getElementById('an-manager');
+  anState.region = regionEl ? regionEl.value : '';
+  anState.manager = managerEl ? managerEl.value : '';
   document.getElementById('an-custom-wrap').style.display = anState.range==='custom' ? 'grid' : 'none';
   if(anState.range==='custom'){
     anState.dateFrom = document.getElementById('an-date-from').value;
@@ -4549,12 +4585,23 @@ function renderEngagementAnalytics(){
 
   var sourceItems = anForwardFilledItems();
   anDateListCache = anDateList();
+  var isAdmin = session.role === 'Admin';
+
+  // County list for the dropdown: every county seen in the data, plus
+  // (Admin only) every county from the Region/Manager coverage map, so
+  // Admin can pick a county that currently has zero visits too.
   var counties = [];
   sourceItems.forEach(function(r){ var c=r['County']; if(c && counties.indexOf(c)===-1) counties.push(c); });
+  if(isAdmin){ Object.keys(AN_COUNTY_TO_REGION).forEach(function(c){ if(counties.indexOf(c)===-1) counties.push(c); }); }
+  // Narrow further if a Region/Area Manager is already selected.
+  if(isAdmin && anState.region) counties = counties.filter(function(c){ return AN_COUNTY_TO_REGION[c]===anState.region; });
+  if(isAdmin && anState.manager) counties = counties.filter(function(c){ return AN_COUNTY_TO_MANAGER[c]===anState.manager; });
   counties.sort();
+  // Selected county may no longer be valid after narrowing by region/manager.
+  if(anState.county && counties.indexOf(anState.county)===-1) anState.county = '';
 
   var rowsInPeriod = sourceItems.filter(function(r){
-    return (!anState.county || r['County']===anState.county) && anRowInPeriod(r);
+    return anCountyAllowed(r['County']) && anRowInPeriod(r);
   });
   // Records with no trainer name attached can't be attributed to anyone,
   // so they're excluded from every chart/rank/matrix below rather than
@@ -4564,6 +4611,22 @@ function renderEngagementAnalytics(){
   var unattributedCount = rowsInPeriod.length - rows.length;
 
   // ── Filter controls (rebuilt each render so selected values persist) ──
+  var adminFiltersHtml = '';
+  if(isAdmin){
+    var regionOptions = AREA_MANAGERS.map(function(m){ return m.region; }).filter(function(r,i,arr){ return arr.indexOf(r)===i; });
+    var managerOptions = AREA_MANAGERS.map(function(m){ return m.name; });
+    adminFiltersHtml =
+      '<div class="an-filters">' +
+        '<div class="field"><label>Region</label><select id="an-region" onchange="anOnFilterChange()">' +
+          '<option value="">All regions</option>' +
+          regionOptions.map(function(r){ return '<option value="'+r+'"'+(anState.region===r?' selected':'')+'>'+r+'</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="field"><label>Area Manager</label><select id="an-manager" onchange="anOnFilterChange()">' +
+          '<option value="">All managers</option>' +
+          managerOptions.map(function(m){ return '<option value="'+m+'"'+(anState.manager===m?' selected':'')+'>'+m+'</option>'; }).join('') +
+        '</select></div>' +
+      '</div>';
+  }
   var filtersHtml =
     '<div class="an-filters">' +
       '<div class="field"><label>Period</label><select id="an-range" onchange="anOnFilterChange()">' +
@@ -4576,6 +4639,7 @@ function renderEngagementAnalytics(){
         counties.map(function(c){ return '<option value="'+c+'"'+(anState.county===c?' selected':'')+'>'+c+'</option>'; }).join('') +
       '</select></div>' +
     '</div>' +
+    adminFiltersHtml +
     '<div class="an-filters" id="an-custom-wrap" style="display:'+(anState.range==='custom'?'grid':'none')+'">' +
       '<div class="field"><label>From</label><input type="date" id="an-date-from" value="'+(anState.dateFrom||'')+'" onchange="anOnFilterChange()"></div>' +
       '<div class="field"><label>To</label><input type="date" id="an-date-to" value="'+(anState.dateTo||'')+'" onchange="anOnFilterChange()"></div>' +
@@ -4602,7 +4666,7 @@ function renderEngagementAnalytics(){
   (anAllTrainersCache || []).forEach(function(u){
     var name = (u.name || u.email || '').trim();
     if(!name) return;
-    if(anState.county && u.county && u.county !== anState.county) return; // trainer isn't assigned to the filtered county
+    if(u.county && !anCountyAllowed(u.county)) return; // trainer's assigned county doesn't pass the County/Region/Area Manager filters
     if(!byTrainer[name]) byTrainer[name] = { total:0, byDay:{} };
   });
 
@@ -4634,7 +4698,7 @@ function renderEngagementAnalytics(){
   });
   var filteredInstalls = (anInstallsCache || []).filter(function(x){
     return x.status==='APPROVED' &&
-      (!anState.county || x.county===anState.county) &&
+      anCountyAllowed(x.county) &&
       anDateValueInPeriod(x.date);
   });
   var installsByTrainer = {};
