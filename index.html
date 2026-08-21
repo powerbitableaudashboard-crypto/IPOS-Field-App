@@ -3750,21 +3750,35 @@ function populateRegionManagerFilters(){
   var managerSel = document.getElementById('dash-manager-filter');
   var regionOptions = AREA_MANAGERS.map(function(m){ return m.region; }).filter(function(r,i,arr){ return arr.indexOf(r)===i; });
   var managerOptions = AREA_MANAGERS.map(function(m){ return m.name; });
-  regionSel.innerHTML = '<option value="">All regions</option>' + regionOptions.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
-  managerSel.innerHTML = '<option value="">All managers</option>' + managerOptions.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('');
+  regionSel.innerHTML = '<option value="">All regions</option>' +
+    regionOptions.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('') +
+    '<option value="__unmapped__">⚠️ Unmapped / Other counties</option>';
+  managerSel.innerHTML = '<option value="">All managers</option>' +
+    managerOptions.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('') +
+    '<option value="__unmapped__">⚠️ Unmapped / Other counties</option>';
 }
 
 // True if `county` passes whatever Region / Area Manager filters are
 // currently set on the main dashboard (Install / Device Payment /
 // Survey list views). Harmless no-op when those dropdowns are hidden
-// or unset, since their values default to ''.
+// or unset, since their values default to ''. "__unmapped__" is a
+// special bucket for visits from counties not yet in AREA_MANAGERS —
+// otherwise those visits vanish from every specific region/manager
+// filter while still counting toward "All regions", which makes totals
+// look like they don't add up.
 function dashRegionManagerAllowed(county){
   var regionEl = document.getElementById('dash-region-filter');
   var managerEl = document.getElementById('dash-manager-filter');
   var region = regionEl ? regionEl.value : '';
   var manager = managerEl ? managerEl.value : '';
-  if(region && AN_COUNTY_TO_REGION[county] !== region) return false;
-  if(manager && AN_COUNTY_TO_MANAGER[county] !== manager) return false;
+  if(region){
+    if(region==='__unmapped__'){ if(AN_COUNTY_TO_REGION[county]) return false; }
+    else if(AN_COUNTY_TO_REGION[county] !== region) return false;
+  }
+  if(manager){
+    if(manager==='__unmapped__'){ if(AN_COUNTY_TO_MANAGER[county]) return false; }
+    else if(AN_COUNTY_TO_MANAGER[county] !== manager) return false;
+  }
   return true;
 }
 
@@ -4443,14 +4457,21 @@ AREA_MANAGERS.forEach(function(m){
 var anState = { range:'month', dateFrom:'', dateTo:'', county:'', region:'', manager:'' };
 
 // True if `county` passes the current County + (Admin-only) Region /
-// Area Manager filters. A county not present in AREA_MANAGERS always
-// passes the region/manager checks (so un-mapped counties aren't
-// silently hidden) but is still excluded once a specific Region or
-// Manager is chosen, since it can't be confirmed to belong to it.
+// Area Manager filters. Selecting a specific Region/Manager excludes
+// counties outside that mapping (as expected); selecting the special
+// "Unmapped / Other counties" option shows only counties NOT covered by
+// any Area Manager yet, so those visits are traceable instead of
+// silently disappearing whenever a specific region is chosen.
 function anCountyAllowed(county){
   if(anState.county && county !== anState.county) return false;
-  if(session.role==='Admin' && anState.region && AN_COUNTY_TO_REGION[county] !== anState.region) return false;
-  if(session.role==='Admin' && anState.manager && AN_COUNTY_TO_MANAGER[county] !== anState.manager) return false;
+  if(session.role==='Admin' && anState.region){
+    if(anState.region==='__unmapped__'){ if(AN_COUNTY_TO_REGION[county]) return false; }
+    else if(AN_COUNTY_TO_REGION[county] !== anState.region) return false;
+  }
+  if(session.role==='Admin' && anState.manager){
+    if(anState.manager==='__unmapped__'){ if(AN_COUNTY_TO_MANAGER[county]) return false; }
+    else if(AN_COUNTY_TO_MANAGER[county] !== anState.manager) return false;
+  }
   return true;
 }
 var anAllTrainersCache = null; // full registered-trainer roster (role:'Trainer'), so 0-visit trainers still get ranked
@@ -4642,8 +4663,10 @@ function renderEngagementAnalytics(){
   sourceItems.forEach(function(r){ var c=r['County']; if(c && counties.indexOf(c)===-1) counties.push(c); });
   if(isAdmin){ Object.keys(AN_COUNTY_TO_REGION).forEach(function(c){ if(counties.indexOf(c)===-1) counties.push(c); }); }
   // Narrow further if a Region/Area Manager is already selected.
-  if(isAdmin && anState.region) counties = counties.filter(function(c){ return AN_COUNTY_TO_REGION[c]===anState.region; });
-  if(isAdmin && anState.manager) counties = counties.filter(function(c){ return AN_COUNTY_TO_MANAGER[c]===anState.manager; });
+  if(isAdmin && anState.region==='__unmapped__') counties = counties.filter(function(c){ return !AN_COUNTY_TO_REGION[c]; });
+  else if(isAdmin && anState.region) counties = counties.filter(function(c){ return AN_COUNTY_TO_REGION[c]===anState.region; });
+  if(isAdmin && anState.manager==='__unmapped__') counties = counties.filter(function(c){ return !AN_COUNTY_TO_MANAGER[c]; });
+  else if(isAdmin && anState.manager) counties = counties.filter(function(c){ return AN_COUNTY_TO_MANAGER[c]===anState.manager; });
   counties.sort();
   // Selected county may no longer be valid after narrowing by region/manager.
   if(anState.county && counties.indexOf(anState.county)===-1) anState.county = '';
@@ -4668,10 +4691,12 @@ function renderEngagementAnalytics(){
         '<div class="field"><label>Region</label><select id="an-region" onchange="anOnFilterChange()">' +
           '<option value="">All regions</option>' +
           regionOptions.map(function(r){ return '<option value="'+r+'"'+(anState.region===r?' selected':'')+'>'+r+'</option>'; }).join('') +
+          '<option value="__unmapped__"'+(anState.region==='__unmapped__'?' selected':'')+'>⚠️ Unmapped / Other counties</option>' +
         '</select></div>' +
         '<div class="field"><label>Area Manager</label><select id="an-manager" onchange="anOnFilterChange()">' +
           '<option value="">All managers</option>' +
           managerOptions.map(function(m){ return '<option value="'+m+'"'+(anState.manager===m?' selected':'')+'>'+m+'</option>'; }).join('') +
+          '<option value="__unmapped__"'+(anState.manager==='__unmapped__'?' selected':'')+'>⚠️ Unmapped / Other counties</option>' +
         '</select></div>' +
       '</div>';
   }
