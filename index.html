@@ -4722,7 +4722,45 @@ function renderEngagementAnalytics(){
       '</div>' +
     '</div>';
 
-  body.innerHTML = filtersHtml + unattributedNote + summaryHtml + barChartHtml + pieHtml + rankingHtml + matrixHtml;
+  // ── Visits by Purpose — ranked the same way as trainers, so you can
+  // see at a glance whether visits are mostly leads-generation, follow-
+  // ups, etc., and how that mix shifts across a period/county. ──
+  var byPurpose = {};
+  rows.forEach(function(r){
+    var p = (r['Purpose']||'').toString().trim() || 'Not specified';
+    byPurpose[p] = (byPurpose[p]||0) + 1;
+  });
+  var purposeNames = Object.keys(byPurpose).sort(function(a,b){ return byPurpose[b]-byPurpose[a]; });
+  var maxPurpose = Math.max.apply(null, purposeNames.map(function(p){ return byPurpose[p]; }).concat([1]));
+
+  var purposeHtml;
+  if(totalEngagements===0){
+    purposeHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">🎯 Visits by Purpose (Ranked)</div>' +
+        '<div class="an-empty-note">No visits recorded yet for this period/county.</div>' +
+      '</div>';
+  } else {
+    var purposeBarsHtml = purposeNames.map(function(p,i){
+      var count = byPurpose[p];
+      var pct = Math.round((count/totalEngagements)*100);
+      var widthPct = Math.max(6, Math.round((count/maxPurpose)*100));
+      var color = anPieColors[i % anPieColors.length];
+      var medal = i===0 ? '🥇 ' : i===1 ? '🥈 ' : i===2 ? '🥉 ' : '';
+      return '<div class="an-bar-row">' +
+        '<div class="an-bar-name" title="'+escapeHtml(p)+'">'+medal+escapeHtml(p)+'</div>' +
+        '<div class="an-bar-track"><div class="an-bar-fill" style="width:'+widthPct+'%;background:'+color+'"><span>'+count+'</span></div></div>' +
+        '<div style="width:38px;text-align:right;color:'+color+';font-weight:700">'+pct+'%</div>' +
+      '</div>';
+    }).join('');
+    purposeHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">🎯 Visits by Purpose (Ranked, '+purposeNames.length+' type'+(purposeNames.length===1?'':'s')+')</div>' +
+        purposeBarsHtml +
+      '</div>';
+  }
+
+  body.innerHTML = filtersHtml + unattributedNote + summaryHtml + barChartHtml + pieHtml + rankingHtml + purposeHtml + matrixHtml;
 }
 
 // Fetches the full repayment history (deposit + every installment/cash
