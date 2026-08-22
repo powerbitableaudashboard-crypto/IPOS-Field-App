@@ -2388,12 +2388,15 @@ function renderMyVisits(){
 }
 
 // ── TRAINER: MY ANALYTICS (own Monthly/Weekly Installs, Leads, Conversion) ──
-// Deliberately lightweight for performance: no charting library, nothing
+// Deliberately lightweight for performance: no charting library (bars
+// are plain HTML/CSS, the trend chart is hand-built SVG), nothing
 // fetched until the trainer actually opens this modal, and both data
 // sources are reused from whatever's already cached by "My Visit
 // History" / "View installed shops" if the trainer has visited those —
-// so most opens cost zero extra network calls.
+// so most opens cost zero extra network calls. Changing the period/date
+// filter afterwards is pure in-memory recomputation, no network at all.
 var myAnalyticsInstallsCache = null;
+var maState = { range:'month', dateFrom:'', dateTo:'' };
 
 function openMyAnalytics(){
   var overlay = document.createElement('div');
@@ -2430,6 +2433,17 @@ function closeMyAnalytics(){
   if(el) el.remove();
 }
 
+function maOnFilterChange(){
+  maState.range = document.getElementById('ma-range').value;
+  document.getElementById('ma-custom-wrap').style.display = maState.range==='custom' ? 'grid' : 'none';
+  if(maState.range==='custom'){
+    maState.dateFrom = document.getElementById('ma-date-from').value;
+    maState.dateTo = document.getElementById('ma-date-to').value;
+    if(!maState.dateFrom) return; // wait for a from-date before recomputing
+  }
+  renderMyAnalytics();
+}
+
 function maBarRow(label, displayVal, widthPct, color){
   return '<div class="an-bar-row">' +
     '<div class="an-bar-name" title="'+label+'">'+label+'</div>' +
@@ -2437,38 +2451,147 @@ function maBarRow(label, displayVal, widthPct, color){
   '</div>';
 }
 
+// True if `dateVal` (any date-ish string) falls inside the currently
+// selected My Analytics period/custom range.
+function maDateInPeriod(dateVal){
+  var d = parseAppDate(dateVal);
+  if(!d) return true;
+  var now = new Date(); now.setHours(0,0,0,0);
+  var range = maState.range;
+  if(range==='all') return true;
+  if(range==='today') return d.toDateString()===now.toDateString();
+  if(range==='week'){
+    var start = new Date(now); start.setDate(now.getDate()-now.getDay());
+    var end = new Date(start); end.setDate(start.getDate()+7);
+    return d>=start && d<end;
+  }
+  if(range==='month') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+  if(range==='year') return d.getFullYear()===now.getFullYear();
+  if(range==='custom'){
+    if(!maState.dateFrom) return true;
+    var from = new Date(maState.dateFrom+'T00:00:00');
+    var to = maState.dateTo ? new Date(maState.dateTo+'T23:59:59') : now;
+    return d>=from && d<=to;
+  }
+  return true;
+}
+
+// Builds a small dependency-free SVG line chart: X-axis = months,
+// Y-axis = counts, one line per metric. No charting library needed.
+function maBuildLineChartSVG(months, maxVal){
+  var W=320, H=170, padL=26, padR=8, padT=10, padB=22;
+  var chartW=W-padL-padR, chartH=H-padT-padB;
+  var n=months.length;
+  var stepX = n>1 ? chartW/(n-1) : 0;
+  function xAt(i){ return padL + stepX*i; }
+  function yAt(v){ return padT + chartH - (maxVal ? (v/maxVal)*chartH : 0); }
+  function seriesPath(key){
+    return months.map(function(m,i){ return (i===0?'M':'L')+xAt(i).toFixed(1)+' '+yAt(m[key]).toFixed(1); }).join(' ');
+  }
+  function seriesDots(key,color){
+    return months.map(function(m,i){ return '<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(m[key]).toFixed(1)+'" r="2.6" fill="'+color+'"/>'; }).join('');
+  }
+  var gridLines='', steps=4;
+  for(var g=0; g<=steps; g++){
+    var val=Math.round(maxVal*g/steps);
+    var y=yAt(val);
+    gridLines += '<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="#e5e7eb" stroke-width="1"/>';
+    gridLines += '<text x="1" y="'+(y+3).toFixed(1)+'" font-size="7.5" fill="#9ca3af">'+val+'</text>';
+  }
+  var xLabels = months.map(function(m,i){ return '<text x="'+xAt(i).toFixed(1)+'" y="'+(H-5)+'" font-size="7.5" fill="#9ca3af" text-anchor="middle">'+m.label+'</text>'; }).join('');
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg">' +
+    gridLines +
+    '<path d="'+seriesPath('engaged')+'" fill="none" stroke="#2563eb" stroke-width="2"/>' + seriesDots('engaged','#2563eb') +
+    '<path d="'+seriesPath('leads')+'" fill="none" stroke="#7c3aed" stroke-width="2"/>' + seriesDots('leads','#7c3aed') +
+    '<path d="'+seriesPath('installs')+'" fill="none" stroke="#16a34a" stroke-width="2"/>' + seriesDots('installs','#16a34a') +
+    xLabels +
+  '</svg>';
+}
+
+// Builds the month-by-month buckets the trend chart plots. Defaults to
+// a rolling trailing-6-months view; if a Custom Range with both dates
+// is active, plots exactly the months that range spans (capped at 12
+// months so the chart stays readable).
+function maBuildMonthlyTrend(installsSource){
+  var now = new Date();
+  var endMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  var startMonth = new Date(endMonth); startMonth.setMonth(startMonth.getMonth()-5);
+  if(maState.range==='custom' && maState.dateFrom){
+    var fromD = new Date(maState.dateFrom+'T00:00:00');
+    startMonth = new Date(fromD.getFullYear(), fromD.getMonth(), 1);
+    var toD = maState.dateTo ? new Date(maState.dateTo+'T00:00:00') : now;
+    endMonth = new Date(toD.getFullYear(), toD.getMonth(), 1);
+    var diffMonths = (endMonth.getFullYear()-startMonth.getFullYear())*12 + (endMonth.getMonth()-startMonth.getMonth());
+    if(diffMonths>11){ startMonth = new Date(endMonth); startMonth.setMonth(startMonth.getMonth()-11); }
+  }
+  var months=[], cursor=new Date(startMonth), guard=0;
+  while(cursor<=endMonth && guard<12){
+    months.push({
+      y:cursor.getFullYear(), m:cursor.getMonth(),
+      label: cursor.toLocaleDateString('en-US',{month:'short'}) + (cursor.getFullYear()!==now.getFullYear() ? " '"+String(cursor.getFullYear()).slice(2) : ''),
+      engaged:0, leads:0, installs:0
+    });
+    cursor.setMonth(cursor.getMonth()+1); guard++;
+  }
+  function bucketFor(d){ return months.filter(function(mm){ return mm.y===d.getFullYear() && mm.m===d.getMonth(); })[0]; }
+  myVisitsData.forEach(function(r){
+    var d = parseAppDate(r['Date']); if(!d) return;
+    var mo = bucketFor(d); if(!mo) return;
+    mo.engaged++;
+    if((r['Purpose']||'').toString().trim().toLowerCase()===LEADS_PURPOSE_LABEL) mo.leads++;
+  });
+  installsSource.filter(function(x){ return x.status==='APPROVED'; }).forEach(function(x){
+    var d = parseAppDate(x.date); if(!d) return;
+    var mo = bucketFor(d); if(!mo) return;
+    mo.installs++;
+  });
+  return months;
+}
+
 function renderMyAnalytics(){
   var body = document.getElementById('ma-modal-body');
   if(!body) return;
 
   var installsSource = (myAnalyticsInstallsCache && myAnalyticsInstallsCache.length) ? myAnalyticsInstallsCache : allInstalledShops;
-  var now = new Date();
-  function isThisMonth(d){ return d && d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth(); }
-  function isThisWeek(d){
-    if(!d) return false;
-    var start = new Date(now); start.setDate(now.getDate()-now.getDay()); start.setHours(0,0,0,0);
-    var end = new Date(start); end.setDate(start.getDate()+7);
-    return d>=start && d<end;
-  }
 
-  var approvedInstalls = installsSource.filter(function(x){ return x.status==='APPROVED'; });
-  var monthlyInstalls = approvedInstalls.filter(function(x){ return isThisMonth(parseAppDate(x.date)); }).length;
-  var weeklyInstalls = approvedInstalls.filter(function(x){ return isThisWeek(parseAppDate(x.date)); }).length;
-  var totalInstalls = approvedInstalls.length;
-
-  var leadsVisits = myVisitsData.filter(function(r){ return (r['Purpose']||'').toString().trim().toLowerCase()===LEADS_PURPOSE_LABEL; });
-  var totalLeads = leadsVisits.length;
-  var conversionRate = totalLeads>0 ? Math.round((totalInstalls/totalLeads)*100) : null;
+  var filtersHtml =
+    '<div class="an-filters">' +
+      '<div class="field" style="grid-column:1/-1"><label>Period</label><select id="ma-range" onchange="maOnFilterChange()">' +
+        ['today:Today','week:This Week','month:This Month','year:This Year','all:All Time','custom:Custom Range…'].map(function(o){
+          var kv=o.split(':'); return '<option value="'+kv[0]+'"'+(maState.range===kv[0]?' selected':'')+'>'+kv[1]+'</option>';
+        }).join('') +
+      '</select></div>' +
+    '</div>' +
+    '<div class="an-filters" id="ma-custom-wrap" style="display:'+(maState.range==='custom'?'grid':'none')+'">' +
+      '<div class="field"><label>From</label><input type="date" id="ma-date-from" value="'+(maState.dateFrom||'')+'" onchange="maOnFilterChange()"></div>' +
+      '<div class="field"><label>To</label><input type="date" id="ma-date-to" value="'+(maState.dateTo||'')+'" onchange="maOnFilterChange()"></div>' +
+    '</div>';
 
   if(!myVisitsData.length && !installsSource.length){
-    body.innerHTML = '<div class="an-empty-note">📭 No visits or installations on record yet — your analytics will appear here once you start submitting.</div>';
+    body.innerHTML = filtersHtml + '<div class="an-empty-note">📭 No visits or installations on record yet — your analytics will appear here once you start submitting.</div>';
     return;
   }
 
+  var approvedInstalls = installsSource.filter(function(x){ return x.status==='APPROVED' && maDateInPeriod(x.date); });
+  var totalInstalls = approvedInstalls.length;
+  var monthNow = new Date();
+  var monthlyInstalls = installsSource.filter(function(x){ return x.status==='APPROVED' && (function(d){ return d && d.getFullYear()===monthNow.getFullYear() && d.getMonth()===monthNow.getMonth(); })(parseAppDate(x.date)); }).length;
+  var weeklyInstalls = installsSource.filter(function(x){
+    if(x.status!=='APPROVED') return false;
+    var d = parseAppDate(x.date); if(!d) return false;
+    var start = new Date(); start.setHours(0,0,0,0); start.setDate(start.getDate()-start.getDay());
+    var end = new Date(start); end.setDate(start.getDate()+7);
+    return d>=start && d<end;
+  }).length;
+
+  var leadsVisits = myVisitsData.filter(function(r){ return (r['Purpose']||'').toString().trim().toLowerCase()===LEADS_PURPOSE_LABEL && maDateInPeriod(r['Date']); });
+  var totalLeads = leadsVisits.length;
+  var conversionRate = totalLeads>0 ? Math.round((totalInstalls/totalLeads)*100) : null;
+
   var summaryHtml =
     '<div class="an-summary-grid" style="grid-template-columns:repeat(3,1fr)">' +
-      '<div class="an-summary-card" style="background:var(--green-bg)"><div class="an-summary-num" style="color:var(--green)">'+totalInstalls+'</div><div class="an-summary-lbl">Total Installs</div></div>' +
-      '<div class="an-summary-card" style="background:var(--purple-bg)"><div class="an-summary-num" style="color:var(--purple)">'+totalLeads+'</div><div class="an-summary-lbl">Total Leads</div></div>' +
+      '<div class="an-summary-card" style="background:var(--green-bg)"><div class="an-summary-num" style="color:var(--green)">'+totalInstalls+'</div><div class="an-summary-lbl">Installs (period)</div></div>' +
+      '<div class="an-summary-card" style="background:var(--purple-bg)"><div class="an-summary-num" style="color:var(--purple)">'+totalLeads+'</div><div class="an-summary-lbl">Leads (period)</div></div>' +
       '<div class="an-summary-card" style="background:#eff6ff"><div class="an-summary-num" style="color:#2563eb">'+(conversionRate===null?'—':conversionRate+'%')+'</div><div class="an-summary-lbl">Conversion</div></div>' +
     '</div>';
 
@@ -2482,14 +2605,30 @@ function renderMyAnalytics(){
   var barsHtml =
     maBarRow('📅 This Month Installs', monthlyInstalls, Math.max(4, Math.round((monthlyInstalls/maxCount)*100)), '#16a34a') +
     maBarRow('🗓️ This Week Installs', weeklyInstalls, Math.max(4, Math.round((weeklyInstalls/maxCount)*100)), '#2563eb') +
-    maBarRow('🎯 Leads Generated (Customer Engaged)', totalLeads, Math.max(4, Math.round((totalLeads/maxCount)*100)), '#7c3aed') +
+    maBarRow('🎯 Leads Generated (period)', totalLeads, Math.max(4, Math.round((totalLeads/maxCount)*100)), '#7c3aed') +
     maBarRow('🔁 Lead → Install Conversion', conversionRate===null?'N/A':conversionRate+'%', conversionRate===null?4:Math.max(4, Math.min(100, conversionRate)), convColor);
 
-  body.innerHTML = summaryHtml +
+  // Monthly trend line chart — independent of the period filter above
+  // (This Month/Week don't have monthly granularity to plot), except
+  // Custom Range, which shapes exactly which months are plotted.
+  var months = maBuildMonthlyTrend(installsSource);
+  var maxVal = Math.max.apply(null, months.reduce(function(acc,mm){ return acc.concat([mm.engaged,mm.leads,mm.installs]); }, []).concat([1]));
+  var lineChartSvg = maBuildLineChartSVG(months, maxVal);
+
+  body.innerHTML = filtersHtml + summaryHtml +
     '<div class="an-section">' +
       '<div class="an-section-head">📊 Performance Comparison</div>' +
       '<div class="an-legend"><span>Installs &amp; Leads are compared by count · Conversion shown as %</span></div>' +
       barsHtml +
+    '</div>' +
+    '<div class="an-section">' +
+      '<div class="an-section-head">📈 Monthly Trend</div>' +
+      '<div class="an-legend">' +
+        '<span><span class="an-dot" style="background:#2563eb"></span>Customer Engaged</span>' +
+        '<span><span class="an-dot" style="background:#7c3aed"></span>Leads Generated</span>' +
+        '<span><span class="an-dot" style="background:#16a34a"></span>Installations</span>' +
+      '</div>' +
+      lineChartSvg +
     '</div>';
 }
 
