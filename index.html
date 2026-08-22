@@ -102,6 +102,12 @@ body.has-motivation-banners .screen{padding-bottom:calc(3rem + 32px)}
 .section-title{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-m);margin-bottom:1rem;display:flex;align-items:center;gap:7px}
 .section-title::after{content:"";flex:1;height:1px;background:var(--border)}
 .field{margin-bottom:1rem}
+.uf-county-box{max-height:190px;overflow-y:auto;border:1px solid var(--border-strong);border-radius:var(--radius);padding:6px 10px;background:var(--surface)}
+.uf-county-item{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:12.5px;color:var(--text)}
+.uf-county-item input{width:15px;height:15px;flex-shrink:0}
+.uf-county-actions{display:flex;gap:8px;margin-top:6px}
+.uf-county-actions button{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-s);cursor:pointer;font-family:inherit}
+.uf-county-summary{font-size:11px;color:var(--text-m);margin-top:5px}
 .field:last-child{margin-bottom:0}
 .field label{display:block;font-size:13px;font-weight:500;color:var(--text-s);margin-bottom:5px}
 .req{color:var(--red);margin-left:2px}
@@ -465,8 +471,14 @@ input[type=file]{display:none}
             <option value="Manager">Manager</option>
             <option value="Admin">Admin</option>
           </select></div>
-        <div class="field"><label>County <span style="font-size:11px;color:#9ca3af;font-weight:400">(trainers only)</span></label>
-          <select id="uf-county"><option value="">Select county…</option><option>Baringo</option><option>Bomet</option><option>Bungoma</option><option>Busia</option><option>Elgeyo-Marakwet</option><option>Embu</option><option>Garissa</option><option>Homa Bay</option><option>Isiolo</option><option>Kajiado</option><option>Kakamega</option><option>Kericho</option><option>Kiambu</option><option>Kilifi</option><option>Kirinyaga</option><option>Kisii</option><option>Kisumu</option><option>Kitui</option><option>Kwale</option><option>Laikipia</option><option>Lamu</option><option>Machakos</option><option>Makueni</option><option>Mandera</option><option>Marsabit</option><option>Meru</option><option>Migori</option><option>Mombasa</option><option>Murang'a</option><option>Nairobi</option><option>Nakuru</option><option>Nandi</option><option>Narok</option><option>Nyamira</option><option>Nyandarua</option><option>Nyeri</option><option>Samburu</option><option>Siaya</option><option>Taita-Taveta</option><option>Tana River</option><option>Tharaka-Nithi</option><option>Trans-Nzoia</option><option>Turkana</option><option>Uasin Gishu</option><option>Vihiga</option><option>Wajir</option><option>West Pokot</option></select></div>
+        <div class="field"><label>Counties <span style="font-size:11px;color:#9ca3af;font-weight:400">(trainers only — tick every county this trainer covers)</span></label>
+          <div class="uf-county-box" id="uf-county-box"></div>
+          <div class="uf-county-actions">
+            <button type="button" onclick="ufCountySelectAll(true)">Select all</button>
+            <button type="button" onclick="ufCountySelectAll(false)">Clear</button>
+          </div>
+          <div class="uf-county-summary" id="uf-county-summary">No counties selected</div>
+        </div>
         <div class="field"><label>Manager Email <span style="font-size:11px;color:#9ca3af;font-weight:400">(who this user reports to)</span></label>
           <input type="email" id="uf-manager-email" placeholder="manager@enduring.co.ke"></div>
         <div style="display:flex;gap:8px;margin-top:1rem">
@@ -1295,6 +1307,13 @@ function countyOptionsHTML(selected){
     return '<option'+(c===selected?' selected':'')+'>'+c+'</option>';
   }).join('');
 }
+// Trainers can now be assigned to more than one county. The 'county'
+// field on a user record is stored as a comma-separated list (e.g.
+// "Kisumu, Siaya, Busia") — this parses it back into a clean array,
+// and also works fine for the common single-county case.
+function parseCountyList(str){
+  return String(str||'').split(',').map(function(s){ return s.trim(); }).filter(function(s){ return s; });
+}
 
 // ── SESSION ──────────────────────────────────────────────────
 var session = null; // { name, email, county, managerEmail, managerName, role }
@@ -1595,7 +1614,7 @@ function goForm(screenId) {
   window['dateStore_'+prefix] = ds;
   setVal(prefix+'-trainer', session.name);
   setVal(prefix+'-email',   session.email);
-  setVal(prefix+'-county',  session.county);
+  setupCountyField(prefix, session.county);
   if(['r','s','i'].includes(prefix)) initGPS(prefix);
   if(prefix==='d') resetPurposeUI();
   calcProgress(prefix);
@@ -1604,6 +1623,48 @@ function goForm(screenId) {
 function setVal(id, val) {
   var el = document.getElementById(id);
   if(el) el.value = val||'';
+}
+
+// Sets up the "County" field on a trainer's submission screen
+// (Route/Device Payment/Survey/Install). Most trainers cover exactly
+// one county, so it stays a plain read-only field like before. Trainers
+// assigned to more than one county get an actual dropdown instead, so
+// they must pick which county THIS particular submission belongs to
+// (rather than every visit being mis-tagged with their first county).
+var countySelForPrefix = {}; // remembers the last picked county per screen, per session
+function setupCountyField(prefix, rawCountyStr){
+  var el = document.getElementById(prefix+'-county');
+  if(!el) return;
+  var counties = parseCountyList(rawCountyStr);
+  if(counties.length <= 1){
+    if(el.tagName!=='INPUT'){
+      var input = document.createElement('input');
+      input.type='text'; input.id=prefix+'-county'; input.readOnly=true;
+      el.parentNode.replaceChild(input, el);
+      el = input;
+    }
+    el.value = counties[0] || rawCountyStr || '';
+    return;
+  }
+  if(el.tagName!=='SELECT'){
+    var sel = document.createElement('select');
+    sel.id = prefix+'-county';
+    el.parentNode.replaceChild(sel, el);
+    el = sel;
+  }
+  var prevVal = countySelForPrefix[prefix] || '';
+  el.innerHTML = '<option value="">Select county for this visit…</option>' +
+    counties.map(function(c){ return '<option value="'+c+'"'+(c===prevVal?' selected':'')+'>'+c+'</option>'; }).join('');
+  el.onchange = function(){ countySelForPrefix[prefix] = el.value; };
+}
+
+// Reads whatever county is currently set/selected on a submission
+// screen — works whether the field ended up as a plain input (single-
+// county trainer) or a select (multi-county trainer).
+function getCurrentCountyValue(prefix){
+  var el = document.getElementById(prefix+'-county');
+  if(el) return el.value || '';
+  return session ? session.county : '';
 }
 
 // ── SCREEN NAV ────────────────────────────────────────────────
@@ -3104,7 +3165,7 @@ function startNewSaleFromSearch(){
   document.getElementById('ns-fields').style.display='block';
   setVal('ns-shopid', v('cr-search'));
   var countySel = document.getElementById('ns-county');
-  if(!countySel.innerHTML) countySel.innerHTML = countyOptionsHTML(session ? session.county : '');
+  if(!countySel.innerHTML) countySel.innerHTML = countyOptionsHTML(session ? parseCountyList(session.county)[0] : '');
 }
 
 function onNewSaleMethodChange(){
@@ -3151,6 +3212,7 @@ function submitNewSale(){
   if(!shopId) missing.push('Shop ID');
   if(!shopName) missing.push('Shop name');
   if(!loc) missing.push('Location');
+  if(!county) missing.push('County');
   if(missing.length){ errEl.textContent='Missing: '+missing.join(', '); errEl.style.display='block'; return; }
 
   var nextPaymentDate='';
@@ -3164,7 +3226,7 @@ function submitNewSale(){
 
   var payload = {
     formType:'devicepay',
-    trainerName: session.name, trainerEmail: session.email, county: session.county,
+    trainerName: session.name, trainerEmail: session.email, county: county,
     managerEmail: session.managerEmail, managerName: session.managerName,
     date: nowKEFrontend(),
     clientRequestId: getRequestId('ns'),
@@ -3224,6 +3286,7 @@ function submitDeviceRequest(){
   else if(!isValidKEPhone(reqPhone)) missing.push('Trainer phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
   if(!reqShipping) missing.push('Shipping location');
   if(!reqStart) missing.push('Start date');
+  if(!getCurrentCountyValue('d')) missing.push('County — please select which county this request is for');
   if(missing.length){ errEl.textContent='Missing: '+missing.join(', '); errEl.style.display='block'; return; }
 
   try{ localStorage.setItem('ipos_trainer_phone', reqPhone); }catch(e){}
@@ -3233,7 +3296,7 @@ function submitDeviceRequest(){
 
   var payload = {
     formType:'devicepay',
-    trainerName: session.name, trainerEmail: session.email, county: session.county,
+    trainerName: session.name, trainerEmail: session.email, county: getCurrentCountyValue('d'),
     managerEmail: session.managerEmail, managerName: session.managerName,
     date: nowKEFrontend(),
     clientRequestId: getRequestId('devreq'),
@@ -3374,10 +3437,12 @@ var formSubmitLock = {};
 function submitForm(type){
   if(!session){showScreen('screen-login');return;}
   if(formSubmitLock[type]) return; // already submitting — ignore repeat clicks
-  var payload={formType:type,trainerName:session.name,trainerEmail:session.email,county:session.county,managerEmail:session.managerEmail,managerName:session.managerName};
-  var missing=[];
   var map={route:'r',devicepay:'d',survey:'s',install:'i'};
   var p=map[type];
+  var currentCounty = getCurrentCountyValue(p);
+  var payload={formType:type,trainerName:session.name,trainerEmail:session.email,county:currentCounty,managerEmail:session.managerEmail,managerName:session.managerName};
+  var missing=[];
+  if(!currentCounty) missing.push('County — please select which county this submission is for');
   payload.date=window['dateStore_'+p]||nowKEFrontend();
   payload.gps=gpsStr(p);
 
@@ -4229,13 +4294,13 @@ function renderUsersList(){
 function openUserForm(user){
   document.getElementById('user-form-wrap').style.display='block';
   document.getElementById('uf-error').style.display='none';
+  ufRenderCountyBox(user ? parseCountyList(user.county) : []);
   if(user){
     document.getElementById('user-form-title').textContent='✏️ Edit User';
     document.getElementById('uf-original-email').value=user.email;
     document.getElementById('uf-name').value=user.name||'';
     document.getElementById('uf-email').value=user.email||'';
     document.getElementById('uf-role').value=user.role||'Trainer';
-    document.getElementById('uf-county').value=user.county||'';
     document.getElementById('uf-manager-email').value=user.managerEmail||'';
   } else {
     document.getElementById('user-form-title').textContent='➕ Register New User';
@@ -4243,11 +4308,39 @@ function openUserForm(user){
     document.getElementById('uf-name').value='';
     document.getElementById('uf-email').value='';
     document.getElementById('uf-role').value='Trainer';
-    document.getElementById('uf-county').value='';
     // Managers registering a new trainer default the manager email to themselves
     document.getElementById('uf-manager-email').value = session.role==='Manager' ? session.email : '';
   }
   document.getElementById('user-form-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+// Builds the tickable county list for the user form, pre-checking
+// whichever counties (if any) this trainer is already assigned to.
+function ufRenderCountyBox(checkedCounties){
+  var box = document.getElementById('uf-county-box');
+  box.innerHTML = KENYA_COUNTIES.map(function(c){
+    var id = 'uf-county-'+c.replace(/[^a-zA-Z0-9]/g,'');
+    var checked = checkedCounties.indexOf(c)!==-1 ? ' checked' : '';
+    return '<label class="uf-county-item" for="'+id+'">' +
+      '<input type="checkbox" id="'+id+'" value="'+c+'" onchange="ufUpdateCountySummary()"'+checked+'> '+c +
+    '</label>';
+  }).join('');
+  ufUpdateCountySummary();
+}
+
+function ufGetCheckedCounties(){
+  return Array.prototype.slice.call(document.querySelectorAll('#uf-county-box input:checked')).map(function(el){ return el.value; });
+}
+
+function ufUpdateCountySummary(){
+  var checked = ufGetCheckedCounties();
+  document.getElementById('uf-county-summary').textContent =
+    checked.length ? checked.length+' selected: '+checked.join(', ') : 'No counties selected';
+}
+
+function ufCountySelectAll(select){
+  document.querySelectorAll('#uf-county-box input').forEach(function(el){ el.checked = select; });
+  ufUpdateCountySummary();
 }
 
 function closeUserForm(){
@@ -4259,7 +4352,7 @@ function saveUser(){
   var name = v('uf-name');
   var email = v('uf-email').toLowerCase();
   var role = document.getElementById('uf-role').value;
-  var county = document.getElementById('uf-county').value;
+  var county = ufGetCheckedCounties().join(', ');
   var managerEmail = v('uf-manager-email').toLowerCase();
 
   if(!name || !email){
@@ -4691,12 +4784,12 @@ function renderEngagementAnalytics(){
         '<div class="field"><label>Region</label><select id="an-region" onchange="anOnFilterChange()">' +
           '<option value="">All regions</option>' +
           regionOptions.map(function(r){ return '<option value="'+r+'"'+(anState.region===r?' selected':'')+'>'+r+'</option>'; }).join('') +
-          '<option value="__unmapped__"'+(anState.region==='__unmapped__'?' selected':'')+'>⚠️ Other Counties</option>' +
+          '<option value="__unmapped__"'+(anState.region==='__unmapped__'?' selected':'')+'>⚠️ Unmapped / Other counties</option>' +
         '</select></div>' +
         '<div class="field"><label>Area Manager</label><select id="an-manager" onchange="anOnFilterChange()">' +
           '<option value="">All managers</option>' +
           managerOptions.map(function(m){ return '<option value="'+m+'"'+(anState.manager===m?' selected':'')+'>'+m+'</option>'; }).join('') +
-          '<option value="__unmapped__"'+(anState.manager==='__unmapped__'?' selected':'')+'>⚠️ Other Counties</option>' +
+          '<option value="__unmapped__"'+(anState.manager==='__unmapped__'?' selected':'')+'>⚠️ Unmapped / Other counties</option>' +
         '</select></div>' +
       '</div>';
   }
@@ -4739,7 +4832,12 @@ function renderEngagementAnalytics(){
   (anAllTrainersCache || []).forEach(function(u){
     var name = (u.name || u.email || '').trim();
     if(!name) return;
-    if(u.county && !anCountyAllowed(u.county)) return; // trainer's assigned county doesn't pass the County/Region/Area Manager filters
+    // A trainer can be assigned multiple counties (comma-separated) —
+    // include them if ANY of their counties passes the current filters.
+    if(u.county){
+      var uCounties = parseCountyList(u.county);
+      if(uCounties.length && !uCounties.some(anCountyAllowed)) return;
+    }
     if(!byTrainer[name]) byTrainer[name] = { total:0, byDay:{} };
   });
 
