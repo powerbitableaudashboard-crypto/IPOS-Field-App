@@ -384,7 +384,7 @@ input[type=file]{display:none}
         </div>
         <div class="form-card orange" onclick="setFormType('survey')">
           <div class="form-card-icon">🏪</div>
-          <div class="form-card-title">Shop Surveys</div>
+          <div class="form-card-title">Shop Surveys(Owners Onboarding Form)/div>
           <div class="form-card-desc">View Trained  Shop Owners</div>
         </div>
         <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb" onclick="setFormType('users')">
@@ -872,6 +872,7 @@ input[type=file]{display:none}
         </div>
       </div>
       <button class="submit-btn" style="margin-top:10px;background:#7c3aed" onclick="exportMyVisitsPdf()">📄 Export As PDF </button>
+      <button class="submit-btn" style="margin-top:10px;background:#0d9488" onclick="openMyAnalytics()">📈 View My Analytics</button>
     </div>
 
     <div id="my-visits-status" style="text-align:center;padding:1rem;color:#9ca3af;font-size:13px">Loading…</div>
@@ -2386,6 +2387,111 @@ function renderMyVisits(){
   '</div>';
 }
 
+// ── TRAINER: MY ANALYTICS (own Monthly/Weekly Installs, Leads, Conversion) ──
+// Deliberately lightweight for performance: no charting library, nothing
+// fetched until the trainer actually opens this modal, and both data
+// sources are reused from whatever's already cached by "My Visit
+// History" / "View installed shops" if the trainer has visited those —
+// so most opens cost zero extra network calls.
+var myAnalyticsInstallsCache = null;
+
+function openMyAnalytics(){
+  var overlay = document.createElement('div');
+  overlay.className = 'ph-overlay';
+  overlay.id = 'ma-overlay';
+  overlay.onclick = function(e){ if(e.target===overlay) closeMyAnalytics(); };
+  overlay.innerHTML =
+    '<div class="ph-modal an-modal">' +
+      '<div class="ph-modal-head">' +
+        '<div><div class="ph-modal-title">📈 My Performance Analytics</div><div class="ph-modal-sub">Your installs, leads &amp; conversion at a glance</div></div>' +
+        '<button class="ph-modal-close" onclick="closeMyAnalytics()">✕</button>' +
+      '</div>' +
+      '<div class="ph-modal-body" id="ma-modal-body"><div class="an-empty-note">Loading…</div></div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  var visitsP = myVisitsData.length ? Promise.resolve() :
+    fetch(APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent('Route Plans') + '&email=' + encodeURIComponent(session.email) + '&role=Trainer')
+      .then(function(r){return r.json();})
+      .then(function(data){ myVisitsData = data.rows || []; })
+      .catch(function(){});
+
+  var installsP = (myAnalyticsInstallsCache || allInstalledShops.length) ? Promise.resolve() :
+    fetch(APPS_SCRIPT_URL + '?action=getInstalls&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
+      .then(function(r){return r.json();})
+      .then(function(data){ myAnalyticsInstallsCache = data.installs || []; })
+      .catch(function(){ myAnalyticsInstallsCache = []; });
+
+  Promise.all([visitsP, installsP]).then(renderMyAnalytics);
+}
+
+function closeMyAnalytics(){
+  var el = document.getElementById('ma-overlay');
+  if(el) el.remove();
+}
+
+function maBarRow(label, displayVal, widthPct, color){
+  return '<div class="an-bar-row">' +
+    '<div class="an-bar-name" title="'+label+'">'+label+'</div>' +
+    '<div class="an-bar-track"><div class="an-bar-fill" style="width:'+widthPct+'%;background:'+color+'"><span>'+displayVal+'</span></div></div>' +
+  '</div>';
+}
+
+function renderMyAnalytics(){
+  var body = document.getElementById('ma-modal-body');
+  if(!body) return;
+
+  var installsSource = (myAnalyticsInstallsCache && myAnalyticsInstallsCache.length) ? myAnalyticsInstallsCache : allInstalledShops;
+  var now = new Date();
+  function isThisMonth(d){ return d && d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth(); }
+  function isThisWeek(d){
+    if(!d) return false;
+    var start = new Date(now); start.setDate(now.getDate()-now.getDay()); start.setHours(0,0,0,0);
+    var end = new Date(start); end.setDate(start.getDate()+7);
+    return d>=start && d<end;
+  }
+
+  var approvedInstalls = installsSource.filter(function(x){ return x.status==='APPROVED'; });
+  var monthlyInstalls = approvedInstalls.filter(function(x){ return isThisMonth(parseAppDate(x.date)); }).length;
+  var weeklyInstalls = approvedInstalls.filter(function(x){ return isThisWeek(parseAppDate(x.date)); }).length;
+  var totalInstalls = approvedInstalls.length;
+
+  var leadsVisits = myVisitsData.filter(function(r){ return (r['Purpose']||'').toString().trim().toLowerCase()===LEADS_PURPOSE_LABEL; });
+  var totalLeads = leadsVisits.length;
+  var conversionRate = totalLeads>0 ? Math.round((totalInstalls/totalLeads)*100) : null;
+
+  if(!myVisitsData.length && !installsSource.length){
+    body.innerHTML = '<div class="an-empty-note">📭 No visits or installations on record yet — your analytics will appear here once you start submitting.</div>';
+    return;
+  }
+
+  var summaryHtml =
+    '<div class="an-summary-grid" style="grid-template-columns:repeat(3,1fr)">' +
+      '<div class="an-summary-card" style="background:var(--green-bg)"><div class="an-summary-num" style="color:var(--green)">'+totalInstalls+'</div><div class="an-summary-lbl">Total Installs</div></div>' +
+      '<div class="an-summary-card" style="background:var(--purple-bg)"><div class="an-summary-num" style="color:var(--purple)">'+totalLeads+'</div><div class="an-summary-lbl">Total Leads</div></div>' +
+      '<div class="an-summary-card" style="background:#eff6ff"><div class="an-summary-num" style="color:#2563eb">'+(conversionRate===null?'—':conversionRate+'%')+'</div><div class="an-summary-lbl">Conversion</div></div>' +
+    '</div>';
+
+  // Monthly/Weekly Installs and Leads Generated share the same unit
+  // (a count), so they're scaled against each other for a fair visual
+  // comparison. Conversion Rate is already 0–100%, so its bar uses that
+  // scale directly instead.
+  var maxCount = Math.max(monthlyInstalls, weeklyInstalls, totalLeads, 1);
+  var convColor = conversionRate===null ? '#9ca3af' : (conversionRate>=70 ? '#16a34a' : (conversionRate>=40 ? '#c2410c' : '#dc2626'));
+
+  var barsHtml =
+    maBarRow('📅 This Month Installs', monthlyInstalls, Math.max(4, Math.round((monthlyInstalls/maxCount)*100)), '#16a34a') +
+    maBarRow('🗓️ This Week Installs', weeklyInstalls, Math.max(4, Math.round((weeklyInstalls/maxCount)*100)), '#2563eb') +
+    maBarRow('🎯 Leads Generated (Customer Engaged)', totalLeads, Math.max(4, Math.round((totalLeads/maxCount)*100)), '#7c3aed') +
+    maBarRow('🔁 Lead → Install Conversion', conversionRate===null?'N/A':conversionRate+'%', conversionRate===null?4:Math.max(4, Math.min(100, conversionRate)), convColor);
+
+  body.innerHTML = summaryHtml +
+    '<div class="an-section">' +
+      '<div class="an-section-head">📊 Performance Comparison</div>' +
+      '<div class="an-legend"><span>Installs &amp; Leads are compared by count · Conversion shown as %</span></div>' +
+      barsHtml +
+    '</div>';
+}
 
 function statusDot(status){
   var color = status==='overdue' ? '#dc2626' : status==='credit' ? '#f59e0b' : status==='pending' ? '#2563eb' : '#16a34a';
@@ -3817,10 +3923,10 @@ function populateRegionManagerFilters(){
   var managerOptions = AREA_MANAGERS.map(function(m){ return m.name; });
   regionSel.innerHTML = '<option value="">All regions</option>' +
     regionOptions.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('') +
-    '<option value="__unmapped__">⚠️ Unmapped / Other counties</option>';
+    '<option value="__unmapped__">Other Counties</option>';
   managerSel.innerHTML = '<option value="">All managers</option>' +
     managerOptions.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('') +
-    '<option value="__unmapped__">⚠️ Unmapped / Other counties</option>';
+    '<option value="__unmapped__">Other Counties</option>';
 }
 
 // True if `county` passes whatever Region / Area Manager filters are
@@ -4536,7 +4642,7 @@ var LEADS_PURPOSE_LABEL = 'leads generation/pitching'; // matched case-insensiti
 // here since there's no backend endpoint exposing this sheet yet.
 // Update this list if a manager's county coverage or region changes.
 var AREA_MANAGERS = [
-  { name:'Philip Sam', email:'philipowino47@gmail.com', region:'Western,Nyanza&N.Rift Region',
+  { name:'Philip Sam', email:'philipowino47@gmail.com', region:'Western,Nyanza&N.Rift',
     counties:['Kisumu','Siaya','Busia','Kakamega','Bugoma','Uasin Gishu','Tranzoia','Elgeyo-Marakwet'] },
   { name:'Ben A', email:'awinobenard91@gmail.com', region:'Nyanza&S.Rift',
     counties:['Kericho','Bomet','Vihiga','Migori','Homabay','Kisii','Nyamira','Nandi'] }
@@ -4784,12 +4890,12 @@ function renderEngagementAnalytics(){
         '<div class="field"><label>Region</label><select id="an-region" onchange="anOnFilterChange()">' +
           '<option value="">All regions</option>' +
           regionOptions.map(function(r){ return '<option value="'+r+'"'+(anState.region===r?' selected':'')+'>'+r+'</option>'; }).join('') +
-          '<option value="__unmapped__"'+(anState.region==='__unmapped__'?' selected':'')+'>⚠️ Unmapped / Other counties</option>' +
+          '<option value="__unmapped__"'+(anState.region==='__unmapped__'?' selected':'')+'>Other Counties</option>' +
         '</select></div>' +
         '<div class="field"><label>Area Manager</label><select id="an-manager" onchange="anOnFilterChange()">' +
           '<option value="">All managers</option>' +
           managerOptions.map(function(m){ return '<option value="'+m+'"'+(anState.manager===m?' selected':'')+'>'+m+'</option>'; }).join('') +
-          '<option value="__unmapped__"'+(anState.manager==='__unmapped__'?' selected':'')+'>⚠️ Unmapped / Other counties</option>' +
+          '<option value="__unmapped__"'+(anState.manager==='__unmapped__'?' selected':'')+'>Other Counties</option>' +
         '</select></div>' +
       '</div>';
   }
@@ -5143,9 +5249,9 @@ function exportDevicePayPdfWithHistory(rows, subtitle, filename, btnId){
       extraSections: extraSections
     });
 
-    if(btn){ btn.disabled=false; btn.textContent=origText||'📄 Export PDF (current filters)'; }
+    if(btn){ btn.disabled=false; btn.textContent=origText||'📄 Export PDF'; }
   }).catch(function(){
-    if(btn){ btn.disabled=false; btn.textContent=origText||'📄 Export PDF (current filters)'; }
+    if(btn){ btn.disabled=false; btn.textContent=origText||'📄 Export PDF'; }
     alert('Failed to prepare the full repayment history for export. Please check your connection and try again.');
   });
 }
