@@ -2658,30 +2658,37 @@ function renderMyAnalytics(){
     var myFirstColor = myAvgFirst<=REPORT_START_CUTOFF ? '#16a34a' : '#dc2626';
     var myLastColor = myAvgLast>=REPORT_END_CUTOFF ? '#16a34a' : '#dc2626';
     var myTimeSummary =
-      '<div class="an-summary-grid" style="grid-template-columns:repeat(3,1fr)">' +
+      '<div class="an-summary-grid" style="grid-template-columns:repeat(4,1fr)">' +
         '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myFirstColor+'">'+minutesToHHMM(myAvgFirst)+'</div><div class="an-summary-lbl">Avg First Visit</div></div>' +
         '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myLastColor+'">'+minutesToHHMM(myAvgLast)+'</div><div class="an-summary-lbl">Avg Last Visit</div></div>' +
+        '<div class="an-summary-card" style="background:var(--purple-bg)"><div class="an-summary-num" style="color:var(--purple)">'+myDaysWorked+'</div><div class="an-summary-lbl">Days Worked</div></div>' +
         '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myPctColor+'">'+myOnTimePct+'%</div><div class="an-summary-lbl">On-Time Days</div></div>' +
       '</div>';
-    var myDayListHtml = myDays.slice(0,31).map(function(iso){
+    var myDayRowsHtml = myDays.slice(0,31).map(function(iso){
       var t = myDayTimes[iso];
       var fMin = minutesOfDay(t.first), lMin = minutesOfDay(t.last);
       var late = fMin>REPORT_START_CUTOFF, early = lMin<REPORT_END_CUTOFF;
+      var rowBg = (late||early) ? '#fef2f2' : '#f0fdf4';
       var badge = (late||early)
-        ? '<span style="color:#dc2626;font-weight:700;font-size:11px">⚠️ '+(late&&early?'Late &amp; Early':late?'Late':'Early')+'</span>'
-        : '<span style="color:#16a34a;font-weight:700;font-size:11px">✅ On time</span>';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--border);font-size:11.5px">' +
-        '<span style="color:var(--text);font-weight:600">'+iso+'</span>' +
-        '<span style="color:var(--text-m)">'+minutesToHHMM(fMin)+' → '+minutesToHHMM(lMin)+'</span>' +
-        badge +
-      '</div>';
+        ? '<span style="color:#dc2626;font-weight:700">⚠️ '+(late&&early?'Late &amp; Early':late?'Late':'Early')+'</span>'
+        : '<span style="color:#16a34a;font-weight:700">✅ On time</span>';
+      return '<tr style="background:'+rowBg+'">' +
+        '<td class="an-mname" style="position:static;background:transparent">'+iso+'</td>' +
+        '<td style="font-weight:700;color:'+(late?'#dc2626':'#16a34a')+'">'+minutesToHHMM(fMin)+'</td>' +
+        '<td style="font-weight:700;color:'+(early?'#dc2626':'#16a34a')+'">'+minutesToHHMM(lMin)+'</td>' +
+        '<td>'+badge+'</td>' +
+      '</tr>';
     }).join('');
+    var myDayTableHtml =
+      '<div class="an-matrix-wrap"><table class="an-matrix"><thead><tr>' +
+        '<th class="an-mname">Date</th><th>First Visit</th><th>Last Visit</th><th>Status</th>' +
+      '</tr></thead><tbody>' + myDayRowsHtml + '</tbody></table></div>';
     reportingTimeHtml =
       '<div class="an-section">' +
         '<div class="an-section-head">⏰ My Reporting Time (9:00am–5:00pm target, ±'+REPORT_GRACE_MIN+'min grace)</div>' +
         myTimeSummary +
-        '<div class="an-legend"><span>Late = first visit after '+minutesToHHMM(REPORT_START_CUTOFF)+' · Early leave = last visit before '+minutesToHHMM(REPORT_END_CUTOFF)+'</span></div>' +
-        '<div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:2px 12px">' + myDayListHtml + '</div>' +
+        '<div class="an-legend"><span>Late = first visit after '+minutesToHHMM(REPORT_START_CUTOFF)+' · Early leave = last visit before '+minutesToHHMM(REPORT_END_CUTOFF)+(myDays.length>31?' · showing last 31 days':'')+'</span></div>' +
+        myDayTableHtml +
       '</div>';
   }
 
