@@ -4773,6 +4773,25 @@ function buildDashSubtitle(countLabel){
 // for the 'route' sheet = one client visit, keyed by 'Trainer Name',
 // 'County' and 'Date'.
 var DAILY_CLIENT_TARGET = 15;
+// Expected reporting window in Kenyan time: pin location/first visit by
+// 9:00am, last visit no earlier than 5:00pm — with a 15-minute grace
+// period each way, since a trainer arriving at 9:10 or leaving at 16:50
+// shouldn't be flagged the same as one arriving at 11am. All stored in
+// minutes-of-day for easy comparison against a visit's parsed timestamp.
+var REPORT_START_MIN = 9*60;   // 9:00am
+var REPORT_END_MIN = 17*60;    // 5:00pm
+var REPORT_GRACE_MIN = 15;     // ± tolerance
+var REPORT_START_CUTOFF = REPORT_START_MIN + REPORT_GRACE_MIN; // 9:15am — arriving after this counts as late
+var REPORT_END_CUTOFF = REPORT_END_MIN - REPORT_GRACE_MIN;     // 4:45pm — leaving before this counts as early
+function minutesOfDay(d){ return d.getHours()*60 + d.getMinutes(); }
+function minutesToHHMM(mins){
+  if(mins===null || mins===undefined || isNaN(mins)) return '—';
+  mins = Math.round(mins);
+  var h = Math.floor(mins/60) % 24, m = mins%60;
+  var ap = h>=12 ? 'PM' : 'AM';
+  var h12 = h%12; if(h12===0) h12=12;
+  return h12+':'+String(m).padStart(2,'0')+' '+ap;
+}
 var LEADS_PURPOSE_LABEL = 'leads generation/pitching'; // matched case-insensitively against the Purpose field
 
 // Area Manager ↔ Region ↔ County coverage map (from the "IPOS Field App
@@ -5060,15 +5079,21 @@ function renderEngagementAnalytics(){
     ? '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:11.5px;color:#92400e;margin-bottom:1rem">⚠️ '+unattributedCount+' visit record(s) in this period have no trainer name attached and are excluded from the charts below. Ask trainers to re-submit or check the source data.</div>'
     : '';
 
-  // ── Aggregate per trainer, and per trainer-per-day (for the matrix) ──
-  var byTrainer = {}; // name -> { total, byDay:{iso:count} }
+  // ── Aggregate per trainer, and per trainer-per-day (for the matrix,
+  // and for first/last visit time reporting-compliance tracking) ──
+  var byTrainer = {}; // name -> { total, byDay:{iso:count}, dayTimes:{iso:{first,last}} }
   rows.forEach(function(r){
     var name = r['Trainer Name'] || 'Unknown';
     var d = parseAppDate(r['Date']);
     var iso = d ? anDateIso(d) : null;
-    if(!byTrainer[name]) byTrainer[name] = { total:0, byDay:{} };
+    if(!byTrainer[name]) byTrainer[name] = { total:0, byDay:{}, dayTimes:{} };
     byTrainer[name].total++;
-    if(iso) byTrainer[name].byDay[iso] = (byTrainer[name].byDay[iso]||0) + 1;
+    if(iso){
+      byTrainer[name].byDay[iso] = (byTrainer[name].byDay[iso]||0) + 1;
+      var dt = byTrainer[name].dayTimes[iso];
+      if(!dt) byTrainer[name].dayTimes[iso] = { first:d, last:d };
+      else { if(d<dt.first) dt.first=d; if(d>dt.last) dt.last=d; }
+    }
   });
 
   // Every registered trainer must be ranked, even with zero visits this
@@ -5083,7 +5108,7 @@ function renderEngagementAnalytics(){
       var uCounties = parseCountyList(u.county);
       if(uCounties.length && !uCounties.some(anCountyAllowed)) return;
     }
-    if(!byTrainer[name]) byTrainer[name] = { total:0, byDay:{} };
+    if(!byTrainer[name]) byTrainer[name] = { total:0, byDay:{}, dayTimes:{} };
   });
 
   var trainerNames = Object.keys(byTrainer);
@@ -5228,6 +5253,77 @@ function renderEngagementAnalytics(){
       '</tbody></table></div>' +
     '</div>';
 
+  // ── Reporting Time Compliance: First/Last visit per trainer ──
+  // Expected window is 9:00am–5:00pm Kenyan time, with a 15-minute
+  // grace period each way (late = arriving after 9:15am, early leave =
+  // last visit before 4:45pm). For each trainer we look at every day
+  // they logged at least one visit, take that day's EARLIEST visit as
+  // their "reported/pinned in" time and LATEST visit as their "left"
+  // time, then flag days outside the grace window. Sorted
+  // worst-compliance-first so the trainers most worth following up
+  // with surface immediately.
+  var complianceRows = trainerNames.map(function(n){
+    var dayTimes = byTrainer[n].dayTimes;
+    var days2 = Object.keys(dayTimes);
+    var daysWorked = days2.length;
+    var lateStarts=0, earlyLeaves=0, sumFirst=0, sumLast=0, fullyCompliantDays=0;
+    days2.forEach(function(iso){
+      var fMin = minutesOfDay(dayTimes[iso].first);
+      var lMin = minutesOfDay(dayTimes[iso].last);
+      sumFirst += fMin; sumLast += lMin;
+      var late = fMin > REPORT_START_CUTOFF;
+      var early = lMin < REPORT_END_CUTOFF;
+      if(late) lateStarts++;
+      if(early) earlyLeaves++;
+      if(!late && !early) fullyCompliantDays++;
+    });
+    var avgFirst = daysWorked ? sumFirst/daysWorked : null;
+    var avgLast = daysWorked ? sumLast/daysWorked : null;
+    var onTimePct = daysWorked ? Math.round((fullyCompliantDays/daysWorked)*100) : null;
+    return { name:n, daysWorked:daysWorked, avgFirst:avgFirst, avgLast:avgLast, lateStarts:lateStarts, earlyLeaves:earlyLeaves, onTimePct:onTimePct };
+  }).sort(function(a,b){
+    if(a.onTimePct===null && b.onTimePct===null) return b.daysWorked-a.daysWorked;
+    if(a.onTimePct===null) return 1;
+    if(b.onTimePct===null) return -1;
+    return a.onTimePct - b.onTimePct; // worst compliance first
+  });
+
+  var complianceHtml;
+  if(!complianceRows.some(function(c){ return c.daysWorked>0; })){
+    complianceHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">⏰ Reporting Time (First &amp; Last Visit, 9:00am–5:00pm ±15min)</div>' +
+        '<div class="an-empty-note">No timestamped visits for this period/county yet.</div>' +
+      '</div>';
+  } else {
+    var complianceRowsHtml = complianceRows.map(function(c){
+      var rowColor = c.onTimePct===null ? '#f9fafb' : (c.onTimePct>=80 ? '#f0fdf4' : (c.onTimePct>=50 ? '#fff7ed' : '#fef2f2'));
+      var pctColor = c.onTimePct===null ? '#9ca3af' : (c.onTimePct>=80 ? '#16a34a' : (c.onTimePct>=50 ? '#c2410c' : '#dc2626'));
+      var firstColor = c.avgFirst===null ? 'var(--text-m)' : (c.avgFirst<=REPORT_START_CUTOFF ? '#16a34a' : '#dc2626');
+      var lastColor = c.avgLast===null ? 'var(--text-m)' : (c.avgLast>=REPORT_END_CUTOFF ? '#16a34a' : '#dc2626');
+      return '<tr style="background:'+rowColor+'">' +
+        '<td class="an-mname" style="position:static;background:transparent">'+escapeHtml(c.name)+'</td>' +
+        '<td style="font-weight:700;color:'+firstColor+'">'+minutesToHHMM(c.avgFirst)+'</td>' +
+        '<td style="font-weight:700;color:'+lastColor+'">'+minutesToHHMM(c.avgLast)+'</td>' +
+        '<td>'+c.lateStarts+'</td>' +
+        '<td>'+c.earlyLeaves+'</td>' +
+        '<td>'+c.daysWorked+'</td>' +
+        '<td style="font-weight:800;color:'+pctColor+'">'+(c.onTimePct===null?'—':c.onTimePct+'%')+'</td>' +
+      '</tr>';
+    }).join('');
+    complianceHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">⏰ Reporting Time (First &amp; Last Visit, 9:00am–5:00pm ±15min grace)</div>' +
+        '<div class="an-legend">' +
+          '<span><span class="an-dot" style="background:#16a34a"></span>Within grace window</span>' +
+          '<span><span class="an-dot" style="background:#dc2626"></span>Late start (after 9:15am) / early leave (before 4:45pm)</span>' +
+        '</div>' +
+        '<div class="an-matrix-wrap"><table class="an-matrix"><thead><tr>' +
+          '<th class="an-mname">Trainer</th><th>Avg First Visit</th><th>Avg Last Visit</th><th>Late Starts</th><th>Early Leaves</th><th>Days Worked</th><th>On-Time %</th>' +
+        '</tr></thead><tbody>' + complianceRowsHtml + '</tbody></table></div>' +
+      '</div>';
+  }
+
   // ── Ranking: top 5 / bottom 5 trainers by total engagement in period ──
   var top5 = sortedByTotal.slice(0,5);
   var bottom5 = sortedByTotal.slice().reverse().slice(0,5);
@@ -5322,7 +5418,7 @@ function renderEngagementAnalytics(){
       '</div>';
   }
 
-  body.innerHTML = filtersHtml + unattributedNote + summaryHtml + barChartHtml + pieHtml + rankingHtml + purposeHtml + conversionHtml + matrixHtml;
+  body.innerHTML = filtersHtml + unattributedNote + summaryHtml + barChartHtml + pieHtml + rankingHtml + purposeHtml + conversionHtml + complianceHtml + matrixHtml;
 }
 
 // Fetches the full repayment history (deposit + every installment/cash
