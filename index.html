@@ -4890,7 +4890,7 @@ function hoursWorkedColor(mins){
   if(mins===null || mins===undefined || isNaN(mins)) return 'var(--text-m)';
   return mins>HOURS_WORKED_CUTOFF_MIN ? '#16a34a' : '#dc2626';
 }
-var LEADS_PURPOSE_LABEL = 'leads generation/pitching'; // matched case-insensitively against the Purpose field
+var LEADS_PURPOSE_LABEL = 'leads generation or pitching'; // matched case-insensitively against the Purpose field
 
 // Area Manager ↔ Region ↔ County coverage map (from the "IPOS Field App
 // Data" reference sheet). Only used to power the Admin-only Region /
@@ -5496,7 +5496,7 @@ function renderEngagementAnalytics(){
     conversionHtml =
       '<div class="an-section">' +
         '<div class="an-section-head">🔁 Lead → Installation Conversion Rate (Ranked)</div>' +
-        '<div class="an-empty-note">No "Leads Generation/Pitching" visits recorded for this period/county yet.</div>' +
+        '<div class="an-empty-note">No "Leads Generation or Pitching" visits recorded for this period/county yet.</div>' +
       '</div>';
   } else {
     var conversionRowsHtml = conversionRows.map(function(c,i){
