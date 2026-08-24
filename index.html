@@ -2615,12 +2615,83 @@ function renderMyAnalytics(){
   var maxVal = Math.max.apply(null, months.reduce(function(acc,mm){ return acc.concat([mm.engaged,mm.leads,mm.installs]); }, []).concat([1]));
   var lineChartSvg = maBuildLineChartSVG(months, maxVal);
 
+  // ── My Reporting Time: first/last visit each day, vs. the
+  // 9:00am–5:00pm target (±grace period, same rule managers see) ──
+  // Same idea as the manager/admin "Reporting Time" table, but scoped
+  // to just this trainer so they can see their own punctuality record
+  // and self-correct — computed entirely from myVisitsData already in
+  // memory, no extra network call.
+  var myDayTimes = {};
+  myVisitsData.forEach(function(r){
+    if(!maDateInPeriod(r['Date'])) return;
+    var d = parseAppDate(r['Date']); if(!d) return;
+    var iso = anDateIso(d);
+    if(!myDayTimes[iso]) myDayTimes[iso] = { first:d, last:d };
+    else { if(d<myDayTimes[iso].first) myDayTimes[iso].first=d; if(d>myDayTimes[iso].last) myDayTimes[iso].last=d; }
+  });
+  var myDays = Object.keys(myDayTimes).sort().reverse(); // most recent first
+  var myDaysWorked = myDays.length;
+  var myLateStarts=0, myEarlyLeaves=0, mySumFirst=0, mySumLast=0, myFullyCompliantDays=0;
+  myDays.forEach(function(iso){
+    var fMin = minutesOfDay(myDayTimes[iso].first);
+    var lMin = minutesOfDay(myDayTimes[iso].last);
+    mySumFirst += fMin; mySumLast += lMin;
+    var late = fMin > REPORT_START_CUTOFF;
+    var early = lMin < REPORT_END_CUTOFF;
+    if(late) myLateStarts++;
+    if(early) myEarlyLeaves++;
+    if(!late && !early) myFullyCompliantDays++;
+  });
+  var myAvgFirst = myDaysWorked ? mySumFirst/myDaysWorked : null;
+  var myAvgLast = myDaysWorked ? mySumLast/myDaysWorked : null;
+  var myOnTimePct = myDaysWorked ? Math.round((myFullyCompliantDays/myDaysWorked)*100) : null;
+
+  var reportingTimeHtml;
+  if(myDaysWorked===0){
+    reportingTimeHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">⏰ My Reporting Time (9:00am–5:00pm target, ±'+REPORT_GRACE_MIN+'min grace)</div>' +
+        '<div class="an-empty-note">No timestamped visits for this period yet.</div>' +
+      '</div>';
+  } else {
+    var myPctColor = myOnTimePct>=80 ? '#16a34a' : (myOnTimePct>=50 ? '#c2410c' : '#dc2626');
+    var myFirstColor = myAvgFirst<=REPORT_START_CUTOFF ? '#16a34a' : '#dc2626';
+    var myLastColor = myAvgLast>=REPORT_END_CUTOFF ? '#16a34a' : '#dc2626';
+    var myTimeSummary =
+      '<div class="an-summary-grid" style="grid-template-columns:repeat(3,1fr)">' +
+        '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myFirstColor+'">'+minutesToHHMM(myAvgFirst)+'</div><div class="an-summary-lbl">Avg First Visit</div></div>' +
+        '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myLastColor+'">'+minutesToHHMM(myAvgLast)+'</div><div class="an-summary-lbl">Avg Last Visit</div></div>' +
+        '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myPctColor+'">'+myOnTimePct+'%</div><div class="an-summary-lbl">On-Time Days</div></div>' +
+      '</div>';
+    var myDayListHtml = myDays.slice(0,31).map(function(iso){
+      var t = myDayTimes[iso];
+      var fMin = minutesOfDay(t.first), lMin = minutesOfDay(t.last);
+      var late = fMin>REPORT_START_CUTOFF, early = lMin<REPORT_END_CUTOFF;
+      var badge = (late||early)
+        ? '<span style="color:#dc2626;font-weight:700;font-size:11px">⚠️ '+(late&&early?'Late &amp; Early':late?'Late':'Early')+'</span>'
+        : '<span style="color:#16a34a;font-weight:700;font-size:11px">✅ On time</span>';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--border);font-size:11.5px">' +
+        '<span style="color:var(--text);font-weight:600">'+iso+'</span>' +
+        '<span style="color:var(--text-m)">'+minutesToHHMM(fMin)+' → '+minutesToHHMM(lMin)+'</span>' +
+        badge +
+      '</div>';
+    }).join('');
+    reportingTimeHtml =
+      '<div class="an-section">' +
+        '<div class="an-section-head">⏰ My Reporting Time (9:00am–5:00pm target, ±'+REPORT_GRACE_MIN+'min grace)</div>' +
+        myTimeSummary +
+        '<div class="an-legend"><span>Late = first visit after '+minutesToHHMM(REPORT_START_CUTOFF)+' · Early leave = last visit before '+minutesToHHMM(REPORT_END_CUTOFF)+'</span></div>' +
+        '<div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:2px 12px">' + myDayListHtml + '</div>' +
+      '</div>';
+  }
+
   body.innerHTML = filtersHtml + summaryHtml +
     '<div class="an-section">' +
       '<div class="an-section-head">📊 Performance Comparison</div>' +
       '<div class="an-legend"><span>Installs &amp; Leads are compared by count · Conversion shown as %</span></div>' +
       barsHtml +
     '</div>' +
+    reportingTimeHtml +
     '<div class="an-section">' +
       '<div class="an-section-head">📈 Monthly Trend</div>' +
       '<div class="an-legend">' +
