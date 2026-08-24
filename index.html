@@ -5186,11 +5186,11 @@ function renderEngagementAnalytics(){
   }).join('');
   var barChartHtml =
     '<div class="an-section">' +
-      '<div class="an-section-head">📶 Visits per Trainer vs. Target ('+target+' for this period)</div>' +
+      '<div class="an-section-head">📶 Visits Per Trainer vs. Target ('+target+' for this period)</div>' +
       '<div class="an-legend">' +
-        '<span><span class="an-dot" style="background:#16a34a"></span>Met target (≥100%)</span>' +
+        '<span><span class="an-dot" style="background:#16a34a"></span>Met Target (≥100%)</span>' +
         '<span><span class="an-dot" style="background:#c2410c"></span>Behind (50–99%)</span>' +
-        '<span><span class="an-dot" style="background:#dc2626"></span>At risk (&lt;50%)</span>' +
+        '<span><span class="an-dot" style="background:#dc2626"></span>At Risk (&lt;50%)</span>' +
       '</div>' +
       barsHtml +
     '</div>';
@@ -5292,7 +5292,7 @@ function renderEngagementAnalytics(){
   if(!complianceRows.some(function(c){ return c.daysWorked>0; })){
     complianceHtml =
       '<div class="an-section">' +
-        '<div class="an-section-head">⏰ Reporting Time (First &amp; Last Visit, 9:00am–5:00pm ±15min)</div>' +
+        '<div class="an-section-head">⏰ Reporting Time (First &amp; Last Visit, 9:00am–5:00pm ±30min)</div>' +
         '<div class="an-empty-note">No timestamped visits for this period/county yet.</div>' +
       '</div>';
   } else {
@@ -5313,10 +5313,10 @@ function renderEngagementAnalytics(){
     }).join('');
     complianceHtml =
       '<div class="an-section">' +
-        '<div class="an-section-head">⏰ Reporting Time (First &amp; Last Visit, 9:00am–5:00pm ±15min grace)</div>' +
+        '<div class="an-section-head">⏰ Reporting Time (First &amp; Last Visit, 9:00am–5:00pm ±30min grace)</div>' +
         '<div class="an-legend">' +
           '<span><span class="an-dot" style="background:#16a34a"></span>Within grace window</span>' +
-          '<span><span class="an-dot" style="background:#dc2626"></span>Late start (after 9:15am) / early leave (before 4:45pm)</span>' +
+          '<span><span class="an-dot" style="background:#dc2626"></span>Late start (after 9:30am) / early leave (before 4:30pm)</span>' +
         '</div>' +
         '<div class="an-matrix-wrap"><table class="an-matrix"><thead><tr>' +
           '<th class="an-mname">Trainer</th><th>Avg First Visit</th><th>Avg Last Visit</th><th>Late Starts</th><th>Early Leaves</th><th>Days Worked</th><th>On-Time %</th>' +
