@@ -415,18 +415,18 @@ input[type=file]{display:none}
         </div>
         <div class="two-col">
           <div class="field" style="margin-bottom:0"><label>Trainer</label>
-            <select id="dash-trainer-filter" onchange="renderDashList()"><option value="">All trainers</option></select>
+            <select id="dash-trainer-filter" onchange="renderDashList()"><option value="">All Trainers</option></select>
           </div>
           <div class="field" style="margin-bottom:0"><label>County</label>
-            <select id="dash-county-filter" onchange="renderDashList()"><option value="">All counties</option></select>
+            <select id="dash-county-filter" onchange="renderDashList()"><option value="">All Counties</option></select>
           </div>
         </div>
         <div class="two-col" id="dash-region-manager-wrap" style="display:none">
           <div class="field" style="margin-bottom:0"><label>Region</label>
-            <select id="dash-region-filter" onchange="renderDashList()"><option value="">All regions</option></select>
+            <select id="dash-region-filter" onchange="renderDashList()"><option value="">All Regions</option></select>
           </div>
           <div class="field" style="margin-bottom:0"><label>Area Manager</label>
-            <select id="dash-manager-filter" onchange="renderDashList()"><option value="">All managers</option></select>
+            <select id="dash-manager-filter" onchange="renderDashList()"><option value="">All Managers</option></select>
           </div>
         </div>
         <div class="field" style="margin-bottom:0"><label>Date Range</label>
@@ -590,7 +590,7 @@ input[type=file]{display:none}
     <div class="section">
       <div class="field"><label for="d-purpose">Select Purpose<span class="req">*</span></label>
         <select id="d-purpose" onchange="onPurposeChange()">
-          <option value="">-- Select an action --</option>
+          <option value="">-- Select an Action --</option>
           <option value="repayment">💳 Device Repayment</option>
           <option value="request">📦 Device Request</option>
           <option value="contract">📄 Contract</option>
@@ -981,10 +981,10 @@ input[type=file]{display:none}
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px">
       <div class="two-col">
         <div class="field" style="margin-bottom:0"><label>Trainer</label>
-          <select id="shops-trainer-filter" onchange="renderShopsList()"><option value="">All trainers</option></select>
+          <select id="shops-trainer-filter" onchange="renderShopsList()"><option value="">All Trainers</option></select>
         </div>
         <div class="field" style="margin-bottom:0"><label>County</label>
-          <select id="shops-county-filter" onchange="renderShopsList()"><option value="">All counties</option></select>
+          <select id="shops-county-filter" onchange="renderShopsList()"><option value="">All Counties</option></select>
         </div>
       </div>
       <div class="field" style="margin-bottom:0"><label>Installed Date Range</label>
@@ -1030,10 +1030,10 @@ input[type=file]{display:none}
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px">
       <div class="two-col">
         <div class="field" style="margin-bottom:0"><label>Trainer</label>
-          <select id="ishop-trainer-filter" onchange="renderInstalledShopsList()"><option value="">All trainers</option></select>
+          <select id="ishop-trainer-filter" onchange="renderInstalledShopsList()"><option value="">All Trainers</option></select>
         </div>
         <div class="field" style="margin-bottom:0"><label>County</label>
-          <select id="ishop-county-filter" onchange="renderInstalledShopsList()"><option value="">All counties</option></select>
+          <select id="ishop-county-filter" onchange="renderInstalledShopsList()"><option value="">All Counties</option></select>
         </div>
       </div>
       <div class="field" style="margin-bottom:0"><label>Installed Date Range</label>
@@ -1075,11 +1075,11 @@ input[type=file]{display:none}
   </div>
   <div class="form-body">
     <div class="two-col">
-      <div class="field" style="margin-bottom:0"><label>Search shop</label>
+      <div class="field" style="margin-bottom:0"><label>Search Shop</label>
         <input type="text" id="contracts-search" placeholder="Shop name or ID…" oninput="renderContractsList()">
       </div>
       <div class="field" style="margin-bottom:0"><label>County</label>
-        <select id="contracts-county-filter" onchange="renderContractsList()"><option value="">All counties</option></select>
+        <select id="contracts-county-filter" onchange="renderContractsList()"><option value="">All Counties</option></select>
       </div>
     </div>
     <div id="contracts-status" style="font-size:12px;color:var(--text-m);margin:10px 0"></div>
@@ -2605,7 +2605,7 @@ function renderMyAnalytics(){
   var barsHtml =
     maBarRow('📅 This Month Installs', monthlyInstalls, Math.max(4, Math.round((monthlyInstalls/maxCount)*100)), '#16a34a') +
     maBarRow('🗓️ This Week Installs', weeklyInstalls, Math.max(4, Math.round((weeklyInstalls/maxCount)*100)), '#2563eb') +
-    maBarRow('🎯 Leads Generated (period)', totalLeads, Math.max(4, Math.round((totalLeads/maxCount)*100)), '#7c3aed') +
+    maBarRow('🎯 Leads Generated (Period)', totalLeads, Math.max(4, Math.round((totalLeads/maxCount)*100)), '#7c3aed') +
     maBarRow('🔁 Lead → Install Conversion', conversionRate===null?'N/A':conversionRate+'%', conversionRate===null?4:Math.max(4, Math.min(100, conversionRate)), convColor);
 
   // Monthly trend line chart — independent of the period filter above
@@ -2719,7 +2719,7 @@ function openSignedContracts(){
       statusEl.textContent = allContracts.length + ' signed contract(s) on file.';
       var countySel = document.getElementById('contracts-county-filter');
       var counties = Array.from(new Set(allContracts.map(function(c){ return c['County']; }).filter(Boolean))).sort();
-      countySel.innerHTML = '<option value="">All counties</option>' + counties.map(function(c){ return '<option>'+c+'</option>'; }).join('');
+      countySel.innerHTML = '<option value="">All Counties</option>' + counties.map(function(c){ return '<option>'+c+'</option>'; }).join('');
       renderContractsList();
     })
     .catch(function(){ statusEl.textContent='Failed to load contracts.'; });
@@ -4780,9 +4780,9 @@ var DAILY_CLIENT_TARGET = 15;
 // minutes-of-day for easy comparison against a visit's parsed timestamp.
 var REPORT_START_MIN = 9*60;   // 9:00am
 var REPORT_END_MIN = 17*60;    // 5:00pm
-var REPORT_GRACE_MIN = 15;     // ± tolerance
-var REPORT_START_CUTOFF = REPORT_START_MIN + REPORT_GRACE_MIN; // 9:15am — arriving after this counts as late
-var REPORT_END_CUTOFF = REPORT_END_MIN - REPORT_GRACE_MIN;     // 4:45pm — leaving before this counts as early
+var REPORT_GRACE_MIN = 30;     // ± tolerance
+var REPORT_START_CUTOFF = REPORT_START_MIN + REPORT_GRACE_MIN; // 9:30am — arriving after this counts as late
+var REPORT_END_CUTOFF = REPORT_END_MIN - REPORT_GRACE_MIN;     // 4:30pm — leaving before this counts as early
 function minutesOfDay(d){ return d.getHours()*60 + d.getMinutes(); }
 function minutesToHHMM(mins){
   if(mins===null || mins===undefined || isNaN(mins)) return '—';
