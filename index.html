@@ -2645,6 +2645,7 @@ function renderMyAnalytics(){
   var myAvgFirst = myDaysWorked ? mySumFirst/myDaysWorked : null;
   var myAvgLast = myDaysWorked ? mySumLast/myDaysWorked : null;
   var myOnTimePct = myDaysWorked ? Math.round((myFullyCompliantDays/myDaysWorked)*100) : null;
+  var myAvgHoursWorked = (myAvgFirst!==null && myAvgLast!==null) ? (myAvgLast-myAvgFirst) : null;
 
   var reportingTimeHtml;
   if(myDaysWorked===0){
@@ -2657,10 +2658,12 @@ function renderMyAnalytics(){
     var myPctColor = myOnTimePct>=80 ? '#16a34a' : (myOnTimePct>=50 ? '#c2410c' : '#dc2626');
     var myFirstColor = myAvgFirst<=REPORT_START_CUTOFF ? '#16a34a' : '#dc2626';
     var myLastColor = myAvgLast>=REPORT_END_CUTOFF ? '#16a34a' : '#dc2626';
+    var myHoursColor = hoursWorkedColor(myAvgHoursWorked);
     var myTimeSummary =
-      '<div class="an-summary-grid" style="grid-template-columns:repeat(4,1fr)">' +
+      '<div class="an-summary-grid" style="grid-template-columns:repeat(5,1fr)">' +
         '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myFirstColor+'">'+minutesToHHMM(myAvgFirst)+'</div><div class="an-summary-lbl">Avg First Visit</div></div>' +
         '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myLastColor+'">'+minutesToHHMM(myAvgLast)+'</div><div class="an-summary-lbl">Avg Last Visit</div></div>' +
+        '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myHoursColor+'">'+minutesToDuration(myAvgHoursWorked)+'</div><div class="an-summary-lbl">Avg Hours Worked</div></div>' +
         '<div class="an-summary-card" style="background:var(--purple-bg)"><div class="an-summary-num" style="color:var(--purple)">'+myDaysWorked+'</div><div class="an-summary-lbl">Days Worked</div></div>' +
         '<div class="an-summary-card" style="background:var(--surface-1)"><div class="an-summary-num" style="color:'+myPctColor+'">'+myOnTimePct+'%</div><div class="an-summary-lbl">On-Time Days</div></div>' +
       '</div>';
@@ -2669,6 +2672,8 @@ function renderMyAnalytics(){
       var fMin = minutesOfDay(t.first), lMin = minutesOfDay(t.last);
       var late = fMin>REPORT_START_CUTOFF, early = lMin<REPORT_END_CUTOFF;
       var rowBg = (late||early) ? '#fef2f2' : '#f0fdf4';
+      var dayHoursWorked = lMin - fMin;
+      var dayHoursColor = hoursWorkedColor(dayHoursWorked);
       var badge = (late||early)
         ? '<span style="color:#dc2626;font-weight:700">⚠️ '+(late&&early?'Late &amp; Early':late?'Late':'Early')+'</span>'
         : '<span style="color:#16a34a;font-weight:700">✅ On time</span>';
@@ -2676,18 +2681,19 @@ function renderMyAnalytics(){
         '<td class="an-mname" style="position:static;background:transparent">'+iso+'</td>' +
         '<td style="font-weight:700;color:'+(late?'#dc2626':'#16a34a')+'">'+minutesToHHMM(fMin)+'</td>' +
         '<td style="font-weight:700;color:'+(early?'#dc2626':'#16a34a')+'">'+minutesToHHMM(lMin)+'</td>' +
+        '<td style="font-weight:700;color:'+dayHoursColor+'">'+minutesToDuration(dayHoursWorked)+'</td>' +
         '<td>'+badge+'</td>' +
       '</tr>';
     }).join('');
     var myDayTableHtml =
       '<div class="an-matrix-wrap"><table class="an-matrix"><thead><tr>' +
-        '<th class="an-mname">Date</th><th>First Visit</th><th>Last Visit</th><th>Status</th>' +
+        '<th class="an-mname">Date</th><th>First Visit</th><th>Last Visit</th><th>Hours Worked</th><th>Status</th>' +
       '</tr></thead><tbody>' + myDayRowsHtml + '</tbody></table></div>';
     reportingTimeHtml =
       '<div class="an-section">' +
         '<div class="an-section-head">⏰ My Reporting Time (9:00am–5:00pm target, ±'+REPORT_GRACE_MIN+'min grace)</div>' +
         myTimeSummary +
-        '<div class="an-legend"><span>Late = first visit after '+minutesToHHMM(REPORT_START_CUTOFF)+' · Early leave = last visit before '+minutesToHHMM(REPORT_END_CUTOFF)+(myDays.length>31?' · showing last 31 days':'')+'</span></div>' +
+        '<div class="an-legend"><span>Late = first visit after '+minutesToHHMM(REPORT_START_CUTOFF)+' · Early leave = last visit before '+minutesToHHMM(REPORT_END_CUTOFF)+' · Hours Worked &gt;7h = green, ≤7h = red'+(myDays.length>31?' · showing last 31 days':'')+'</span></div>' +
         myDayTableHtml +
       '</div>';
   }
@@ -4870,6 +4876,20 @@ function minutesToHHMM(mins){
   var h12 = h%12; if(h12===0) h12=12;
   return h12+':'+String(m).padStart(2,'0')+' '+ap;
 }
+// Hours Worked = last visit time minus first visit time for the day
+// (or the average of that across days). Flagged red if under 7hrs,
+// green once it's over 7hrs by a minute or more.
+var HOURS_WORKED_CUTOFF_MIN = 7*60; // 7:00
+function minutesToDuration(mins){
+  if(mins===null || mins===undefined || isNaN(mins)) return '—';
+  mins = Math.round(mins); if(mins<0) mins = 0;
+  var h = Math.floor(mins/60), m = mins%60;
+  return h+'h '+String(m).padStart(2,'0')+'m';
+}
+function hoursWorkedColor(mins){
+  if(mins===null || mins===undefined || isNaN(mins)) return 'var(--text-m)';
+  return mins>HOURS_WORKED_CUTOFF_MIN ? '#16a34a' : '#dc2626';
+}
 var LEADS_PURPOSE_LABEL = 'leads generation/pitching'; // matched case-insensitively against the Purpose field
 
 // Area Manager ↔ Region ↔ County coverage map (from the "IPOS Field App
@@ -5358,7 +5378,8 @@ function renderEngagementAnalytics(){
     var avgFirst = daysWorked ? sumFirst/daysWorked : null;
     var avgLast = daysWorked ? sumLast/daysWorked : null;
     var onTimePct = daysWorked ? Math.round((fullyCompliantDays/daysWorked)*100) : null;
-    return { name:n, daysWorked:daysWorked, avgFirst:avgFirst, avgLast:avgLast, lateStarts:lateStarts, earlyLeaves:earlyLeaves, onTimePct:onTimePct };
+    var hoursWorked = (avgFirst!==null && avgLast!==null) ? (avgLast-avgFirst) : null;
+    return { name:n, daysWorked:daysWorked, avgFirst:avgFirst, avgLast:avgLast, lateStarts:lateStarts, earlyLeaves:earlyLeaves, onTimePct:onTimePct, hoursWorked:hoursWorked };
   }).sort(function(a,b){
     if(a.onTimePct===null && b.onTimePct===null) return b.daysWorked-a.daysWorked;
     if(a.onTimePct===null) return 1;
@@ -5379,10 +5400,12 @@ function renderEngagementAnalytics(){
       var pctColor = c.onTimePct===null ? '#9ca3af' : (c.onTimePct>=80 ? '#16a34a' : (c.onTimePct>=50 ? '#c2410c' : '#dc2626'));
       var firstColor = c.avgFirst===null ? 'var(--text-m)' : (c.avgFirst<=REPORT_START_CUTOFF ? '#16a34a' : '#dc2626');
       var lastColor = c.avgLast===null ? 'var(--text-m)' : (c.avgLast>=REPORT_END_CUTOFF ? '#16a34a' : '#dc2626');
+      var hoursColor = hoursWorkedColor(c.hoursWorked);
       return '<tr style="background:'+rowColor+'">' +
         '<td class="an-mname" style="position:static;background:transparent">'+escapeHtml(c.name)+'</td>' +
         '<td style="font-weight:700;color:'+firstColor+'">'+minutesToHHMM(c.avgFirst)+'</td>' +
         '<td style="font-weight:700;color:'+lastColor+'">'+minutesToHHMM(c.avgLast)+'</td>' +
+        '<td style="font-weight:700;color:'+hoursColor+'">'+minutesToDuration(c.hoursWorked)+'</td>' +
         '<td>'+c.lateStarts+'</td>' +
         '<td>'+c.earlyLeaves+'</td>' +
         '<td>'+c.daysWorked+'</td>' +
@@ -5395,9 +5418,10 @@ function renderEngagementAnalytics(){
         '<div class="an-legend">' +
           '<span><span class="an-dot" style="background:#16a34a"></span>Within grace window</span>' +
           '<span><span class="an-dot" style="background:#dc2626"></span>Late start (after 9:30am) / early leave (before 4:30pm)</span>' +
+          '<span><span class="an-dot" style="background:#16a34a"></span>Hours Worked &gt;7h = green, ≤7h = red</span>' +
         '</div>' +
         '<div class="an-matrix-wrap"><table class="an-matrix"><thead><tr>' +
-          '<th class="an-mname">Trainer</th><th>Avg First Visit</th><th>Avg Last Visit</th><th>Late Starts</th><th>Early Leaves</th><th>Days Worked</th><th>On-Time %</th>' +
+          '<th class="an-mname">Trainer</th><th>Avg First Visit</th><th>Avg Last Visit</th><th>Hours Worked</th><th>Late Starts</th><th>Early Leaves</th><th>Days Worked</th><th>On-Time %</th>' +
         '</tr></thead><tbody>' + complianceRowsHtml + '</tbody></table></div>' +
       '</div>';
   }
