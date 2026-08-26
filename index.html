@@ -875,6 +875,8 @@ input[type=file]{display:none}
       <button class="submit-btn" style="margin-top:10px;background:#0d9488" onclick="openMyAnalytics()">📈 View My Analytics</button>
     </div>
 
+    <div id="my-visits-checkouts"></div>
+
     <div id="my-visits-status" style="text-align:center;padding:1rem;color:#9ca3af;font-size:13px">Loading…</div>
     <div id="my-visits-summary"></div>
   </div>
@@ -2320,12 +2322,14 @@ function openMyVisits(){
   statusEl.style.display='block';
   statusEl.textContent='Loading…';
   document.getElementById('my-visits-summary').innerHTML='';
+  document.getElementById('my-visits-checkouts').innerHTML='';
 
   var url = APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent('Route Plans') +
     '&email=' + encodeURIComponent(session.email) + '&role=Trainer';
   fetch(url).then(function(r){return r.json();}).then(function(data){
     myVisitsData = data.rows || [];
     statusEl.style.display='none';
+    renderTodaysCheckouts();
     renderMyVisits();
   }).catch(function(){ statusEl.textContent='Failed to load your visit history.'; });
 }
@@ -2367,6 +2371,132 @@ function getFilteredMyVisits(){
   return myVisitsData.filter(function(r){ return myVisitsDateMatches(r['Date']); });
 }
 
+// Route Plan submissions with multiple shops are saved as several
+// consecutive sheet rows, but only the FIRST row of each submission
+// carries the shared Trainer Name/Email/County/Date/GPS — the rest are
+// genuinely blank in the API response. Forward-filling those fields
+// from the nearest row above reconstructs the real visit date for
+// every row, which "Pending Check-Out" needs to correctly identify
+// "today's" installs (mirrors the same pattern used for the Manager's
+// Engagement Analytics, at anForwardFilledItems()).
+function myVisitsForwardFilled(){
+  var carryFields = ['Trainer Name','Trainer Email','County','Date','GPS'];
+  var last = {};
+  return myVisitsData.map(function(r){
+    var copy = Object.assign({}, r);
+    carryFields.forEach(function(k){
+      var v = (copy[k]!=null ? String(copy[k]).trim() : '');
+      if(v) last[k] = copy[k];
+      else if(last[k]!=null) copy[k] = last[k];
+    });
+    return copy;
+  });
+}
+
+// Shows today's Installation/Reactivation visits that haven't been
+// checked out yet, each with its own Check Out button. Purely a
+// same-day view — once a visit rolls past today without being checked
+// out it stops appearing here (it's still visible, uncompleted, in the
+// regular Visits list below).
+function renderTodaysCheckouts(){
+  var el = document.getElementById('my-visits-checkouts');
+  if(!el) return;
+  var today = new Date();
+  var filled = myVisitsForwardFilled();
+  var pending = filled.filter(function(r){
+    var purpose = (r['Purpose']||'').toString().trim().toLowerCase();
+    if(purpose !== INSTALL_PURPOSE_LABEL) return false;
+    if(r['Check Out Time']) return false;
+    var d = parseAppDate(r['Date']);
+    if(!d) return false;
+    return d.toDateString() === today.toDateString();
+  });
+
+  if(!pending.length){ el.innerHTML=''; return; }
+
+  el.innerHTML = '<div class="section" style="border:1px solid #fed7aa;background:#fff7ed">' +
+    '<div class="section-title">🔧 Pending Check-Out — Today\'s Installs ('+pending.length+')</div>' +
+    pending.map(function(r){
+      var vid = r['Visit ID'] || '';
+      if(!vid) return ''; // visit predates Check Out being enabled — nothing to target
+      return '<div style="padding:10px 0;border-bottom:1px solid #fed7aa;font-size:12.5px;line-height:1.7" id="co-row-'+vid+'">' +
+        '<strong>'+(r['Shop Name']||'—')+'</strong><br>' +
+        '<span style="color:var(--text-m)">📍 '+(r['Location']||'')+'</span><br>' +
+        '<button class="submit-btn" style="margin-top:8px;background:#c2410c;padding:8px 14px;font-size:12.5px" ' +
+        'id="co-btn-'+vid+'" onclick="checkOutVisit(\''+vid+'\')">✅ Check Out Now</button>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+// Captures GPS then posts the checkout. Split into two steps so the
+// button can show "Getting location…" vs "Checking out…" separately —
+// clearer if the slow part turns out to be the GPS fix rather than
+// the network call.
+function checkOutVisit(visitId){
+  var btn = document.getElementById('co-btn-'+visitId);
+  if(!btn) return;
+  var originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Getting location…';
+
+  if(!navigator.geolocation){
+    btn.textContent = 'GPS not supported';
+    setTimeout(function(){ btn.disabled=false; btn.textContent=originalText; }, 2500);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      var gps = pos.coords.latitude.toFixed(6) + ',' + pos.coords.longitude.toFixed(6);
+      submitCheckOut(visitId, gps, btn, originalText);
+    },
+    function(err){
+      var msg = err.code===1 ? 'Location blocked — enable it & retry' : 'Could not get location — retry';
+      btn.textContent = msg;
+      setTimeout(function(){ btn.disabled=false; btn.textContent=originalText; }, 3000);
+    },
+    { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+  );
+}
+
+function submitCheckOut(visitId, gps, btn, originalText){
+  btn.textContent = 'Checking out…';
+  fetch(APPS_SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({
+      formType:'checkOutVisit',
+      visitId: visitId,
+      gps: gps,
+      requestedBy: session.email,
+      requestedByRole: session.role
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.status==='success'){
+      // Update the local cache so both this list and the regular
+      // Visits list below reflect it immediately, with no refetch.
+      myVisitsData.forEach(function(r){
+        if(r['Visit ID']===visitId){
+          r['Check Out Time'] = data.checkOutTime || '';
+          r['Check Out GPS'] = data.checkOutGps || '';
+        }
+      });
+      var row = document.getElementById('co-row-'+visitId);
+      if(row) row.innerHTML = '<strong>Checked out ✅</strong> at '+(data.checkOutTime||'');
+      renderMyVisits();
+    } else {
+      alert(data.message || 'Failed to check out.');
+      btn.disabled = false; btn.textContent = originalText;
+    }
+  })
+  .catch(function(){
+    alert('Network error — please try again.');
+    btn.disabled = false; btn.textContent = originalText;
+  });
+}
+
 function renderMyVisits(){
   var filtered = getFilteredMyVisits();
   var el = document.getElementById('my-visits-summary');
@@ -2376,11 +2506,14 @@ function renderMyVisits(){
   }
   el.innerHTML = '<div class="section"><div class="section-title">📋 Visits ('+filtered.length+')</div>' +
     filtered.map(function(r){
+      var purpose = (r['Purpose']||'').toString().trim().toLowerCase();
+      var isInstallVisit = purpose === INSTALL_PURPOSE_LABEL;
       return '<div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:12.5px;line-height:1.8">'+
         '<strong>'+(r['Shop Name']||'—')+'</strong><br>'+
         '<span style="color:var(--text-m)">📅 '+(r['Date']||'')+' · 📍 '+(r['Location']||'')+'</span><br>'+
         (r['Shop Owner Phone'] ? ('☎️ '+r['Shop Owner Phone']+'<br>') : '') +
         (r['Purpose'] ? ('🎯 '+r['Purpose']+'<br>') : '') +
+        (isInstallVisit && r['Check Out Time'] ? ('✅ Checked out: '+r['Check Out Time']+'<br>') : '') +
         (r['Client Feedback'] ? ('💬 '+r['Client Feedback']) : '') +
       '</div>';
     }).join('') +
@@ -4891,6 +5024,10 @@ function hoursWorkedColor(mins){
   return mins>HOURS_WORKED_CUTOFF_MIN ? '#16a34a' : '#dc2626';
 }
 var LEADS_PURPOSE_LABEL = 'leads generation or pitching'; // matched case-insensitively against the Purpose field
+// Purpose value that unlocks Check Out for a visit (see "My Visit
+// History" — Pending Check-Out section, and the Reporting Time
+// Compliance calc below, both matched case-insensitively).
+var INSTALL_PURPOSE_LABEL = 'installation or reactivation';
 
 // Area Manager ↔ Region ↔ County coverage map (from the "IPOS Field App
 // Data" reference sheet). Only used to power the Admin-only Region /
@@ -5191,6 +5328,23 @@ function renderEngagementAnalytics(){
       var dt = byTrainer[name].dayTimes[iso];
       if(!dt) byTrainer[name].dayTimes[iso] = { first:d, last:d };
       else { if(d<dt.first) dt.first=d; if(d>dt.last) dt.last=d; }
+
+      // Installation/Reactivation visits can be Checked Out later the
+      // same evening (see "My Visit History" — Pending Check-Out). Once
+      // logged, that's a more accurate "last visit" marker for the day
+      // than the route-plan submission time, so fold it in if later.
+      // If it's NOT logged, flag that day so managers can see "Last
+      // Visit" here is likely understated rather than trusting it as-is.
+      var purpose = (r['Purpose']||'').toString().trim().toLowerCase();
+      if(purpose === INSTALL_PURPOSE_LABEL){
+        var dt2 = byTrainer[name].dayTimes[iso];
+        var coDate = parseAppDate(r['Check Out Time']);
+        if(coDate){
+          if(coDate > dt2.last) dt2.last = coDate;
+        } else {
+          dt2.pendingCheckout = true;
+        }
+      }
     }
   });
 
@@ -5364,7 +5518,7 @@ function renderEngagementAnalytics(){
     var dayTimes = byTrainer[n].dayTimes;
     var days2 = Object.keys(dayTimes);
     var daysWorked = days2.length;
-    var lateStarts=0, earlyLeaves=0, sumFirst=0, sumLast=0, fullyCompliantDays=0;
+    var lateStarts=0, earlyLeaves=0, sumFirst=0, sumLast=0, fullyCompliantDays=0, missingCheckoutDays=0;
     days2.forEach(function(iso){
       var fMin = minutesOfDay(dayTimes[iso].first);
       var lMin = minutesOfDay(dayTimes[iso].last);
@@ -5374,12 +5528,13 @@ function renderEngagementAnalytics(){
       if(late) lateStarts++;
       if(early) earlyLeaves++;
       if(!late && !early) fullyCompliantDays++;
+      if(dayTimes[iso].pendingCheckout) missingCheckoutDays++;
     });
     var avgFirst = daysWorked ? sumFirst/daysWorked : null;
     var avgLast = daysWorked ? sumLast/daysWorked : null;
     var onTimePct = daysWorked ? Math.round((fullyCompliantDays/daysWorked)*100) : null;
     var hoursWorked = (avgFirst!==null && avgLast!==null) ? (avgLast-avgFirst) : null;
-    return { name:n, daysWorked:daysWorked, avgFirst:avgFirst, avgLast:avgLast, lateStarts:lateStarts, earlyLeaves:earlyLeaves, onTimePct:onTimePct, hoursWorked:hoursWorked };
+    return { name:n, daysWorked:daysWorked, avgFirst:avgFirst, avgLast:avgLast, lateStarts:lateStarts, earlyLeaves:earlyLeaves, onTimePct:onTimePct, hoursWorked:hoursWorked, missingCheckoutDays:missingCheckoutDays };
   }).sort(function(a,b){
     if(a.onTimePct===null && b.onTimePct===null) return b.daysWorked-a.daysWorked;
     if(a.onTimePct===null) return 1;
@@ -5401,15 +5556,19 @@ function renderEngagementAnalytics(){
       var firstColor = c.avgFirst===null ? 'var(--text-m)' : (c.avgFirst<=REPORT_START_CUTOFF ? '#16a34a' : '#dc2626');
       var lastColor = c.avgLast===null ? 'var(--text-m)' : (c.avgLast>=REPORT_END_CUTOFF ? '#16a34a' : '#dc2626');
       var hoursColor = hoursWorkedColor(c.hoursWorked);
+      var missingWarning = c.missingCheckoutDays>0
+        ? ' <span title="'+c.missingCheckoutDays+' day(s) had an Installation/Reactivation visit with no Check Out — Last Visit/Hours Worked may be understated for those days" style="color:#dc2626;cursor:help">⚠</span>'
+        : '';
       return '<tr style="background:'+rowColor+'">' +
         '<td class="an-mname" style="position:static;background:transparent">'+escapeHtml(c.name)+'</td>' +
         '<td style="font-weight:700;color:'+firstColor+'">'+minutesToHHMM(c.avgFirst)+'</td>' +
-        '<td style="font-weight:700;color:'+lastColor+'">'+minutesToHHMM(c.avgLast)+'</td>' +
+        '<td style="font-weight:700;color:'+lastColor+'">'+minutesToHHMM(c.avgLast)+missingWarning+'</td>' +
         '<td style="font-weight:700;color:'+hoursColor+'">'+minutesToDuration(c.hoursWorked)+'</td>' +
         '<td>'+c.lateStarts+'</td>' +
         '<td>'+c.earlyLeaves+'</td>' +
         '<td>'+c.daysWorked+'</td>' +
         '<td style="font-weight:800;color:'+pctColor+'">'+(c.onTimePct===null?'—':c.onTimePct+'%')+'</td>' +
+        '<td style="font-weight:700;color:'+(c.missingCheckoutDays>0?'#dc2626':'#9ca3af')+'">'+(c.missingCheckoutDays>0?('⚠ '+c.missingCheckoutDays):'—')+'</td>' +
       '</tr>';
     }).join('');
     complianceHtml =
@@ -5419,9 +5578,11 @@ function renderEngagementAnalytics(){
           '<span><span class="an-dot" style="background:#16a34a"></span>Within grace window</span>' +
           '<span><span class="an-dot" style="background:#dc2626"></span>Late start (after 9:30am) / early leave (before 4:30pm)</span>' +
           '<span><span class="an-dot" style="background:#16a34a"></span>Hours Worked &gt;7h = green, ≤7h = red</span>' +
+          '<span>Last Visit uses Check Out time for Installation/Reactivation visits, if later</span>' +
+          '<span>⚠ = day(s) with an install/reactivation visit that was never checked out — Last Visit may be understated</span>' +
         '</div>' +
         '<div class="an-matrix-wrap"><table class="an-matrix"><thead><tr>' +
-          '<th class="an-mname">Trainer</th><th>Avg First Visit</th><th>Avg Last Visit</th><th>Hours Worked</th><th>Late Starts</th><th>Early Leaves</th><th>Days Worked</th><th>On-Time %</th>' +
+          '<th class="an-mname">Trainer</th><th>Avg First Visit</th><th>Avg Last Visit</th><th>Hours Worked</th><th>Late Starts</th><th>Early Leaves</th><th>Days Worked</th><th>On-Time %</th><th>Missing Check-Out</th>' +
         '</tr></thead><tbody>' + complianceRowsHtml + '</tbody></table></div>' +
       '</div>';
   }
@@ -5615,7 +5776,7 @@ function exportMyVisitsPdf(){
       {header:'Client Feedback', dataKey:'Client Feedback'}
     ],
     rows: rows,
-    filename: 'my-visit-history_' + todayStamp() + '.pdf' 
+    filename: 'my-visit-history_' + todayStamp() + '.pdf'
   });
 }
 
