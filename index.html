@@ -402,6 +402,11 @@ input[type=file]{display:none}
           <div class="form-card-title">Signed Contracts</div>
           <div class="form-card-desc">View &amp; download uploaded contracts</div>
         </div>
+        <div class="form-card" id="dash-archive-card" style="background:#f3f4f6;border-color:#e5e7eb;display:none" onclick="openArchiveManager()">
+          <div class="form-card-icon">🗄️</div>
+          <div class="form-card-title">Archive Data</div>
+          <div class="form-card-desc">Move old records out to keep the app fast</div>
+        </div>
       </div>
     </div>
 
@@ -1086,6 +1091,74 @@ input[type=file]{display:none}
     </div>
     <div id="contracts-status" style="font-size:12px;color:var(--text-m);margin:10px 0"></div>
     <div id="contracts-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ ARCHIVE DATA (Admin/Manager) -->
+<div class="screen" id="screen-archive-manager">
+  <div class="app-header">
+    <div><h1>🗄️ Archive Data</h1><p>Move old records out to keep the app fast</p></div>
+    <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
+  </div>
+  <div class="form-body">
+
+    <div class="form-card-title" style="margin-bottom:8px">Archive Records</div>
+    <p style="font-size:12px;color:var(--text-m);margin:0 0 12px 0">
+      Moves matching rows out of the live sheets into a separate archive, so the app stays fast as data grows.
+      Archived records are never deleted — just moved — and you can still view, export, or share them below.
+    </p>
+
+    <div class="field">
+      <label>Sheets to archive</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0">
+        <input type="checkbox" id="arc-sheet-route" checked style="width:16px;height:16px"> Route Plans (Clients Engagement Tracker)
+      </label>
+      <label id="arc-sheet-idem-wrap" style="display:none;align-items:center;gap:8px;font-size:13px;padding:6px 0">
+        <input type="checkbox" id="arc-sheet-idem" style="width:16px;height:16px"> Idempotency Keys <span style="color:#9ca3af;font-size:11px">(technical/internal — Admin only)</span>
+      </label>
+    </div>
+
+    <div class="field">
+      <label>Archive records that are…</label>
+      <select id="arc-mode" onchange="document.getElementById('arc-custom-wrap').style.display = this.value==='custom' ? 'grid' : 'none'">
+        <option value="2months">Older than 2 months</option>
+        <option value="custom">From a custom date range</option>
+      </select>
+    </div>
+    <div class="two-col" id="arc-custom-wrap" style="display:none">
+      <div class="field" style="margin-bottom:0"><label>From</label><input type="date" id="arc-date-from"></div>
+      <div class="field" style="margin-bottom:0"><label>To</label><input type="date" id="arc-date-to"></div>
+    </div>
+
+    <button class="submit-btn" id="arc-run-btn" style="background:#b91c1c" onclick="runArchiveData()">🗄️ Archive Now</button>
+    <div id="arc-status" style="font-size:12px;color:var(--text-m);margin-top:10px"></div>
+
+    <div style="height:1px;background:var(--border);margin:1.75rem 0"></div>
+
+    <div class="form-card-title" style="margin-bottom:8px">📂 View &amp; Export Archived Data</div>
+    <div class="two-col">
+      <div class="field" style="margin-bottom:0"><label>Sheet</label>
+        <select id="arv-sheet" onchange="loadArchivedData()">
+          <option value="route">Route Plans (Clients Engagement Tracker)</option>
+          <option value="idempotency" id="arv-sheet-idem-opt" style="display:none">Idempotency Keys</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0"><label>Trainer</label>
+        <select id="arv-trainer-filter" onchange="renderArchivedList()"><option value="">All trainers</option></select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field" style="margin-bottom:0"><label>From</label><input type="date" id="arv-date-from" onchange="loadArchivedData()"></div>
+      <div class="field" style="margin-bottom:0"><label>To</label><input type="date" id="arv-date-to" onchange="loadArchivedData()"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="submit-btn" style="margin-top:0;background:#7c3aed" onclick="exportArchivedPdf(false)">📄 Export PDF</button>
+      <button class="submit-btn" style="margin-top:0;background:#0d9488" onclick="exportArchivedPdf(true)">📤 Share as PDF</button>
+    </div>
+
+    <div id="arv-status" style="font-size:12px;color:var(--text-m);margin:10px 0"></div>
+    <div id="arv-list"></div>
   </div>
 </div>
 
@@ -2964,6 +3037,170 @@ function renderContractsList(){
 
 
 var deviceAmountDefaults = { cash:'', credit:'', depositAmount:'', facilityAmount:'', installmentAmount:'', installmentCount:'' };
+
+// ── ARCHIVE DATA (Admin/Manager) ─────────────────────────────────
+var allArchivedItems = [];
+
+function openArchiveManager(){
+  showScreen('screen-archive-manager');
+  var isAdmin = session.role==='Admin';
+  document.getElementById('arc-sheet-idem-wrap').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('arc-sheet-idem').checked = false;
+  document.getElementById('arv-sheet-idem-opt').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('arc-status').textContent = '';
+  document.getElementById('arv-status').textContent = '';
+  document.getElementById('arv-list').innerHTML = '';
+  loadArchivedData();
+}
+
+function runArchiveData(){
+  var sheets = [];
+  if(document.getElementById('arc-sheet-route').checked) sheets.push('Route Plans');
+  if(session.role==='Admin' && document.getElementById('arc-sheet-idem').checked) sheets.push('Idempotency Keys');
+  if(!sheets.length){ document.getElementById('arc-status').textContent = '⚠️ Select at least one sheet to archive.'; return; }
+
+  var mode = document.getElementById('arc-mode').value;
+  var dateFrom='', dateTo='';
+  if(mode==='custom'){
+    dateFrom = document.getElementById('arc-date-from').value;
+    dateTo = document.getElementById('arc-date-to').value;
+    if(!dateFrom || !dateTo){ document.getElementById('arc-status').textContent = '⚠️ Pick both a From and To date for a custom range.'; return; }
+  }
+
+  var confirmMsg = mode==='2months'
+    ? 'Archive every record older than 2 months from: ' + sheets.join(', ') + '?\n\nThis moves them out of the live sheet (they remain viewable under "Archived Data" below) so the app stays fast.'
+    : 'Archive records from ' + dateFrom + ' to ' + dateTo + ' in: ' + sheets.join(', ') + '?\n\nThis moves them out of the live sheet (they remain viewable under "Archived Data" below) so the app stays fast.';
+  if(!confirm(confirmMsg)) return;
+
+  var btn = document.getElementById('arc-run-btn');
+  btn.disabled = true; btn.textContent = 'Archiving…';
+  var statusEl = document.getElementById('arc-status');
+  statusEl.textContent = 'Working — this can take a moment for large sheets…';
+
+  fetch(APPS_SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({
+      formType:'archiveData', sheets:sheets, mode:mode, dateFrom:dateFrom, dateTo:dateTo,
+      requestedBy: session.email, requestedByRole: session.role
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.status==='success'){
+      statusEl.textContent = '✅ Archived ' + (data.archivedCount!=null ? data.archivedCount : '') + ' record(s). The live sheets are now lighter.';
+      loadArchivedData();
+    } else {
+      statusEl.textContent = '❌ ' + (data.message || 'Archiving failed.');
+    }
+  })
+  .catch(function(){
+    statusEl.textContent = '❌ Could not reach the server. Please try again.';
+  })
+  .finally(function(){ btn.disabled=false; btn.textContent='🗄️ Archive Now'; });
+}
+
+function loadArchivedData(){
+  var sheetKey = document.getElementById('arv-sheet').value;
+  var dateFrom = document.getElementById('arv-date-from').value;
+  var dateTo = document.getElementById('arv-date-to').value;
+  var statusEl = document.getElementById('arv-status');
+  statusEl.textContent = 'Loading archived records…';
+  document.getElementById('arv-list').innerHTML = '';
+
+  var url = APPS_SCRIPT_URL + '?action=getArchivedData&sheet=' + encodeURIComponent(sheetKey) +
+    '&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role) +
+    (dateFrom ? '&dateFrom=' + encodeURIComponent(dateFrom) : '') +
+    (dateTo ? '&dateTo=' + encodeURIComponent(dateTo) : '');
+
+  fetch(url).then(function(r){ return r.json(); }).then(function(data){
+    allArchivedItems = data.rows || [];
+    statusEl.textContent = allArchivedItems.length + ' archived record(s).';
+    var trainerSel = document.getElementById('arv-trainer-filter');
+    var names = Array.from(new Set(allArchivedItems.map(function(r){ return r['Trainer Name']; }).filter(Boolean))).sort();
+    trainerSel.innerHTML = '<option value="">All trainers</option>' + names.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('');
+    renderArchivedList();
+  }).catch(function(){
+    statusEl.textContent = '⚠️ Could not load archived data.';
+  });
+}
+
+function getFilteredArchivedItems(){
+  var trainerFilter = document.getElementById('arv-trainer-filter').value;
+  return allArchivedItems.filter(function(r){ return !trainerFilter || r['Trainer Name']===trainerFilter; });
+}
+
+function renderArchivedList(){
+  var filtered = getFilteredArchivedItems();
+  var listEl = document.getElementById('arv-list');
+  if(!filtered.length){ listEl.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:10px 0">No archived records match.</div>'; return; }
+  listEl.innerHTML = filtered.slice(0,200).map(function(r){
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;font-size:12.5px;line-height:1.7">' +
+      '<strong>'+(r['Shop Name']||r['Key']||'—')+'</strong><br>' +
+      '<span style="color:var(--text-m)">📅 '+(r['Date']||'')+' · 👤 '+(r['Trainer Name']||'—')+' · 📍 '+(r['County']||'')+'</span>' +
+    '</div>';
+  }).join('') + (filtered.length>200 ? '<div style="text-align:center;color:var(--text-m);font-size:11px;padding:6px 0">Showing first 200 of '+filtered.length+' — narrow your filters or use Export PDF for the full set.</div>' : '');
+}
+
+// Exports (or shares) the currently-filtered archived records as a PDF.
+// Sharing uses the Web Share API with a file attachment where supported
+// (most mobile browsers); otherwise it falls back to a normal download
+// so the admin/manager can share it manually (e.g. via WhatsApp).
+function exportArchivedPdf(share){
+  var rows = getFilteredArchivedItems();
+  var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+  if(!jsPDFCtor){ alert('PDF library failed to load — check your internet connection and try again.'); return; }
+
+  var sheetKey = document.getElementById('arv-sheet').value;
+  var title = sheetKey==='idempotency' ? 'Archived Idempotency Keys' : 'Archived Clients Engagement Records';
+  var trainerFilter = document.getElementById('arv-trainer-filter').value;
+  var dateFrom = document.getElementById('arv-date-from').value;
+  var dateTo = document.getElementById('arv-date-to').value;
+  var subtitleBits = [];
+  if(dateFrom || dateTo) subtitleBits.push('Range: ' + (dateFrom||'…') + ' to ' + (dateTo||'…'));
+  if(trainerFilter) subtitleBits.push('Trainer: ' + trainerFilter);
+  subtitleBits.push(rows.length + ' record(s)');
+
+  var doc = new jsPDFCtor({orientation:'landscape', unit:'pt', format:'a4'});
+  var pageWidth = doc.internal.pageSize.getWidth();
+  doc.setFontSize(16); doc.setFont(undefined,'bold');
+  doc.text(title, 40, 40);
+  doc.setFontSize(9); doc.setFont(undefined,'bold'); doc.setTextColor(107,114,128);
+  doc.text(subtitleBits.join(' · '), 40, 58);
+  doc.text('Generated: ' + new Date().toLocaleString('en-KE'), pageWidth-40, 40, {align:'right'});
+  doc.setTextColor(17,24,39);
+
+  var columns = sheetKey==='idempotency'
+    ? [{header:'Key',dataKey:'Key'},{header:'Form Type',dataKey:'Form Type'},{header:'Status',dataKey:'Status'},{header:'Reserved At',dataKey:'Reserved At'},{header:'Completed At',dataKey:'Completed At'}]
+    : [{header:'Date',dataKey:'Date'},{header:'Trainer',dataKey:'Trainer Name'},{header:'County',dataKey:'County'},{header:'Shop Name',dataKey:'Shop Name'},{header:'Location',dataKey:'Location'},{header:'Purpose',dataKey:'Purpose'}];
+
+  if(rows.length){
+    doc.autoTable({
+      startY:75,
+      head:[columns.map(function(c){return c.header;})],
+      body: rows.map(function(r){ return columns.map(function(c){ var v=r[c.dataKey]; return (v!==undefined && v!==null && v!=='') ? String(v) : '—'; }); }),
+      styles:{fontSize:8, cellPadding:4, overflow:'linebreak', fontStyle:'bold'},
+      headStyles:{fillColor:[185,28,28], textColor:255, fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[249,250,251]},
+      margin:{left:40,right:40}
+    });
+  } else {
+    doc.setFontSize(11); doc.text('No archived records for the selected filters.', 40, 75);
+  }
+
+  var filename = 'archived-' + sheetKey + '_' + todayStamp() + '.pdf';
+
+  if(!share){ doc.save(filename); return; }
+
+  var blob = doc.output('blob');
+  var file = new File([blob], filename, {type:'application/pdf'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    navigator.share({files:[file], title:title, text:subtitleBits.join(' · ')}).catch(function(){});
+  } else {
+    alert('Sharing isn\'t supported on this browser/device — downloading the PDF instead so you can share it manually.');
+    doc.save(filename);
+  }
+}
+
 var deviceAmountEdited = false;
 var depositAmountEdited = false;
 
@@ -4159,6 +4396,8 @@ var dashLabels = { install:'Installations', route:'Clients Engagement Tracker', 
 function openDashboard(){
   showScreen('screen-dashboard');
   backToDashMenu();
+  // Archive Data is Manager/Admin only; Idempotency Keys within it is Admin-only (technical/internal sheet).
+  document.getElementById('dash-archive-card').style.display = (session.role==='Admin' || session.role==='Manager') ? 'block' : 'none';
 }
 
 function dashTabGo(tab){
