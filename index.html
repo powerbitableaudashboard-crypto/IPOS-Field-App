@@ -2109,7 +2109,7 @@ function installedShopsDateMatches(s){
 function getFilteredInstalledShops(){
   var q = (v('ishop-search')||'').toLowerCase();
   var trainerFilter = document.getElementById('ishop-trainer-filter').value;
-  var countyFilter = document.getElementById('ishop-county-filter').value; 
+  var countyFilter = document.getElementById('ishop-county-filter').value;
   return allInstalledShops.filter(function(s){
     return (!q || (s.shopName||'').toLowerCase().indexOf(q)!==-1 || String(s.shopId||'').toLowerCase().indexOf(q)!==-1) &&
       (!trainerFilter || s.trainerName===trainerFilter) &&
@@ -3114,7 +3114,14 @@ function runArchiveData(){
       requestedBy: session.email, requestedByRole: session.role
     })
   })
-  .then(function(r){ return r.json(); })
+  .then(function(r){
+    return r.text().then(function(text){
+      var parsed;
+      try { parsed = JSON.parse(text); }
+      catch(e){ throw new Error('Server returned something unexpected (not JSON). This usually means the archiveData backend code hasn\'t been deployed yet — see setup notes. Raw response: ' + text.slice(0,150)); }
+      return parsed;
+    });
+  })
   .then(function(data){
     if(data.status==='success'){
       statusEl.textContent = '✅ Archived ' + (data.archivedCount!=null ? data.archivedCount : '') + ' record(s). The live sheets are now lighter.';
@@ -3123,8 +3130,8 @@ function runArchiveData(){
       statusEl.textContent = '❌ ' + (data.message || 'Archiving failed.');
     }
   })
-  .catch(function(){
-    statusEl.textContent = '❌ Could not reach the server. Please try again.';
+  .catch(function(err){
+    statusEl.textContent = '❌ ' + (err && err.message ? err.message : 'Could not reach the server. Please try again.');
   })
   .finally(function(){ btn.disabled=false; btn.textContent='🗄️ Archive Now'; });
 }
@@ -3144,15 +3151,22 @@ function loadArchivedData(){
     (dateTo ? '&dateTo=' + encodeURIComponent(dateTo) : '') +
     (purpose ? '&purpose=' + encodeURIComponent(purpose) : '');
 
-  fetch(url).then(function(r){ return r.json(); }).then(function(data){
+  fetch(url).then(function(r){
+    return r.text().then(function(text){
+      var parsed;
+      try { parsed = JSON.parse(text); }
+      catch(e){ throw new Error('Server returned something unexpected (not JSON) — the getArchivedData backend code may not be deployed yet.'); }
+      return parsed;
+    });
+  }).then(function(data){
     allArchivedItems = data.rows || [];
     statusEl.textContent = allArchivedItems.length + ' archived record(s).';
     var trainerSel = document.getElementById('arv-trainer-filter');
     var names = Array.from(new Set(allArchivedItems.map(function(r){ return r['Trainer Name']; }).filter(Boolean))).sort();
     trainerSel.innerHTML = '<option value="">All trainers</option>' + names.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('');
     renderArchivedList();
-  }).catch(function(){
-    statusEl.textContent = '⚠️ Could not load archived data.';
+  }).catch(function(err){
+    statusEl.textContent = '⚠️ ' + (err && err.message ? err.message : 'Could not load archived data.');
   });
 }
 
