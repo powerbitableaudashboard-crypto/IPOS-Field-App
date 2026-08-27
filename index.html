@@ -1129,6 +1129,15 @@ input[type=file]{display:none}
       <div class="field" style="margin-bottom:0"><label>From</label><input type="date" id="arc-date-from"></div>
       <div class="field" style="margin-bottom:0"><label>To</label><input type="date" id="arc-date-to"></div>
     </div>
+    <div class="field" id="arc-purpose-wrap">
+      <label>Purpose <span style="color:#9ca3af;font-size:11px;font-weight:400">(only applies to Route Plans — leave on "All purposes" to archive everything matching the date range)</span></label>
+      <select id="arc-purpose">
+        <option value="">All purposes</option>
+        <option>System Maintainance</option><option>Installation or Reactivation</option><option>Leads Generation or Pitching</option><option>Follow-up visit(Leads)</option>
+        <option>Churn or Retention Follow-Up</option><option>Training</option>
+        <option>Device Repayment Follow-Up</option><option>Zero-Transacting Users (Low/Non User)</option><option>Other</option>
+      </select>
+    </div>
 
     <button class="submit-btn" id="arc-run-btn" style="background:#b91c1c" onclick="runArchiveData()">🗄️ Archive Now</button>
     <div id="arc-status" style="font-size:12px;color:var(--text-m);margin-top:10px"></div>
@@ -1138,13 +1147,23 @@ input[type=file]{display:none}
     <div class="form-card-title" style="margin-bottom:8px">📂 View &amp; Export Archived Data</div>
     <div class="two-col">
       <div class="field" style="margin-bottom:0"><label>Sheet</label>
-        <select id="arv-sheet" onchange="loadArchivedData()">
+        <select id="arv-sheet" onchange="onArvSheetChange()">
           <option value="route">Route Plans (Clients Engagement Tracker)</option>
           <option value="idempotency" id="arv-sheet-idem-opt" style="display:none">Idempotency Keys</option>
         </select>
       </div>
       <div class="field" style="margin-bottom:0"><label>Trainer</label>
         <select id="arv-trainer-filter" onchange="renderArchivedList()"><option value="">All trainers</option></select>
+      </div>
+    </div>
+    <div class="two-col" id="arv-purpose-wrap">
+      <div class="field" style="margin-bottom:0"><label>Purpose</label>
+        <select id="arv-purpose-filter" onchange="renderArchivedList()">
+          <option value="">All purposes</option>
+          <option>System Maintainance</option><option>Installation or Reactivation</option><option>Leads Generation or Pitching</option><option>Follow-up visit(Leads)</option>
+          <option>Churn or Retention Follow-Up</option><option>Training</option>
+          <option>Device Repayment Follow-Up</option><option>Zero-Transacting Users (Low/Non User)</option><option>Other</option>
+        </select>
       </div>
     </div>
     <div class="two-col">
@@ -1377,7 +1396,7 @@ function nowKEFrontend() {
   return weekday + ', ' + day + ' ' + month + ' ' + year + ', ' + hour + ':' + min;
 }
 
-var KENYA_COUNTIES = ['Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa','Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa',"Murang'a",'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans-Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot'];
+var KENYA_COUNTIES = ['Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa','Homabay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa',"Murang'a",'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans-Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot'];
 function countyOptionsHTML(selected){
   return '<option value="">Select county…</option>' + KENYA_COUNTIES.map(function(c){
     return '<option'+(c===selected?' selected':'')+'>'+c+'</option>';
@@ -3050,6 +3069,16 @@ function openArchiveManager(){
   document.getElementById('arc-status').textContent = '';
   document.getElementById('arv-status').textContent = '';
   document.getElementById('arv-list').innerHTML = '';
+  onArvSheetChange();
+}
+
+// Idempotency Keys has no "Purpose" column, so hide that filter when
+// that sheet is selected in the viewer (it stays relevant for Archive
+// Now, since that always offers both sheets but Purpose there is
+// explicitly scoped to "only applies to Route Plans").
+function onArvSheetChange(){
+  var isIdem = document.getElementById('arv-sheet').value==='idempotency';
+  document.getElementById('arv-purpose-wrap').style.display = isIdem ? 'none' : 'grid';
   loadArchivedData();
 }
 
@@ -3066,10 +3095,11 @@ function runArchiveData(){
     dateTo = document.getElementById('arc-date-to').value;
     if(!dateFrom || !dateTo){ document.getElementById('arc-status').textContent = '⚠️ Pick both a From and To date for a custom range.'; return; }
   }
+  var purpose = document.getElementById('arc-purpose').value;
 
-  var confirmMsg = mode==='2months'
-    ? 'Archive every record older than 2 months from: ' + sheets.join(', ') + '?\n\nThis moves them out of the live sheet (they remain viewable under "Archived Data" below) so the app stays fast.'
-    : 'Archive records from ' + dateFrom + ' to ' + dateTo + ' in: ' + sheets.join(', ') + '?\n\nThis moves them out of the live sheet (they remain viewable under "Archived Data" below) so the app stays fast.';
+  var scopeMsg = mode==='2months' ? 'every record older than 2 months' : ('records from ' + dateFrom + ' to ' + dateTo);
+  var purposeMsg = purpose ? (' with Purpose "' + purpose + '"') : '';
+  var confirmMsg = 'Archive ' + scopeMsg + purposeMsg + ' from: ' + sheets.join(', ') + '?\n\nThis moves them out of the live sheet (they remain viewable under "Archived Data" below) so the app stays fast.';
   if(!confirm(confirmMsg)) return;
 
   var btn = document.getElementById('arc-run-btn');
@@ -3080,7 +3110,7 @@ function runArchiveData(){
   fetch(APPS_SCRIPT_URL, {
     method:'POST',
     body: JSON.stringify({
-      formType:'archiveData', sheets:sheets, mode:mode, dateFrom:dateFrom, dateTo:dateTo,
+      formType:'archiveData', sheets:sheets, mode:mode, dateFrom:dateFrom, dateTo:dateTo, purpose:purpose,
       requestedBy: session.email, requestedByRole: session.role
     })
   })
@@ -3103,6 +3133,7 @@ function loadArchivedData(){
   var sheetKey = document.getElementById('arv-sheet').value;
   var dateFrom = document.getElementById('arv-date-from').value;
   var dateTo = document.getElementById('arv-date-to').value;
+  var purpose = sheetKey==='idempotency' ? '' : document.getElementById('arv-purpose-filter').value;
   var statusEl = document.getElementById('arv-status');
   statusEl.textContent = 'Loading archived records…';
   document.getElementById('arv-list').innerHTML = '';
@@ -3110,7 +3141,8 @@ function loadArchivedData(){
   var url = APPS_SCRIPT_URL + '?action=getArchivedData&sheet=' + encodeURIComponent(sheetKey) +
     '&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role) +
     (dateFrom ? '&dateFrom=' + encodeURIComponent(dateFrom) : '') +
-    (dateTo ? '&dateTo=' + encodeURIComponent(dateTo) : '');
+    (dateTo ? '&dateTo=' + encodeURIComponent(dateTo) : '') +
+    (purpose ? '&purpose=' + encodeURIComponent(purpose) : '');
 
   fetch(url).then(function(r){ return r.json(); }).then(function(data){
     allArchivedItems = data.rows || [];
@@ -3126,6 +3158,9 @@ function loadArchivedData(){
 
 function getFilteredArchivedItems(){
   var trainerFilter = document.getElementById('arv-trainer-filter').value;
+  // Purpose is already applied server-side (loadArchivedData sends it as
+  // a query param), so this is trainer-only client-side narrowing —
+  // kept separate so switching trainers doesn't need a fresh fetch.
   return allArchivedItems.filter(function(r){ return !trainerFilter || r['Trainer Name']===trainerFilter; });
 }
 
@@ -3136,7 +3171,7 @@ function renderArchivedList(){
   listEl.innerHTML = filtered.slice(0,200).map(function(r){
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;font-size:12.5px;line-height:1.7">' +
       '<strong>'+(r['Shop Name']||r['Key']||'—')+'</strong><br>' +
-      '<span style="color:var(--text-m)">📅 '+(r['Date']||'')+' · 👤 '+(r['Trainer Name']||'—')+' · 📍 '+(r['County']||'')+'</span>' +
+      '<span style="color:var(--text-m)">📅 '+(r['Date']||'')+' · 👤 '+(r['Trainer Name']||'—')+' · 📍 '+(r['County']||'')+(r['Purpose']?(' · 🎯 '+r['Purpose']):'')+'</span>' +
     '</div>';
   }).join('') + (filtered.length>200 ? '<div style="text-align:center;color:var(--text-m);font-size:11px;padding:6px 0">Showing first 200 of '+filtered.length+' — narrow your filters or use Export PDF for the full set.</div>' : '');
 }
@@ -3153,11 +3188,13 @@ function exportArchivedPdf(share){
   var sheetKey = document.getElementById('arv-sheet').value;
   var title = sheetKey==='idempotency' ? 'Archived Idempotency Keys' : 'Archived Clients Engagement Records';
   var trainerFilter = document.getElementById('arv-trainer-filter').value;
+  var purposeFilter = sheetKey==='idempotency' ? '' : document.getElementById('arv-purpose-filter').value;
   var dateFrom = document.getElementById('arv-date-from').value;
   var dateTo = document.getElementById('arv-date-to').value;
   var subtitleBits = [];
   if(dateFrom || dateTo) subtitleBits.push('Range: ' + (dateFrom||'…') + ' to ' + (dateTo||'…'));
   if(trainerFilter) subtitleBits.push('Trainer: ' + trainerFilter);
+  if(purposeFilter) subtitleBits.push('Purpose: ' + purposeFilter);
   subtitleBits.push(rows.length + ' record(s)');
 
   var doc = new jsPDFCtor({orientation:'landscape', unit:'pt', format:'a4'});
@@ -5275,7 +5312,7 @@ var INSTALL_PURPOSE_LABEL = 'installation or reactivation';
 // Update this list if a manager's county coverage or region changes.
 var AREA_MANAGERS = [
   { name:'Philip Sam', email:'philipowino47@gmail.com', region:'Western,Nyanza&N.Rift',
-    counties:['Kisumu','Siaya','Busia','Kakamega','Bugoma','Uasin Gishu','Tranzoia','Elgeyo-Marakwet'] },
+    counties:['Kisumu','Siaya','Busia','Kakamega','Bugoma','Uasin Gishu','Trans-Nzoia','Elgeyo-Marakwet'] },
   { name:'Ben A', email:'awinobenard91@gmail.com', region:'Nyanza&S.Rift',
     counties:['Kericho','Bomet','Vihiga','Migori','Homabay','Kisii','Nyamira','Nandi'] }
 ];
