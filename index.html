@@ -2109,7 +2109,7 @@ function installedShopsDateMatches(s){
 function getFilteredInstalledShops(){
   var q = (v('ishop-search')||'').toLowerCase();
   var trainerFilter = document.getElementById('ishop-trainer-filter').value;
-  var countyFilter = document.getElementById('ishop-county-filter').value;
+  var countyFilter = document.getElementById('ishop-county-filter').value; 
   return allInstalledShops.filter(function(s){
     return (!q || (s.shopName||'').toLowerCase().indexOf(q)!==-1 || String(s.shopId||'').toLowerCase().indexOf(q)!==-1) &&
       (!trainerFilter || s.trainerName===trainerFilter) &&
