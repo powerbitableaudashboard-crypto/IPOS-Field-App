@@ -4800,12 +4800,24 @@ function renderInstallList(){
       actionsHtml = '<div style="font-size:11px;color:#9ca3af;margin-top:8px">By: '+(item.approvedBy||'—')+'</div>';
     }
 
+    var gpsHtml = '';
+    if(item.gps){
+      var gpsMatch = String(item.gps).match(/^(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+      if(gpsMatch){
+        var mapUrl = 'https://www.google.com/maps?q='+gpsMatch[1]+','+gpsMatch[2];
+        gpsHtml = '<a href="'+mapUrl+'" target="_blank">📍 '+item.gps+' (view on map)</a><br>';
+      } else {
+        gpsHtml = '📍 '+item.gps+'<br>';
+      }
+    }
+
     div.innerHTML =
       '<div class="dash-item-top">' +
         '<div><div class="dash-item-shop">🏪 '+(item.shopName||'Unknown')+'</div><div class="dash-item-ref">'+item.installId+'</div></div>' +
         '<div class="dash-item-status" style="background:'+statusColors[item.status].split(';')[0]+';color:'+statusColors[item.status].split('color:')[1]+'">'+item.status+'</div>' +
       '</div>' +
       '<div class="dash-item-body">' +
+        gpsHtml +
         '👤 '+(item.trainerName||'')+' · 📍 '+(item.county?item.county+' · ':'')+(item.shopLocation||'')+'<br>'+
         (item.ownerName ? '👨 Owner: '+item.ownerName+' · 📞 '+(item.ownerPhone||'')+'<br>' : '') +
         (item.deviceType ? '📱 Device: '+item.deviceType+'<br>' : '') +
