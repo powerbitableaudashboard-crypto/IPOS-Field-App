@@ -624,6 +624,9 @@ input[type=file]{display:none}
       <div id="cr-selected" style="display:none;margin-top:12px">
         <div id="cr-selected-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px"></div>
         <div id="cr-repay-fields">
+          <div class="field"><label for="cr-device-serial">Device Serial No <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
+            <input type="text" id="cr-device-serial" placeholder="e.g. SN-00123456">
+          </div>
           <div class="field"><label for="cr-amount">Amount Received (KES)<span class="req">*</span></label>
             <input type="text" id="cr-amount" inputmode="numeric" placeholder="e.g. Ksh 10,000">
           </div>
@@ -2975,10 +2978,12 @@ function renderShopsList(){
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">'+
       '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px">'+
       '<div>'+statusDot(s.status)+'<strong>'+(s.shopName||'—')+'</strong> <span style="color:var(--text-m);font-size:12px">(ID: '+(s.shopId||'—')+')</span><br>'+
-      '<span style="font-size:12px;color:var(--text-m);margin-left:15px">'+(s.county||'')+' · '+(s.trainerName||'')+' · '+s.recordCount+' record(s)'+(s.totalBalance>0?' · balance KES '+Number(s.totalBalance).toLocaleString():'')+(installedDate?' · installed '+installedDate:'')+'</span></div>'+
+      '<span style="font-size:12px;color:var(--text-m);margin-left:15px">'+(s.county||'')+' · '+(s.trainerName||'')+' · '+s.recordCount+' record(s)'+(s.totalBalance>0?' · balance KES '+Number(s.totalBalance).toLocaleString():'')+(installedDate?' · installed '+installedDate:'')+'</span><br>'+
+      '<span style="font-size:12px;color:var(--text-m);margin-left:15px">📟 Device Serial No: '+(s.deviceSerial?('<strong>'+s.deviceSerial+'</strong>'):'<em>not set</em>')+'</span></div>'+
       '<div style="display:flex;gap:6px;flex-shrink:0">'+
       '<button type="button" onclick="viewShopDetails('+i+')" title="View" style="border:none;background:#eff6ff;color:#1d4ed8;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px">👁️</button>'+
       '<button type="button" onclick="editShopPrompt('+i+')" title="Edit" style="border:none;background:var(--surface-2,#eef2ff);color:var(--accent);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px">✏️</button>'+
+      '<button type="button" onclick="editDeviceSerialPrompt('+i+')" title="Edit Device Serial No" style="border:none;background:#f3e8ff;color:#7c3aed;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px">📟</button>'+
       '<button type="button" onclick="deleteShopPrompt('+i+')" title="Delete" style="border:none;background:#fef2f2;color:#b91c1c;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px">🗑️</button>'+
       '</div></div></div>';
   }).join('');
@@ -3008,6 +3013,26 @@ function editShopPrompt(filteredIndex){
   .then(function(data){
     if(data.status==='success'){ openManageShops(); }
     else { alert(data.message || 'Failed to update shop.'); }
+  })
+  .catch(function(){ alert('Network error — please try again.'); });
+}
+
+function editDeviceSerialPrompt(filteredIndex){
+  var filtered = getFilteredShops();
+  var shop = filtered[filteredIndex];
+  if(!shop) return;
+  var newSerial = window.prompt('Device Serial No for '+(shop.shopName||shop.shopId)+' (ID: '+shop.shopId+'):', shop.deviceSerial||'');
+  if(newSerial===null) return;
+  newSerial = newSerial.trim();
+
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    body: JSON.stringify({ formType:'editDeviceSerial', shopId: shop.shopId, deviceSerial: newSerial, requestedBy: session.email, requestedByRole: session.role })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.status==='success'){ openManageShops(); }
+    else { alert(data.message || 'Failed to update device serial number.'); }
   })
   .catch(function(){ alert('Network error — please try again.'); });
 }
@@ -3749,12 +3774,14 @@ function selectCreditShop(i){
     '<strong>'+(m.shopName||'—')+'</strong> <span style="color:var(--text-m)">(ID: '+(m.shopId||'—')+')</span><br>'+
     'Customer: '+(m.customerName||'')+' · '+(m.customerPhone||'')+'<br>'+
     'Location: '+(m.location||'')+'<br>'+
+    (m.deviceSerial ? ('Device Serial No: '+m.deviceSerial+'<br>') : '')+
     (m.status==='pending' ? '<span style="color:#2563eb">Cash order — awaiting delivery confirmation</span><br>' : '')+
     amountLabel+': <strong style="color:#b91c1c">KES '+Number(m.balance||0).toLocaleString()+'</strong>';
   document.getElementById('cr-repay-fields').style.display='block';
   document.getElementById('cr-selected').style.display='block';
   document.getElementById('cr-search-status').textContent='Shop selected.';
   setVal('cr-amount',''); setVal('cr-mpesa-msg',''); clearPhoto('cr-mpesa');
+  setVal('cr-device-serial', m.deviceSerial||'');
 }
 
 function submitCreditRepayment(){
@@ -3772,6 +3799,7 @@ function submitCreditRepayment(){
     formType:'creditRepayment',
     paymentId: crSelectedPaymentId,
     amount: parseFloat(amount),
+    deviceSerial: v('cr-device-serial'),
     mpesaMessage: v('cr-mpesa-msg'),
     mpesaPhoto: photos['cr-mpesa']||'',
     trainerName: session.name,
@@ -3793,7 +3821,7 @@ function submitCreditRepayment(){
       document.getElementById('cr-success').innerHTML = '✅ Repayment recorded.' + (bal!==null ? (bal>0 ? ' New balance: KES '+bal.toLocaleString()+'.' : ' Fully paid off! 🎉') : '');
       document.getElementById('cr-success').style.display='block';
       crSelectedPaymentId=null;
-      setVal('cr-search',''); setVal('cr-amount',''); setVal('cr-mpesa-msg',''); clearPhoto('cr-mpesa');
+      setVal('cr-search',''); setVal('cr-amount',''); setVal('cr-mpesa-msg',''); setVal('cr-device-serial',''); clearPhoto('cr-mpesa');
       document.getElementById('cr-results').innerHTML='';
       document.getElementById('cr-search-status').textContent='';
       setTimeout(function(){ document.getElementById('cr-selected').style.display='none'; document.getElementById('cr-success').style.display='none'; }, 3500);
