@@ -1366,30 +1366,29 @@ input[type=file]{display:none}
           <span style="font-size:13.5px;font-weight:700;color:#111827" id="i-status-shopname">—</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9">
-          <span style="font-size:12.5px;color:#6b7280">Reference</span>
+          <span style="font-size:12.5px;color:#6b7280">📋 Reference</span>
           <span style="font-size:13.5px;font-weight:700;color:#111827" id="i-status-ref">—</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9">
           <span style="font-size:12.5px;color:#6b7280">County</span>
           <span style="font-size:13.5px;font-weight:700;color:#111827" id="i-status-county">—</span>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px" id="i-status-status-row">
           <span style="font-size:12.5px;color:#6b7280">Status</span>
           <span id="i-status-pill" style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:#fef3c7;color:#92400e">⏳ Awaiting Approval</span>
         </div>
+        <div style="display:none;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid #f1f5f9" id="i-status-approvedby-row">
+          <span style="font-size:12.5px;color:#6b7280">👤 Approved By</span>
+          <span style="font-size:13.5px;font-weight:700;color:#111827" id="i-status-approvedby">—</span>
+        </div>
+        <div style="display:none;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid #f1f5f9" id="i-status-time-row">
+          <span style="font-size:12.5px;color:#6b7280">🕐 Date &amp; Time</span>
+          <span style="font-size:13.5px;font-weight:700;color:#111827" id="i-status-time">—</span>
+        </div>
       </div>
-    </div>
-    <div class="success-banner" id="i-approved">
-      <div class="success-icon">✅</div><h2>Approved by your line manager!</h2>
-      <p>You may proceed. Great work!</p>
-      <div class="success-meta" id="i-approved-meta"></div>
-      <button class="home-btn" onclick="resetInstallForm()">➕ Submit Another Installation/Reactivation</button>
-    </div>
-    <div class="success-banner" id="i-rejected" style="display:none;background:#fef2f2;border-color:#fecaca">
-      <div class="success-icon">❌</div><h2 style="color:#b91c1c">Rejected by your line Manager</h2>
-      <p style="color:#b91c1c">Please contact your line manager before proceeding.</p>
-      <div class="success-meta" id="i-rejected-meta" style="background:#fee2e2;color:#b91c1c"></div>
-      <button class="home-btn" onclick="resetInstallForm()">↺ Retake / Resubmit</button>
+
+      <p style="display:none;font-size:13px;font-weight:600;margin-top:14px" id="i-status-final-msg"></p>
+      <button style="display:none" id="i-status-action-btn" onclick="resetInstallForm()"></button>
     </div>
   </div>
 </div>
@@ -4414,8 +4413,6 @@ var approvalPollCount = 0;
 function startApprovalWait(payload){
   document.getElementById('i-submit').style.display='none';
   document.getElementById('i-waiting').style.display='block';
-  document.getElementById('i-approved').style.display='none';
-  document.getElementById('i-rejected').style.display='none';
 
   document.getElementById('i-status-shopname').textContent = payload.shopName || '—';
   document.getElementById('i-status-ref').textContent = payload.installId || '—';
@@ -4426,6 +4423,10 @@ function startApprovalWait(payload){
   document.getElementById('i-waiting-icon').textContent = '⏳';
   document.getElementById('i-waiting-title').textContent = 'Waiting for manager approval…';
   document.getElementById('i-waiting-desc').textContent = 'Your installation has been sent to your area manager. This screen updates automatically once they respond.';
+  document.getElementById('i-status-approvedby-row').style.display='none';
+  document.getElementById('i-status-time-row').style.display='none';
+  document.getElementById('i-status-final-msg').style.display='none';
+  document.getElementById('i-status-action-btn').style.display='none';
 
   approvalPollCount=0;
   pollApprovalStatus(payload.installId);
@@ -4451,8 +4452,21 @@ function pollApprovalStatus(installId){
       document.getElementById('i-waiting-icon').textContent = '✅';
       document.getElementById('i-waiting-title').textContent = 'Approved!';
       document.getElementById('i-waiting-desc').textContent = 'Your area manager has approved this installation.';
-      document.getElementById('i-approved').style.display='block';
-      document.getElementById('i-approved-meta').innerHTML='📋 Ref: <strong>'+installId+'</strong><br>👤 Approved by: '+(data.approvedBy||'Manager')+'<br>🕐 '+nowKEFrontend();
+
+      document.getElementById('i-status-approvedby').textContent = data.approvedBy||'Manager';
+      document.getElementById('i-status-time').textContent = nowKEFrontend();
+      document.getElementById('i-status-approvedby-row').style.display='flex';
+      document.getElementById('i-status-time-row').style.display='flex';
+
+      var msgEl = document.getElementById('i-status-final-msg');
+      msgEl.style.color='#166534';
+      msgEl.textContent='✅ You may proceed. Great work!';
+      msgEl.style.display='block';
+
+      var btn = document.getElementById('i-status-action-btn');
+      btn.className='home-btn';
+      btn.style.display='block';
+      btn.textContent='➕ Submit Another Installation/Reactivation';
     } else if(data.status==='REJECTED'){
       clearInterval(approvalPollTimer);
       document.getElementById('i-status-pill').style.background = '#fee2e2';
@@ -4461,8 +4475,21 @@ function pollApprovalStatus(installId){
       document.getElementById('i-waiting-icon').textContent = '❌';
       document.getElementById('i-waiting-title').textContent = 'Rejected';
       document.getElementById('i-waiting-desc').textContent = 'Your area manager has rejected this installation. Please contact them before proceeding.';
-      document.getElementById('i-rejected').style.display='block';
-      document.getElementById('i-rejected-meta').innerHTML='📋 Ref: <strong>'+installId+'</strong><br>👤 Rejected by: '+(data.approvedBy||'Manager')+'<br>🕐 '+nowKEFrontend();
+
+      document.getElementById('i-status-approvedby').textContent = data.approvedBy||'Manager';
+      document.getElementById('i-status-time').textContent = nowKEFrontend();
+      document.getElementById('i-status-approvedby-row').style.display='flex';
+      document.getElementById('i-status-time-row').style.display='flex';
+
+      var rMsgEl = document.getElementById('i-status-final-msg');
+      rMsgEl.style.color='#b91c1c';
+      rMsgEl.textContent='❌ Please contact your line manager before proceeding.';
+      rMsgEl.style.display='block';
+
+      var rBtn = document.getElementById('i-status-action-btn');
+      rBtn.className='home-btn';
+      rBtn.style.display='block';
+      rBtn.textContent='↺ Retake / Resubmit';
     }
   }).catch(function(){});
 }
@@ -4470,8 +4497,10 @@ function pollApprovalStatus(installId){
 function resetInstallForm(){
   if(approvalPollTimer) clearInterval(approvalPollTimer);
   document.getElementById('i-waiting').style.display='none';
-  document.getElementById('i-approved').style.display='none';
-  document.getElementById('i-rejected').style.display='none';
+  document.getElementById('i-status-approvedby-row').style.display='none';
+  document.getElementById('i-status-time-row').style.display='none';
+  document.getElementById('i-status-final-msg').style.display='none';
+  document.getElementById('i-status-action-btn').style.display='none';
   document.getElementById('i-submit').style.display='flex';
   document.getElementById('i-shopname').value='';
   document.getElementById('i-shopid').value='';
