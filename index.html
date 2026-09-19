@@ -766,9 +766,9 @@ input[type=file]{display:none}
       </div>
       <div class="two-col">
         <div class="field"><label for="d-req-start">Start Date<span class="req">*</span></label>
-          <input type="date" id="d-req-start">
+          <input type="date" id="d-req-start" onchange="autoFillDeviceRequestEndDate()">
         </div>
-        <div class="field"><label for="d-req-end">End Date</label>
+        <div class="field"><label for="d-req-end">End Date <span style="color:var(--text-m);font-weight:400">(auto-filled if left blank)</span></label>
           <input type="date" id="d-req-end">
         </div>
       </div>
@@ -3469,6 +3469,30 @@ function applyDefaultDeviceAmount(){
   }
 }
 
+// Credit sales run on a monthly cycle — if the trainer picks a Start
+// Date and leaves End Date blank, preview it here as Start Date + the
+// configured installment count (each installment is 30 days), same
+// as the backend computes it. Purely a live preview for the trainer
+// to see/confirm before submitting — the backend recomputes this
+// itself as the source of truth (see handleDeviceRequest in Code.gs),
+// so this never needs to be perfectly correct on its own, just a
+// helpful default.
+function autoFillDeviceRequestEndDate(){
+  var endEl = document.getElementById('d-req-end');
+  if(endEl.value) return; // trainer already set one — never overwrite it
+  var startVal = document.getElementById('d-req-start').value;
+  if(!startVal) return;
+  var methodEl = document.getElementById('d-req-paytype');
+  if(methodEl && methodEl.value==='Cash') return; // no installment cycle on cash sales
+
+  var start = new Date(startVal+'T00:00:00');
+  if(isNaN(start.getTime())) return;
+  var periods = Number(deviceAmountDefaults.installmentCount)||4;
+  var end = new Date(start.getTime());
+  end.setDate(end.getDate()+(periods*30));
+  endEl.value = end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0');
+}
+
 function openDeviceSettings(){
   showScreen('screen-settings');
   var cashStatus = document.getElementById('set-status-cash');
@@ -4018,11 +4042,11 @@ function calcNewSaleBalance(){
   if(!price){ balEl.style.display='none'; return; }
   if(method==='Installment'){
     var balance = Math.max(price-paid,0);
-    var nd=new Date(); nd.setDate(nd.getDate()+3);
+    var nd=new Date(); nd.setDate(nd.getDate()+30);
     var nextStr = nd.toLocaleDateString('en-KE',{weekday:'short',day:'numeric',month:'short'});
     balEl.style.display='block';
     balEl.innerHTML = balance>0
-      ? '💰 Balance: <strong>KES '+balance.toLocaleString()+'</strong> &nbsp;·&nbsp; ⏰ Next payment reminder: <strong>'+nextStr+'</strong> (in 3 days)'
+      ? '💰 Balance: <strong>KES '+balance.toLocaleString()+'</strong> &nbsp;·&nbsp; ⏰ Next payment reminder: <strong>'+nextStr+'</strong> (in 30 days)'
       : '✅ Fully paid off';
   } else {
     balEl.style.display='block';
@@ -4053,7 +4077,7 @@ function submitNewSale(){
 
   var nextPaymentDate='';
   if(method==='Installment' && balance>0){
-    var nd=new Date(); nd.setDate(nd.getDate()+3);
+    var nd=new Date(); nd.setDate(nd.getDate()+30);
     nextPaymentDate = nd.toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'});
   }
 
