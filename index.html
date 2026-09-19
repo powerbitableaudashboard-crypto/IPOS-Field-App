@@ -2353,8 +2353,8 @@ function renderMyPayments(){
   var dueSoonHtml = dueSoon.length ? dueSoon.map(function(x){
     var r = x.row;
     return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;'+(x.overdue?'background:#fef2f2':'')+'">'+
-      '<div>'+(x.overdue?'🔴 Overdue':'⏰ Due soon')+' — <strong style="color:'+(x.overdue?'#dc2626':'#111827')+'">'+(r['Customer Name']||'Customer')+'</strong> · '+(r['Customer Phone']||'')+'<br><span style="color:var(--text-m)">'+(r['Shop Name']||'')+'</span></div>'+
-      '<div style="text-align:right"><strong style="color:#dc2626">KES '+num(r['Balance']).toLocaleString()+'</strong><br><span style="color:var(--text-m)">'+(r['Next Payment Date']||'')+'</span></div>'+
+      '<div style="color:#dc2626;font-weight:700">'+(x.overdue?'🔴 Overdue':'⏰ Due soon')+' — '+(r['Customer Name']||'Customer')+' · '+(r['Customer Phone']||'')+'<br><span style="color:#6b7280;font-weight:600">'+(r['Shop Name']||'')+'</span></div>'+
+      '<div style="text-align:right;color:#2563eb;font-weight:700">KES '+num(r['Balance']).toLocaleString()+'<br><span style="color:#2563eb;font-weight:600">'+(r['Next Payment Date']||'')+'</span></div>'+
     '</div>';
   }).join('') : '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No credit payments due within 3 days.</div>';
 
@@ -2369,7 +2369,7 @@ function renderMyPayments(){
 
   document.getElementById('my-payments-summary').innerHTML =
     cardsHtml +
-    '<div class="section" style="margin-bottom:10px"><div class="section-title">⏰ 3-Day Credit Follow-ups</div>'+dueSoonHtml+'</div>' +
+    '<div class="section" style="margin-bottom:10px"><div class="section-title" style="color:#16a34a;font-weight:700">⏰ 3-Day Credit Follow-ups</div>'+dueSoonHtml+'</div>' +
     '<div class="section" style="margin-bottom:10px"><div class="section-title">🏪 My Shops</div>'+myShopsHtml+'</div>' +
     '<div class="section"><div class="section-title">✅ Completed Accounts ('+completed.length+')</div>'+completedHtml+'</div>';
 }
@@ -4890,15 +4890,15 @@ function renderDevicePaySummary(){
 
   var upcomingHtml = upcoming.length ? upcoming.map(function(u){
     return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">'+
-      '<div>'+(u.overdue?'🔴 Overdue':'⏰ Due soon')+' — <strong>'+(u.customer||'Customer')+'</strong> · '+(u.phone||'')+'<br><span style="color:var(--text-m)">Trainer: '+u.trainer+'</span></div>'+
-      '<div style="text-align:right"><strong>KES '+num(u.balance).toLocaleString()+'</strong><br><span style="color:var(--text-m)">'+u.due+'</span></div>'+
+      '<div style="color:#dc2626;font-weight:700">'+(u.overdue?'🔴 Overdue':'⏰ Due soon')+' — '+(u.customer||'Customer')+' · '+(u.phone||'')+'<br><span style="color:#6b7280;font-weight:600">Trainer: '+u.trainer+'</span></div>'+
+      '<div style="text-align:right;color:#2563eb;font-weight:700">KES '+num(u.balance).toLocaleString()+'<br><span style="color:#2563eb;font-weight:600">'+u.due+'</span></div>'+
     '</div>';
   }).join('') : '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No credit payments due in the next 3 days.</div>';
 
   document.getElementById('dash-devicepay-summary').innerHTML =
     cardsHtml +
     '<div class="section" style="margin-bottom:10px"><div class="section-title">👤 By trainer</div>'+trainerRows+'</div>' +
-    '<div class="section"><div class="section-title">⏰ 3-day credit follow-ups</div>'+upcomingHtml+'</div>' +
+    '<div class="section"><div class="section-title" style="color:#16a34a;font-weight:700">⏰ 3-day credit follow-ups</div>'+upcomingHtml+'</div>' +
     '<div class="section-title" style="margin-top:1rem">📄 Individual records</div>';
 }
 
