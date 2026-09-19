@@ -2331,7 +2331,7 @@ function renderMyPayments(){
       outstandingBalance += balance;
       var nextDate = r['Next Payment Date'];
       if(nextDate){
-        var nd = new Date(nextDate);
+        var nd = parseAppDate(nextDate);
         if(!isNaN(nd.getTime())){
           var diffDays = Math.ceil((nd - new Date())/(1000*60*60*24));
           if(diffDays <= 3) dueSoon.push({ row:r, overdue: diffDays<0 });
@@ -4863,7 +4863,7 @@ function renderDevicePaySummary(){
     else { creditCount++; creditTotal+=paid; balanceTotal+=balance; byTrainer[trainer].credit++; } // anything not literally 'Cash' is a credit/installment sale — don't require an exact 'Installment' match
 
     if(row['Status']==='Balance Due' && row['Next Payment Date']){
-      var due=new Date(row['Next Payment Date']);
+      var due=parseAppDate(row['Next Payment Date']);
       var now=new Date();
       var diffDays=Math.ceil((due-now)/(1000*60*60*24));
       if(!isNaN(due.getTime()) && diffDays<=3){
@@ -4976,7 +4976,7 @@ function paymentStatusDot(row){
   if(status==='Balance Due'){
     var isOverdue = false;
     if(nextDate){
-      var d = new Date(nextDate);
+      var d = parseAppDate(nextDate);
       if(!isNaN(d.getTime())) isOverdue = d < new Date(new Date().toDateString());
     }
     return isOverdue
