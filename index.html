@@ -802,6 +802,9 @@ input[type=file]{display:none}
           <input type="text" id="ctr-shopid" placeholder="e.g. 356">
         </div>
       </div>
+      <div class="field"><label for="ctr-phone">Your Phone Number<span class="req">*</span></label>
+        <input type="tel" id="ctr-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
+      </div>
       <div class="field"><label>Signed contract file (PDF or photo, max 3MB)<span class="req">*</span></label>
         <label for="ctr-file" style="display:block;padding:14px;border:2px dashed var(--border);border-radius:10px;text-align:center;cursor:pointer;color:var(--accent);font-weight:600;background:var(--surface)" id="ctr-file-label">📎 Tap to choose a file</label>
         <input type="file" id="ctr-file" accept="application/pdf,image/*" onchange="document.getElementById('ctr-file-label').textContent = (this.files[0] ? '📄 '+this.files[0].name : '📎 Tap to choose a file')">
@@ -3909,12 +3912,14 @@ function onPurposeChange(){
     try{ savedPhone = localStorage.getItem('ipos_trainer_phone')||''; }catch(e){}
     if(savedPhone && !v('d-req-phone')) setVal('d-req-phone', savedPhone);
     loadDeviceSettings();
-    loadDeviceTypesForTrainer();
-    loadRecipientsForTrainer();
+    loadDeviceTypesForTrainer();    loadRecipientsForTrainer();
   }
 
   if(purpose==='contract'){
     loadContractTemplateForTrainer();
+    var ctrSavedPhone = '';
+    try{ ctrSavedPhone = localStorage.getItem('ipos_trainer_phone')||''; }catch(e){}
+    if(ctrSavedPhone && !v('ctr-phone')) setVal('ctr-phone', ctrSavedPhone);
   }
 }
 
@@ -3934,16 +3939,19 @@ function loadContractTemplateForTrainer(){
 function submitSignedContract(){
   var errEl = document.getElementById('ctr-error');
   errEl.style.display='none';
-  var shopName = v('ctr-shopname'), shopId = v('ctr-shopid');
+  var shopName = v('ctr-shopname'), shopId = v('ctr-shopid'), ctrPhone = v('ctr-phone');
   var fileInput = document.getElementById('ctr-file');
   var file = fileInput.files && fileInput.files[0];
 
   var missing=[];
   if(!shopName) missing.push('Shop name');
   if(!shopId) missing.push('Shop ID');
+  if(!ctrPhone) missing.push('Your phone number');
   if(!file) missing.push('Signed contract file');
   if(missing.length){ errEl.textContent='Missing: '+missing.join(', '); errEl.style.display='block'; return; }
   if(file.size > 3*1024*1024){ errEl.textContent='File is larger than 3MB — please choose a smaller file.'; errEl.style.display='block'; return; }
+
+  try{ localStorage.setItem('ipos_trainer_phone', ctrPhone); }catch(e){}
 
   document.getElementById('ctr-submit').style.display='none';
   document.getElementById('ctr-spinner').style.display='block';
@@ -3954,6 +3962,7 @@ function submitSignedContract(){
       formType:'uploadSignedContract',
       shopName:shopName, shopId:shopId, file:reader.result, fileName:file.name,
       trainerName: session.name, trainerEmail: session.email, county: session.county,
+      trainerPhone: ctrPhone,
       authEmail: session.email,
       date: nowKEFrontend()
     };
@@ -4012,7 +4021,7 @@ function resetPurposeUI(){
   depositAmountEdited=false;
   deviceAmountDefaults={cash:'',credit:'',depositAmount:'',facilityAmount:'',installmentAmount:'',installmentCount:''};
   // contract sub-widgets
-  setVal('ctr-shopname',''); setVal('ctr-shopid','');
+  setVal('ctr-shopname',''); setVal('ctr-shopid',''); setVal('ctr-phone','');
   var ctrFile=document.getElementById('ctr-file'); if(ctrFile) ctrFile.value='';
   var ctrFileLabel=document.getElementById('ctr-file-label'); if(ctrFileLabel) ctrFileLabel.textContent='📎 Tap to choose a file';
   document.getElementById('ctr-submit').style.display='flex';
@@ -6238,7 +6247,7 @@ function exportMyVisitsPdf(){
       {header:'Client Feedback', dataKey:'Client Feedback'}
     ],
     rows: rows,
-    filename: 'my-visit-history_' + todayStamp() + '.pdf' 
+    filename: 'my-visit-history_' + todayStamp() + '.pdf'
   });
 }
 
