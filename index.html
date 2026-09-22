@@ -4303,6 +4303,38 @@ function resetRequestId(key){ delete formRequestId[key]; }
 // where a second touch can register before the disabled state takes effect.
 var formSubmitLock = {};
 
+// ── DUPLICATE VISIT DETECTION ────────────────────────────────
+// This catches a different scenario than the double-click guard above: a
+// trainer submits a visit, isn't sure it went through (slow network, missed
+// the success screen, etc.), and manually re-enters + resubmits the SAME
+// shop a minute or two later — creating a real, distinct POST request that
+// the backend has no way to know is a repeat. We remember recently
+// submitted visits (by shop name + phone + county) in localStorage — so it
+// survives a page reload — and warn once if a near-identical visit is about
+// to be submitted again soon after. A second tap confirms it's genuinely a
+// new visit and goes through normally.
+var DUPLICATE_VISIT_WINDOW_MIN = 30;
+var dupeVisitConfirmed = {}; // key -> true once the trainer has confirmed past the warning
+function visitDupeKey(name, phone, county){
+  return (name||'').trim().toLowerCase()+'|'+(phone||'').trim()+'|'+(county||'').trim().toLowerCase();
+}
+function getRecentVisitLog(){
+  try{ return JSON.parse(localStorage.getItem('recentVisitLog')||'{}'); }catch(e){ return {}; }
+}
+function saveRecentVisitLog(log){
+  try{ localStorage.setItem('recentVisitLog', JSON.stringify(log)); }catch(e){}
+}
+function pruneVisitLog(log){
+  var cutoff = Date.now() - DUPLICATE_VISIT_WINDOW_MIN*60*1000;
+  Object.keys(log).forEach(function(k){ if(log[k] < cutoff) delete log[k]; });
+  return log;
+}
+function recordSubmittedVisits(visits, county){
+  var log = pruneVisitLog(getRecentVisitLog());
+  visits.forEach(function(vv){ log[visitDupeKey(vv.name, vv.phone, county)] = Date.now(); });
+  saveRecentVisitLog(log);
+}
+
 function submitForm(type){
   if(!session){showScreen('screen-login');return;}
   if(formSubmitLock[type]) return; // already submitting — ignore repeat clicks
@@ -4398,6 +4430,34 @@ function submitForm(type){
   if(missing.length){showErr(type,'Please complete: '+missing.join(', '));return;}
   if(APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL'){showErr(type,'App not configured. Contact admin.');return;}
 
+  // Duplicate-visit / duplicate-install check — catches a trainer re-typing
+  // and resubmitting the same shop a minute or two later because they
+  // weren't sure the first submission went through. Warn once per shop;
+  // a second tap confirms it's genuinely a new entry and goes through.
+  if(type==='route'){
+    var dupeLog = pruneVisitLog(getRecentVisitLog());
+    var dupeMsgs = [];
+    payload.visits.forEach(function(vv){
+      var dk = visitDupeKey(vv.name, vv.phone, currentCounty);
+      if(dupeLog[dk] && !dupeVisitConfirmed[dk]){
+        var minsAgo = Math.max(1, Math.round((Date.now()-dupeLog[dk])/60000));
+        dupeMsgs.push('"'+vv.name+'" looks like a visit already submitted about '+minsAgo+' minute'+(minsAgo===1?'':'s')+' ago. Tap Submit again if this is genuinely a separate visit.');
+        dupeVisitConfirmed[dk] = true; // allow the next tap for this shop through
+      }
+    });
+    if(dupeMsgs.length){ showErr(type, dupeMsgs.join(' ')); return; }
+  }
+  else if(type==='install'){
+    var dupeLogI = pruneVisitLog(getRecentVisitLog());
+    var dkI = visitDupeKey(payload.shopName, payload.ownerPhone, currentCounty);
+    if(dupeLogI[dkI] && !dupeVisitConfirmed[dkI]){
+      var minsAgoI = Math.max(1, Math.round((Date.now()-dupeLogI[dkI])/60000));
+      showErr(type, '"'+payload.shopName+'" looks like an installation/reactivation already submitted about '+minsAgoI+' minute'+(minsAgoI===1?'':'s')+' ago. Tap Submit again if this is genuinely a separate visit (e.g. a real re-installation).');
+      dupeVisitConfirmed[dkI] = true; // allow the next tap through
+      return;
+    }
+  }
+
   payload.clientRequestId = getRequestId(type);
   formSubmitLock[type]=true;
   setLoading(type,true); hideErr(type);
@@ -4409,7 +4469,11 @@ function submitForm(type){
     setLoading(type,false);
     if(data.status==='success'){
       resetRequestId(type); // confirmed saved — next click is a brand new submission
-      if(type==='install'){ startApprovalWait(payload); }
+      if(type==='route'){ recordSubmittedVisits(payload.visits, payload.county); }
+      if(type==='install'){
+        recordSubmittedVisits([{name:payload.shopName, phone:payload.ownerPhone}], payload.county);
+        startApprovalWait(payload);
+      }
       else { showSuccess(type,payload); }
     }
     else { resetRequestId(type); showErr(type,'Failed: '+(data.message||'Unknown error')); } // real validation error — nothing was saved, safe to start fresh
