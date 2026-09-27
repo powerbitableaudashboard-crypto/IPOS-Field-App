@@ -1927,7 +1927,7 @@ function addVisit(){
     '<div class="field"><label>Shop Name<span class="req">*</span></label>'+
     '<input type="text" id="v-name-'+id+'" placeholder="Shop name" oninput="calcProgress(\'r\')"></div>'+
 
-    '<div class="field"><label>Location<span class="req">*</span></label><input type="text" id="v-loc-'+id+'" placeholder="Centers/Town" oninput="calcProgress(\'r\')"></div>'+
+    '<div class="field"><label>Location<span class="req">*</span></label><input type="text" id="v-loc-'+id+'" minlength="4" placeholder="Centers/Town" oninput="calcProgress(\'r\')"></div>'+
 
     '<div class="field"><label>Shop owner phone number<span class="req">*</span></label>'+
     '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" inputmode="tel" pattern="^(\\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress(\'r\')"></div>'+
@@ -4487,8 +4487,8 @@ function submitForm(type){
         }
       }
       if(!name) missing.push('Visit '+id+' name');
-      if(!loc) missing.push('Visit '+id+' location');
-      if(!phone) missing.push('Visit '+id+' shop owner phone number');
+     if(!loc) missing.push('Visit '+id+' location');
+else if(loc.trim().length < 4) missing.push('Visit '+id+' — Location is too short ('+loc.trim().length+' characters). Please give at least 4 characters');
       else if(!isValidKEPhone(phone)) missing.push('Visit '+id+' shop owner phone number (use +254712345678, 254712345678, 0712345678, or 0112345678)');
       if(!feedback) missing.push('Visit '+id+' client feedback');
       else if(feedback.trim().length < 50) missing.push('Visit '+id+' — Client feedback is too short ('+feedback.trim().length+' characters). Please give at least 50 characters');
