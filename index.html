@@ -3964,23 +3964,28 @@ function submitSignedContract(){
       trainerName: session.name, trainerEmail: session.email, county: session.county,
       trainerPhone: ctrPhone,
       authEmail: session.email,
-      date: nowKEFrontend()
+      date: nowKEFrontend(),
+      clientRequestId: getRequestId('contract')
     };
     fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
     .then(function(r){return r.json();})
     .then(function(data){
       document.getElementById('ctr-spinner').style.display='none';
       if(data.status==='success'){
+        resetRequestId('contract'); // confirmed saved — next click is a brand new submission
         document.getElementById('ctr-submit').style.display='none';
         document.getElementById('ctr-meta').textContent = shopName+' (ID: '+shopId+') — saved to Google Drive.';
         document.getElementById('ctr-success').style.display='block';
       } else {
+        resetRequestId('contract'); // real validation error — nothing was saved, safe to start fresh
         document.getElementById('ctr-submit').style.display='flex';
         errEl.textContent = data.message || 'Upload failed.';
         errEl.style.display='block';
       }
     })
     .catch(function(){
+      // keep the same request ID — the save may have actually gone
+      // through; a retry with the same ID lets the backend dedupe it
       document.getElementById('ctr-spinner').style.display='none';
       document.getElementById('ctr-submit').style.display='flex';
       errEl.textContent='Network error — please try again.';
@@ -4220,15 +4225,60 @@ function onInstallDeviceTypeChange(){
 
 function previewPhoto(input,key,prefix){
   var file=input.files[0]; if(!file) return;
-  var reader=new FileReader();
-  reader.onload=function(ev){
-    photos[key]=ev.target.result;
-    document.getElementById(key+'-img').src=ev.target.result;
+  compressImageFile(file, 1280, 0.72).then(function(dataUrl){
+    photos[key]=dataUrl;
+    document.getElementById(key+'-img').src=dataUrl;
     document.getElementById(key+'-ph').style.display='none';
     document.getElementById(key+'-preview').style.display='block';
     if(prefix) calcProgress(prefix);
-  };
-  reader.readAsDataURL(file);
+  }).catch(function(){
+    // Fallback for anything compression can't handle (e.g. an
+    // unusual file type) — read it uncompressed rather than blocking
+    // the trainer from submitting at all.
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      photos[key]=ev.target.result;
+      document.getElementById(key+'-img').src=ev.target.result;
+      document.getElementById(key+'-ph').style.display='none';
+      document.getElementById(key+'-preview').style.display='block';
+      if(prefix) calcProgress(prefix);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Resizes an image down to at most maxDim on its longest side and
+// re-encodes it as JPEG at the given quality, returning a base64 data
+// URL. This is the single biggest lever for making submissions fast
+// on the mobile data trainers actually use in the field — an
+// uncompressed phone camera photo (3-8MB) can take a long time to
+// upload on 3G/4G, and installs alone attach up to 4 of them. A
+// couple hundred KB is still more than sharp enough for an approval
+// photo — this isn't a print asset.
+function compressImageFile(file, maxDim, quality){
+  return new Promise(function(resolve, reject){
+    if(!file.type || file.type.indexOf('image/') !== 0){
+      reject(new Error('not an image')); // e.g. a PDF — nothing to compress
+      return;
+    }
+    var img = new Image();
+    var objectUrl = URL.createObjectURL(file);
+    img.onload = function(){
+      URL.revokeObjectURL(objectUrl);
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if(!w || !h){ reject(new Error('could not read image dimensions')); return; }
+      var scale = Math.min(1, maxDim / Math.max(w, h));
+      var outW = Math.round(w * scale), outH = Math.round(h * scale);
+      var canvas = document.createElement('canvas');
+      canvas.width = outW; canvas.height = outH;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, outW, outH);
+      try { resolve(canvas.toDataURL('image/jpeg', quality)); }
+      catch(e) { reject(e); }
+    };
+    img.onerror = function(){ URL.revokeObjectURL(objectUrl); reject(new Error('image failed to load')); };
+    img.src = objectUrl;
+  });
 }
 
 function clearPhoto(key){
@@ -4292,11 +4342,24 @@ function isValidKEPhone(str){
 var formRequestId = {};
 function getRequestId(key){
   if(!formRequestId[key]){
-    formRequestId[key] = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('id-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+    // Reuse a pending ID left over from BEFORE an app reload/restart —
+    // this is what stops a duplicate when a trainer reopens the app
+    // mid-submission because it seemed stuck (formSubmitLock only
+    // guards against a fast double-tap within the same page load; it
+    // can't survive the page itself being reloaded or killed). Without
+    // this, a reload wipes the in-memory ID and a retry looks like a
+    // brand-new submission to the backend's duplicate check.
+    var saved = null;
+    try{ saved = localStorage.getItem('ipos_pending_req_'+key); }catch(e){}
+    formRequestId[key] = saved || ((window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('id-'+Date.now()+'-'+Math.random().toString(36).slice(2)));
+    try{ localStorage.setItem('ipos_pending_req_'+key, formRequestId[key]); }catch(e){}
   }
   return formRequestId[key];
 }
-function resetRequestId(key){ delete formRequestId[key]; }
+function resetRequestId(key){
+  delete formRequestId[key];
+  try{ localStorage.removeItem('ipos_pending_req_'+key); }catch(e){}
+}
 
 // Guards against duplicate submissions from a fast double-tap/double-click —
 // disabling the button alone isn't always enough on some mobile webviews,
@@ -4481,6 +4544,7 @@ function submitForm(type){
   .catch(function(){formSubmitLock[type]=false;setLoading(type,false);showErr(type,'Network error. Check connection.');}); // keep the same request ID — the save may have actually gone through; a retry with the same ID lets the backend dedupe it
 }
 
+var loadingReassureTimers = {};
 function setLoading(type,on){
   var map={route:'r',devicepay:'d',survey:'s',install:'i'};
   var p=map[type];
@@ -4492,6 +4556,31 @@ function setLoading(type,on){
   document.getElementById(p+'-spinner').style.display=on?'block':'none';
   var labels={route:'Submit Recorded Visits',devicepay:'Submit Device Payment Report',survey:'Submit Shop Survey',install:'Submit & Notify Manager'};
   document.getElementById(p+'-btn').textContent=on?'Submitting…':labels[type];
+
+  // If a submission is taking a while — usually uploading a photo on a
+  // slow connection — reassure the trainer it's still working instead
+  // of leaving them to guess. This is what actually stops people from
+  // closing/reopening the app mid-submission out of impatience, which
+  // is what causes duplicate entries — not a rendering bug.
+  clearTimeout(loadingReassureTimers[type]);
+  var reassureId = p+'-reassure';
+  var existingMsg = document.getElementById(reassureId);
+  if(on){
+    loadingReassureTimers[type] = setTimeout(function(){
+      var spinner = document.getElementById(p+'-spinner');
+      if(!spinner) return;
+      var msg = document.getElementById(reassureId);
+      if(!msg){
+        msg = document.createElement('div');
+        msg.id = reassureId;
+        msg.style.cssText = 'font-size:11.5px;color:var(--text-m);text-align:center;margin-top:8px';
+        spinner.insertAdjacentElement('afterend', msg);
+      }
+      msg.textContent = "Still working — please don't close the app. This can take longer on a slow connection.";
+    }, 6000);
+  } else if(existingMsg){
+    existingMsg.remove();
+  }
 }
 function showErr(type,msg){
   var map={route:'r',devicepay:'d',survey:'s',install:'i'};
