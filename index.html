@@ -1402,6 +1402,56 @@ input[type=file]{display:none}
 <script>
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGO_3aw2o5g7UMxBJnZEYxjh2Lt9rOnA0nM0ZRNLWpF-TPE_psWqONiQACqw0LCff9/exec'
 
+// ── AUTH TOKEN INJECTION ────────────────────────────────────
+// The backend now verifies WHO is calling, not just which email a
+// request claims — it does this by matching an authToken against the
+// one on file for that email. The token is issued once, at login (see
+// doLogin below), and lands in session.authToken via saveSession().
+//
+// Rather than editing every single fetch(APPS_SCRIPT_URL, ...) call in
+// this file by hand (there are dozens), this wraps window.fetch once:
+// any request aimed at APPS_SCRIPT_URL automatically gets the current
+// session's token attached — as `&token=...` on GET requests, and as
+// `authToken` inside the JSON body on POST requests. Every existing
+// call site below is unchanged and needs no further edits; any new
+// fetch() added later against this same URL is covered automatically
+// too. Requests to any other URL pass through completely untouched.
+//
+// Before login, session is null, so this silently does nothing — the
+// login call itself reaches the server with no token, exactly as the
+// backend expects (login is the one call exempt from the check, since
+// it's what hands out the token in the first place).
+(function(){
+  var _origFetch = window.fetch;
+  window.fetch = function(input, init){
+    try {
+      var urlStr = (typeof input === 'string') ? input : (input && input.url) || '';
+      if (urlStr.indexOf(APPS_SCRIPT_URL) === 0 && typeof session !== 'undefined' && session && session.authToken) {
+        var isPost = init && init.method && String(init.method).toUpperCase() === 'POST';
+        if (isPost && init && typeof init.body === 'string') {
+          try {
+            var bodyObj = JSON.parse(init.body);
+            if (bodyObj && bodyObj.authToken === undefined) {
+              bodyObj.authToken = session.authToken;
+              init.body = JSON.stringify(bodyObj);
+            }
+          } catch(parseErr) {
+            // Body wasn't JSON — shouldn't happen for this backend, but
+            // never let that break the real request.
+          }
+        } else if (!isPost && urlStr.indexOf('token=') === -1) {
+          var sep = urlStr.indexOf('?') === -1 ? '?' : '&';
+          input = urlStr + sep + 'token=' + encodeURIComponent(session.authToken);
+        }
+      }
+    } catch(e) {
+      // A bug in this wrapper should never take down a real request —
+      // fall through and send it exactly as the caller built it.
+    }
+    return _origFetch.call(this, input, init);
+  };
+})();
+
 // Always produce Kenya EAT timestamps regardless of the device's system timezone
 // Format: "Mon, 10 Aug 2026, 09:04"
 function nowKEFrontend() {
