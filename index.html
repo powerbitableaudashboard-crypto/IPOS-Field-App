@@ -268,7 +268,7 @@ input[type=file]{display:none}
       <p>Sign in with your full name and login PIN</p>
       <div class="login-field">
         <label for="login-name">Your Full Name</label>
-        <input type="text" id="login-name" autocomplete="name" placeholder="e.g. Alice Wanjiku" onkeydown="if(event.key==='Enter')doLogin()">
+        <input type="text" id="login-name" autocomplete="name" placeholder="e.g. Alice Wanjiku (or your email)" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div class="login-field">
         <label for="login-pin">Login PIN / Password</label>
@@ -282,7 +282,7 @@ input[type=file]{display:none}
       <div id="login-ok" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:13px;color:#166534;margin-top:1rem;text-align:left;line-height:1.6"></div>
       <div style="margin-top:14px"><a href="#" id="forgot-pin-link" onclick="forgotPin();return false" style="color:var(--accent);font-size:13px;text-decoration:underline">Forgot your PIN? Get a temporary one by email</a></div>
       <div class="login-info">
-        🔒 Type your name exactly as your manager registered it. Forgot your PIN? Type your name and tap the link below the Sign In button. Contact your manager if you still cannot sign in.
+        🔒 Type your name as your manager registered it (spaces and capital letters do not matter) or use your email. First time here, or forgot your PIN? Type your name and tap "Forgot your PIN?" — a temporary PIN is emailed to you and you will then choose your own. Contact your manager if you still cannot sign in.
       </div>
     </div>
   </div>
@@ -1455,9 +1455,11 @@ var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGO_3aw2o5g7UMxB
 (function(){
   var _origFetch = window.fetch;
   window.fetch = function(input, init){
+    var usedToken = '';
     try {
       var urlStr = (typeof input === 'string') ? input : (input && input.url) || '';
       if (urlStr.indexOf(APPS_SCRIPT_URL) === 0 && typeof session !== 'undefined' && session && session.authToken) {
+        usedToken = session.authToken;
         var isPost = init && init.method && String(init.method).toUpperCase() === 'POST';
         if (isPost && init && typeof init.body === 'string') {
           try {
@@ -1479,7 +1481,22 @@ var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGO_3aw2o5g7UMxB
       // A bug in this wrapper should never take down a real request —
       // fall through and send it exactly as the caller built it.
     }
-    return _origFetch.call(this, input, init);
+    var p = _origFetch.call(this, input, init);
+    if (usedToken) {
+      p = p.then(function(resp){
+        try {
+          resp.clone().json().then(function(d){
+            // Only react if the token we sent is still the live one (a PIN change rotates it mid-flight).
+            if (d && d.status === 'error' && /^Session expired or not authorised/.test(String(d.message||'')) &&
+                typeof session !== 'undefined' && session && session.authToken === usedToken) {
+              sessionExpiredLogout();
+            }
+          }).catch(function(){});
+        } catch(e) {}
+        return resp;
+      });
+    }
+    return p;
   };
 })();
 
@@ -1864,6 +1881,11 @@ function stopMotivationBanners(){
   document.getElementById('motivation-bottom-banner').classList.remove('visible');
   if(motivationState.timer){ clearTimeout(motivationState.timer); motivationState.timer=null; }
   motivationState.started = false;
+}
+
+function sessionExpiredLogout() {
+  doLogout();
+  showLoginErr('Your session has ended. Please sign in again.');
 }
 
 function doLogout() {
@@ -5703,7 +5725,7 @@ function saveUser(){
   .then(function(r){return r.json();})
   .then(function(data){
     btn.disabled=false; btn.textContent='💾 Save';
-    if(data.status==='success'){ closeUserForm(); anAllTrainersCache=null; loadDashboard(); }
+    if(data.status==='success'){ closeUserForm(); anAllTrainersCache=null; loadDashboard(); if(data.message) alert(data.message); }
     else { var el=document.getElementById('uf-error'); el.textContent='⚠️ '+(data.message||'Failed to save.'); el.style.display='block'; }
   })
   .catch(function(){ btn.disabled=false; btn.textContent='💾 Save'; var el=document.getElementById('uf-error'); el.textContent='⚠️ Network error.'; el.style.display='block'; });
