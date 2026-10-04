@@ -4933,7 +4933,15 @@ function setFormType(type){
   document.getElementById('dash-county-filter').value='';
   var showRegionMgr = session.role==='Admin' && (type==='install' || type==='devicepay' || type==='survey');
   document.getElementById('dash-region-manager-wrap').style.display = showRegionMgr ? 'grid' : 'none';
-  if(showRegionMgr) populateRegionManagerFilters();
+  if(showRegionMgr){
+    populateRegionManagerFilters();
+    loadAreaManagers(function(){
+      var rs=document.getElementById('dash-region-filter'), ms=document.getElementById('dash-manager-filter');
+      var rv=rs?rs.value:'', mv=ms?ms.value:'';
+      populateRegionManagerFilters();
+      if(rs) rs.value=rv; if(ms) ms.value=mv;
+    });
+  }
   document.getElementById('dash-region-filter').value='';
   document.getElementById('dash-manager-filter').value='';
   document.getElementById('dash-range-filter').value='all';
@@ -5034,12 +5042,12 @@ function dashRegionManagerAllowed(county){
   var region = regionEl ? regionEl.value : '';
   var manager = managerEl ? managerEl.value : '';
   if(region){
-    if(region==='__unmapped__'){ if(AN_COUNTY_TO_REGION[county]) return false; }
-    else if(AN_COUNTY_TO_REGION[county] !== region) return false;
+    if(region==='__unmapped__'){ if(anRegionOf(county)) return false; }
+    else if(anRegionOf(county) !== region) return false;
   }
   if(manager){
-    if(manager==='__unmapped__'){ if(AN_COUNTY_TO_MANAGER[county]) return false; }
-    else if(AN_COUNTY_TO_MANAGER[county] !== manager) return false;
+    if(manager==='__unmapped__'){ if(anManagerOf(county)) return false; }
+    else if(anManagerOf(county) !== manager) return false;
   }
   return true;
 }
@@ -5781,18 +5789,76 @@ var INSTALL_PURPOSE_LABEL = 'installation or reactivation';
 // Area Manager filters in analytics — kept as a small static config
 // here since there's no backend endpoint exposing this sheet yet.
 // Update this list if a manager's county coverage or region changes.
+// Area Manager <-> Region <-> County coverage. The source of truth is the
+// "Regions" sheet in the hub spreadsheet (served by ?action=getAreaManagers),
+// so adding a manager or editing their counties there is all that is needed.
+// The list below is only an offline FALLBACK used until/unless that request
+// succeeds. County names are compared in a normalised form (case, spaces,
+// punctuation ignored, plus a few known spelling aliases) so "Bungoma" /
+// "Bugoma" / "Homa Bay" / "Homabay" all match.
+var LEGACY_REGION_LABELS = { 'philip sam':'Western,Nyanza&N.Rift', 'ben a':'Nyanza&S.Rift' };
 var AREA_MANAGERS = [
-  { name:'Philip Sam', email:'philipowino47@gmail.com', region:'Western,Nyanza&N.Rift',
-    counties:['Kisumu','Siaya','Busia','Kakamega','Bugoma','Uasin Gishu','Trans-Nzoia','Elgeyo-Marakwet'] },
-  { name:'Ben A', email:'awinobenard91@gmail.com', region:'Nyanza&S.Rift',
-    counties:['Kericho','Bomet','Vihiga','Migori','Homabay','Kisii','Nyamira','Nandi'] }
+  { name:'Philip Sam', email:'', region:'Western,Nyanza&N.Rift',
+    counties:['Kisumu','Siaya','Busia','Kakamega','Bungoma','Uasin Gishu','Trans-Nzoia','Elgeyo-Marakwet'] },
+  { name:'Ben A', email:'', region:'Nyanza&S.Rift',
+    counties:['Kericho','Bomet','Vihiga','Migori','Homabay','Kisii','Nyamira','Nandi'] },
+  { name:'Maende', email:'', region:'Maende Region',
+    counties:['Baringo','Laikipia',"Murang'a",'Nairobi','Nakuru','Narok','Nyandarua','Nyeri'] },
+  { name:'Dan Ndoro', email:'', region:'Dan Ndoro Region',
+    counties:['Embu','Isiolo','Kajiado','Kiambu','Kilifi','Kirinyaga','Kitui','Kwale','Lamu','Machakos','Makueni','Marsabit','Meru','Mombasa','Taita-Taveta','Tana River','Tharaka-Nithi'] }
 ];
-var AN_COUNTY_TO_REGION = {};
-var AN_COUNTY_TO_MANAGER = {};
-AREA_MANAGERS.forEach(function(m){
-  m.counties.forEach(function(c){ AN_COUNTY_TO_REGION[c] = m.region; AN_COUNTY_TO_MANAGER[c] = m.name; });
-});
+var AN_COUNTY_ALIASES = { 'bugoma':'bungoma', 'homabay':'homabay', 'homabaycounty':'homabay', 'muranga':'muranga', 'taitataveta':'taitataveta', 'transnzoia':'transnzoia', 'elgeyomarakwet':'elgeyomarakwet', 'tharakanithi':'tharakanithi', 'nairobicity':'nairobi' };
+function anCountyKey(c){
+  var k = String(c==null?'':c).toLowerCase().replace(/[^a-z0-9]/g,'');
+  k = k.replace(/county$/,'');
+  return AN_COUNTY_ALIASES[k] || k;
+}
+var AN_COUNTY_TO_REGION = {};   // normalised county key -> region label
+var AN_COUNTY_TO_MANAGER = {};  // normalised county key -> manager name
+var AN_COUNTY_DISPLAY = {};     // normalised county key -> pretty county name
+function anRegionOf(county){ return AN_COUNTY_TO_REGION[anCountyKey(county)]; }
+function anManagerOf(county){ return AN_COUNTY_TO_MANAGER[anCountyKey(county)]; }
+function rebuildAreaManagerMaps(){
+  AN_COUNTY_TO_REGION = {}; AN_COUNTY_TO_MANAGER = {}; AN_COUNTY_DISPLAY = {};
+  AREA_MANAGERS.forEach(function(m){
+    (m.counties||[]).forEach(function(c){
+      var k = anCountyKey(c); if(!k) return;
+      AN_COUNTY_TO_REGION[k] = m.region; AN_COUNTY_TO_MANAGER[k] = m.name;
+      if(!AN_COUNTY_DISPLAY[k]) AN_COUNTY_DISPLAY[k] = String(c).trim();
+    });
+  });
+}
+rebuildAreaManagerMaps();
 
+// Loads the manager list from the backend (Admin/Manager only). Cached for
+// 5 minutes; on any failure the fallback list above stays in effect.
+var areaManagersLoadedAt = 0, areaManagersInFlight = null;
+function loadAreaManagers(cb){
+  cb = cb || function(){};
+  if(areaManagersLoadedAt && (Date.now()-areaManagersLoadedAt) < 300000){ cb(); return; }
+  if(areaManagersInFlight){ areaManagersInFlight.then(cb); return; }
+  areaManagersInFlight = fetch(APPS_SCRIPT_URL + '?action=getAreaManagers&email=' + encodeURIComponent(session.email||'') + '&role=' + encodeURIComponent(session.role||''))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var list = (data && data.managers) || [];
+      if(list.length){
+        AREA_MANAGERS = list.map(function(m){
+          var nm = String(m.name||m.email||'').trim();
+          return {
+            name: nm,
+            email: String(m.email||'').trim(),
+            region: (m.region && String(m.region).trim()) || LEGACY_REGION_LABELS[nm.toLowerCase()] || (nm + ' Region'),
+            counties: m.counties || []
+          };
+        }).filter(function(m){ return m.name; });
+        rebuildAreaManagerMaps();
+      }
+      areaManagersLoadedAt = Date.now();
+    })
+    .catch(function(){ /* keep fallback list */ })
+    .then(function(){ areaManagersInFlight = null; });
+  areaManagersInFlight.then(cb);
+}
 var anState = { range:'month', dateFrom:'', dateTo:'', county:'', region:'', manager:'' };
 
 // True if `county` passes the current County + (Admin-only) Region /
@@ -5802,14 +5868,14 @@ var anState = { range:'month', dateFrom:'', dateTo:'', county:'', region:'', man
 // any Area Manager yet, so those visits are traceable instead of
 // silently disappearing whenever a specific region is chosen.
 function anCountyAllowed(county){
-  if(anState.county && county !== anState.county) return false;
+  if(anState.county && anCountyKey(county) !== anCountyKey(anState.county)) return false;
   if(session.role==='Admin' && anState.region){
-    if(anState.region==='__unmapped__'){ if(AN_COUNTY_TO_REGION[county]) return false; }
-    else if(AN_COUNTY_TO_REGION[county] !== anState.region) return false;
+    if(anState.region==='__unmapped__'){ if(anRegionOf(county)) return false; }
+    else if(anRegionOf(county) !== anState.region) return false;
   }
   if(session.role==='Admin' && anState.manager){
-    if(anState.manager==='__unmapped__'){ if(AN_COUNTY_TO_MANAGER[county]) return false; }
-    else if(AN_COUNTY_TO_MANAGER[county] !== anState.manager) return false;
+    if(anState.manager==='__unmapped__'){ if(anManagerOf(county)) return false; }
+    else if(anManagerOf(county) !== anState.manager) return false;
   }
   return true;
 }
@@ -5843,6 +5909,11 @@ function openEngagementAnalytics(){
 
   if(anAllTrainersCache && anInstallsCache){ renderEngagementAnalytics(); }
   else { anFetchAnalyticsData(renderEngagementAnalytics); }
+  // Pull the live manager list; re-render once it arrives so the Area
+  // Manager / Region dropdowns show everyone from the Regions sheet.
+  if(session.role==='Admin'){
+    loadAreaManagers(function(){ if(document.getElementById('an-overlay') && anAllTrainersCache && anInstallsCache) renderEngagementAnalytics(); });
+  }
 }
 
 // Fetches whatever of (registered trainers, installations) isn't already
@@ -5998,17 +6069,18 @@ function renderEngagementAnalytics(){
   // County list for the dropdown: every county seen in the data, plus
   // (Admin only) every county from the Region/Manager coverage map, so
   // Admin can pick a county that currently has zero visits too.
-  var counties = [];
-  sourceItems.forEach(function(r){ var c=r['County']; if(c && counties.indexOf(c)===-1) counties.push(c); });
-  if(isAdmin){ Object.keys(AN_COUNTY_TO_REGION).forEach(function(c){ if(counties.indexOf(c)===-1) counties.push(c); }); }
+  var counties = [], countySeen = {};
+  function addCounty(c){ var k=anCountyKey(c); if(!k || countySeen[k]) return; countySeen[k]=true; counties.push(String(c).trim()); }
+  sourceItems.forEach(function(r){ if(r['County']) addCounty(r['County']); });
+  if(isAdmin){ Object.keys(AN_COUNTY_DISPLAY).forEach(function(k){ addCounty(AN_COUNTY_DISPLAY[k]); }); }
   // Narrow further if a Region/Area Manager is already selected.
-  if(isAdmin && anState.region==='__unmapped__') counties = counties.filter(function(c){ return !AN_COUNTY_TO_REGION[c]; });
-  else if(isAdmin && anState.region) counties = counties.filter(function(c){ return AN_COUNTY_TO_REGION[c]===anState.region; });
-  if(isAdmin && anState.manager==='__unmapped__') counties = counties.filter(function(c){ return !AN_COUNTY_TO_MANAGER[c]; });
-  else if(isAdmin && anState.manager) counties = counties.filter(function(c){ return AN_COUNTY_TO_MANAGER[c]===anState.manager; });
+  if(isAdmin && anState.region==='__unmapped__') counties = counties.filter(function(c){ return !anRegionOf(c); });
+  else if(isAdmin && anState.region) counties = counties.filter(function(c){ return anRegionOf(c)===anState.region; });
+  if(isAdmin && anState.manager==='__unmapped__') counties = counties.filter(function(c){ return !anManagerOf(c); });
+  else if(isAdmin && anState.manager) counties = counties.filter(function(c){ return anManagerOf(c)===anState.manager; });
   counties.sort();
   // Selected county may no longer be valid after narrowing by region/manager.
-  if(anState.county && counties.indexOf(anState.county)===-1) anState.county = '';
+  if(anState.county && !counties.some(function(c){ return anCountyKey(c)===anCountyKey(anState.county); })) anState.county = '';
 
   var rowsInPeriod = sourceItems.filter(function(r){
     return anCountyAllowed(r['County']) && anRowInPeriod(r);
