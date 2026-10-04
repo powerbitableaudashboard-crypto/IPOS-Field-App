@@ -2522,7 +2522,7 @@ function openMyVisits(){
   var url = APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent('Route Plans') +
     '&email=' + encodeURIComponent(session.email) + '&role=Trainer';
   fetch(url).then(function(r){return r.json();}).then(function(data){
-    myVisitsData = data.rows || [];
+    myVisitsData = sortNewestFirst(fillRouteGroupFields(data.rows || []), 'Submitted At');
     statusEl.style.display='none';
     renderTodaysCheckouts();
     renderMyVisits();
@@ -2744,7 +2744,7 @@ function openMyAnalytics(){
   var visitsP = myVisitsData.length ? Promise.resolve() :
     fetch(APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent('Route Plans') + '&email=' + encodeURIComponent(session.email) + '&role=Trainer')
       .then(function(r){return r.json();})
-      .then(function(data){ myVisitsData = data.rows || []; })
+      .then(function(data){ myVisitsData = sortNewestFirst(fillRouteGroupFields(data.rows || []), 'Submitted At'); })
       .catch(function(){});
 
   var installsP = (myAnalyticsInstallsCache || allInstalledShops.length) ? Promise.resolve() :
@@ -3285,6 +3285,8 @@ function loadArchivedData(){
     });
   }).then(function(data){
     allArchivedItems = data.rows || [];
+    if(sheetKey==='idempotency') allArchivedItems = sortNewestFirst(allArchivedItems, 'Reserved At');
+    else allArchivedItems = sortNewestFirst(fillRouteGroupFields(allArchivedItems), 'Submitted At');
     statusEl.textContent = allArchivedItems.length + ' archived record(s).';
     var trainerSel = document.getElementById('arv-trainer-filter');
     var names = Array.from(new Set(allArchivedItems.map(function(r){ return r['Trainer Name']; }).filter(Boolean))).sort();
@@ -4422,14 +4424,19 @@ var formSubmitLock = {};
 // the success screen, etc.), and manually re-enters + resubmits the SAME
 // shop a minute or two later — creating a real, distinct POST request that
 // the backend has no way to know is a repeat. We remember recently
-// submitted visits (by shop name + phone + county) in localStorage — so it
-// survives a page reload — and warn once if a near-identical visit is about
-// to be submitted again soon after. A second tap confirms it's genuinely a
-// new visit and goes through normally.
+// submitted visits — keyed by shop name + phone + county + purpose +
+// feedback, so two genuinely different visits to the same shop (different
+// reason, different notes) are never confused for a repeat — in
+// localStorage, so it survives a page reload, and BLOCK a near-identical
+// resubmission outright within the window below. This is a hard stop, not
+// a warn-then-allow: the backend enforces the same rule (see Code.gs), so
+// a bypass here would just be rejected there anyway. If it's genuinely a
+// new visit, the trainer's own notes for it will naturally differ and the
+// key below won't match.
 var DUPLICATE_VISIT_WINDOW_MIN = 30;
-var dupeVisitConfirmed = {}; // key -> true once the trainer has confirmed past the warning
-function visitDupeKey(name, phone, county){
-  return (name||'').trim().toLowerCase()+'|'+(phone||'').trim()+'|'+(county||'').trim().toLowerCase();
+function visitDupeKey(name, phone, county, purpose, feedback){
+  return (name||'').trim().toLowerCase()+'|'+(phone||'').trim()+'|'+(county||'').trim().toLowerCase()
+    +'|'+(purpose||'').trim().toLowerCase()+'|'+(feedback||'').trim().toLowerCase();
 }
 function getRecentVisitLog(){
   try{ return JSON.parse(localStorage.getItem('recentVisitLog')||'{}'); }catch(e){ return {}; }
@@ -4444,7 +4451,11 @@ function pruneVisitLog(log){
 }
 function recordSubmittedVisits(visits, county){
   var log = pruneVisitLog(getRecentVisitLog());
-  visits.forEach(function(vv){ log[visitDupeKey(vv.name, vv.phone, county)] = Date.now(); });
+  visits.forEach(function(vv){
+    // vv.purpose/vv.feedback for a route visit; vv.notes doubles as the
+    // "feedback" slot for an install, since installs don't collect feedback.
+    log[visitDupeKey(vv.name, vv.phone, county, vv.purpose, vv.feedback || vv.notes)] = Date.now();
+  });
   saveRecentVisitLog(log);
 }
 
@@ -4546,29 +4557,33 @@ function submitForm(type){
   if(APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL'){showErr(type,'App not configured. Contact admin.');return;}
 
   // Duplicate-visit / duplicate-install check — catches a trainer re-typing
-  // and resubmitting the same shop a minute or two later because they
-  // weren't sure the first submission went through. Warn once per shop;
-  // a second tap confirms it's genuinely a new entry and goes through.
+  // and resubmitting the SAME visit (same shop, same phone, same purpose,
+  // same feedback/notes, same county) a minute or two later because they
+  // weren't sure the first submission went through. This is a hard block,
+  // not a warning: letting a second tap push it through is exactly how the
+  // duplicate rows happened before. If it's genuinely a new, separate
+  // visit, its own feedback/notes will naturally read differently from the
+  // last one and this key won't match. The backend enforces the identical
+  // rule (see findDuplicateVisit_ in Code.gs), so this is purely a fast,
+  // friendly check — nothing bypasses the real guard on the server.
   if(type==='route'){
     var dupeLog = pruneVisitLog(getRecentVisitLog());
     var dupeMsgs = [];
     payload.visits.forEach(function(vv){
-      var dk = visitDupeKey(vv.name, vv.phone, currentCounty);
-      if(dupeLog[dk] && !dupeVisitConfirmed[dk]){
+      var dk = visitDupeKey(vv.name, vv.phone, currentCounty, vv.purpose, vv.feedback);
+      if(dupeLog[dk]){
         var minsAgo = Math.max(1, Math.round((Date.now()-dupeLog[dk])/60000));
-        dupeMsgs.push('"'+vv.name+'" looks like a visit already submitted about '+minsAgo+' minute'+(minsAgo===1?'':'s')+' ago. Tap Submit again if this is genuinely a separate visit.');
-        dupeVisitConfirmed[dk] = true; // allow the next tap for this shop through
+        dupeMsgs.push('"'+vv.name+'" with this same purpose and feedback was already submitted about '+minsAgo+' minute'+(minsAgo===1?'':'s')+' ago. If this is genuinely a separate visit, update the Client Feedback to reflect what actually happened this time.');
       }
     });
     if(dupeMsgs.length){ showErr(type, dupeMsgs.join(' ')); return; }
   }
   else if(type==='install'){
     var dupeLogI = pruneVisitLog(getRecentVisitLog());
-    var dkI = visitDupeKey(payload.shopName, payload.ownerPhone, currentCounty);
-    if(dupeLogI[dkI] && !dupeVisitConfirmed[dkI]){
+    var dkI = visitDupeKey(payload.shopName, payload.ownerPhone, currentCounty, payload.deviceType, payload.notes);
+    if(dupeLogI[dkI]){
       var minsAgoI = Math.max(1, Math.round((Date.now()-dupeLogI[dkI])/60000));
-      showErr(type, '"'+payload.shopName+'" looks like an installation/reactivation already submitted about '+minsAgoI+' minute'+(minsAgoI===1?'':'s')+' ago. Tap Submit again if this is genuinely a separate visit (e.g. a real re-installation).');
-      dupeVisitConfirmed[dkI] = true; // allow the next tap through
+      showErr(type, '"'+payload.shopName+'" with this same device type and notes was already submitted about '+minsAgoI+' minute'+(minsAgoI===1?'':'s')+' ago. If this is genuinely a separate visit (e.g. a real re-installation), update the Notes to reflect it.');
       return;
     }
   }
@@ -4811,6 +4826,59 @@ function resetInstallForm(){
   showScreen('screen-install');
 }
 
+// ── ORDERING HELPERS (newest first) ─────────────────────────────
+// Backend timestamps are "dd/MM/yyyy, HH:mm:ss" TEXT, so plain string
+// comparison is NOT chronological ("04/10/2026" < "30/09/2026").
+// These sort by the real parsed date. The server now sorts too; this is
+// the safety net so the list is right even against an older deployment.
+// Route Plans only store Date/GPS/Trainer/County/Submitted At on the
+// FIRST visit of a submission, so those are carried down first (guarded
+// by the shared timestamp inside Visit ID: V-<timestamp>-<n>).
+var ROUTE_GROUP_FIELDS = ['Date','GPS','Trainer Name','Trainer Email','County','Submitted At'];
+function routeBatchKey(r){
+  var p = String((r && r['Visit ID']) || '').split('-');
+  return p.length >= 3 ? p[1] : '';
+}
+// Owner row is found by the shared Visit ID timestamp, so it works
+// whichever order the rows arrive in. Rows with no Visit ID (very old
+// data) fall back to carrying down from the nearest owner row above.
+function fillRouteGroupFields(rows){
+  if(!rows || !rows.length) return rows || [];
+  var out = rows.map(function(r){ return Object.assign({}, r); });
+  var owners = {};
+  out.forEach(function(r){
+    var key = routeBatchKey(r);
+    if(key && String(r['Trainer Email'] || '').trim() !== '') owners[key] = r;
+  });
+  var carry = null;
+  out.forEach(function(r){
+    var hasOwner = String(r['Trainer Email'] || '').trim() !== '';
+    var key = routeBatchKey(r);
+    var src = null;
+    if(hasOwner){ carry = r; return; }
+    if(key && owners[key]) src = owners[key];
+    else if(!key && carry) src = carry;
+    if(!src) return;
+    ROUTE_GROUP_FIELDS.forEach(function(k){
+      if((r[k] == null || String(r[k]).trim() === '') && src[k] != null) r[k] = src[k];
+    });
+  });
+  return out;
+}
+function sortNewestFirst(rows, field){
+  if(!rows || rows.length < 2) return rows || [];
+  var w = rows.map(function(r, i){
+    var d = parseAppDate(r[field]);
+    return { r:r, t: d ? d.getTime() : 0, v: Number(r['Visit#']) || 0, i:i };
+  });
+  w.sort(function(a, b){
+    if(b.t !== a.t) return b.t - a.t;
+    if(a.v !== b.v) return a.v - b.v;
+    return a.i - b.i;
+  });
+  return w.map(function(x){ return x.r; });
+}
+
 // ── MANAGER DASHBOARD ───────────────────────────────────────────
 var dashFilter = 'PENDING';
 var dashFormType = 'install';
@@ -4905,6 +4973,9 @@ function loadDashboard(){
     if(dashFormType==='install') dashAllItems = data.installs || [];
     else if(dashFormType==='users') dashAllItems = data.users || [];
     else dashAllItems = data.rows || [];
+    if(dashFormType==='route') dashAllItems = fillRouteGroupFields(dashAllItems);
+    if(dashFormType==='install') dashAllItems = sortNewestFirst(dashAllItems, 'submittedAt');
+    else if(dashFormType!=='users') dashAllItems = sortNewestFirst(dashAllItems, 'Submitted At');
     if(dashFormType==='install') anInstallsCache = dashAllItems; // keep analytics' installs cache fresh whenever this loads
     anFilledItemsCache = null; // source rows changed — invalidate the forward-fill cache used by analytics
     if(dashFormType!=='users') populateTrainerFilter();
