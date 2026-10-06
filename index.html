@@ -717,7 +717,7 @@ input[type=file]{display:none}
         <select id="d-req-devicetype"><option value="H10">H10</option></select>
       </div>
       <div class="field"><label for="d-req-email">Send request to<span class="req">*</span></label>
-        <select id="d-req-email" onchange="renderCcOptions()"><option value="">Select recipient…</option></select>
+        <select id="d-req-email" onchange="renderCcOptions()" onfocus="if(!deviceRequestRecipients.length) loadRecipientsForTrainer();"><option value="">Select recipient…</option></select>
       </div>
       <div class="field"><label>CC <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional, tap to select — multiple allowed)</span></label>
         <div id="d-req-cc-list" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:220px;overflow-y:auto;font-size:13px;color:var(--text-m)">No recipients configured yet.</div>
@@ -3397,25 +3397,71 @@ function fmtKsh(n){ n = Number(n)||0; return 'Ksh ' + n.toLocaleString(); }
 
 var deviceRequestRecipients = [];
 
-function loadRecipientsForTrainer(){
-  fetch(APPS_SCRIPT_URL + '?action=getRecipients')
-    .then(function(r){return r.json();})
-    .then(function(data){
-      deviceRequestRecipients = data.recipients || [];
-      var toOptions = deviceRequestRecipients.filter(function(r){ return r.canBeTo!==false; });
-      var sel = document.getElementById('d-req-email');
-      var current = sel.value;
-      if(!toOptions.length){
-        sel.innerHTML = '<option value="">No recipients configured — ask your manager</option>';
-      } else {
-        sel.innerHTML = '<option value="">Select recipient…</option>' + toOptions.map(function(r){
-          return '<option value="'+r.email+'"'+(r.email===current?' selected':'')+'>'+r.name+' ('+r.email+')</option>';
-        }).join('');
+var RECIPIENTS_CACHE_KEY = 'ipos_recipients_cache';
+var recipientsLoadSeq = 0;
+
+function escHtml_(t){
+  return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function applyRecipients_(list){
+  deviceRequestRecipients = list || [];
+  var toOptions = deviceRequestRecipients.filter(function(r){ return r.canBeTo!==false; });
+  var sel = document.getElementById('d-req-email');
+  var current = sel.value;
+  if(!toOptions.length){
+    sel.innerHTML = '<option value="">No recipients configured — ask your manager</option>';
+  } else {
+    sel.innerHTML = '<option value="">Select recipient…</option>' + toOptions.map(function(r){
+      return '<option value="'+escHtml_(r.email)+'"'+(r.email===current?' selected':'')+'>'+escHtml_(r.name)+' ('+escHtml_(r.email)+')</option>';
+    }).join('');
+  }
+  renderCcOptions();
+}
+
+// Fetches the recipients list. Retries automatically (the Apps Script
+// backend occasionally times out or returns an HTML error page on the
+// first hit), and falls back to the last list that loaded successfully
+// so a flaky connection never leaves the trainer unable to send.
+// Returns a promise that always resolves so callers can chain loaders.
+function loadRecipientsForTrainer(attempt){
+  attempt = attempt || 1;
+  var mySeq = ++recipientsLoadSeq;
+  var sel = document.getElementById('d-req-email');
+  var listEl = document.getElementById('d-req-cc-list');
+  if(attempt === 1){
+    sel.innerHTML = '<option value="">Loading recipients…</option>';
+    if(listEl) listEl.innerHTML = 'Loading recipients…';
+  }
+  return fetch(APPS_SCRIPT_URL + '?action=getRecipients&_=' + Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      var data;
+      try { data = JSON.parse(txt); } catch(e){ throw new Error('bad-response'); }
+      if(data && data.status === 'error'){
+        var err = new Error(data.message || 'Could not load recipients.');
+        err.fatal = true;
+        throw err;
       }
-      renderCcOptions();
+      if(mySeq !== recipientsLoadSeq) return;
+      var list = (data && data.recipients) || [];
+      try{ localStorage.setItem(RECIPIENTS_CACHE_KEY, JSON.stringify(list)); }catch(e){}
+      applyRecipients_(list);
     })
-    .catch(function(){
-      document.getElementById('d-req-email').innerHTML = '<option value="">Failed to load — try again</option>';
+    .catch(function(err){
+      if(mySeq !== recipientsLoadSeq) return;
+      if(!(err && err.fatal) && attempt < 3){
+        return new Promise(function(res){ setTimeout(res, 800*attempt); })
+          .then(function(){ return loadRecipientsForTrainer(attempt+1); });
+      }
+      var cached = null;
+      try{ cached = JSON.parse(localStorage.getItem(RECIPIENTS_CACHE_KEY)||'null'); }catch(e){}
+      if(cached && cached.length){
+        applyRecipients_(cached);
+        return;
+      }
+      sel.innerHTML = '<option value="">'+escHtml_(err && err.fatal ? err.message : 'Failed to load — tap here to retry')+'</option>';
+      if(listEl) listEl.innerHTML = 'Recipients not loaded.';
     });
 }
 
@@ -3963,8 +4009,12 @@ function onPurposeChange(){
     var savedPhone = '';
     try{ savedPhone = localStorage.getItem('ipos_trainer_phone')||''; }catch(e){}
     if(savedPhone && !v('d-req-phone')) setVal('d-req-phone', savedPhone);
-    loadDeviceSettings();
-    loadDeviceTypesForTrainer();    loadRecipientsForTrainer();
+    // Load one after another (recipients first — it's the one the trainer
+    // needs to submit). Firing all three at once made the backend
+    // drop requests on slow connections.
+    loadRecipientsForTrainer()
+      .then(function(){ loadDeviceTypesForTrainer(); return new Promise(function(r){ setTimeout(r, 300); }); })
+      .then(function(){ loadDeviceSettings(); });
   }
 
   if(purpose==='contract'){
@@ -4246,7 +4296,8 @@ function submitDeviceRequest(){
     if(data.status==='success'){
       resetRequestId('devreq');
       document.getElementById('d-submit').style.display='none';
-      document.getElementById('d-meta').innerHTML = 'Shop: <strong>'+reqShopName+'</strong> (ID: '+reqShopId+')<br>Sent to: <strong>'+reqEmail+'</strong><br>'+reqLocation;
+      document.getElementById('d-meta').innerHTML = 'Shop: <strong>'+reqShopName+'</strong> (ID: '+reqShopId+')<br>Sent to: <strong>'+reqEmail+'</strong><br>'+reqLocation+
+        (data.message ? '<br><span style="color:#b91c1c;font-weight:600">⚠️ '+String(data.message).replace(/</g,'&lt;')+'</span>' : '');
       document.getElementById('d-success').style.display='block';
     } else {
       resetRequestId('devreq'); // confirmed error — nothing saved, safe to start fresh next attempt
