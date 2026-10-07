@@ -752,17 +752,17 @@ input[type=file]{display:none}
           </select>
         </div>
       </div>
-      <div id="d-req-deposit-wrap" style="display:none" class="field"><label for="d-req-deposit">Deposit / amount already collected (KES) <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
+      <div id="d-req-deposit-wrap" style="display:none" class="field"><label for="d-req-deposit">Deposit / Amount Already Collected (KES) <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
         <input type="text" id="d-req-deposit" inputmode="numeric" placeholder="e.g. Ksh 7,500" oninput="depositAmountEdited=true">
         <small id="d-req-deposit-hint" style="color:var(--text-m);font-size:11px">Leave blank if nothing has been collected yet. This is deducted from the balance owed.</small>
       </div>
       <div id="d-req-facility-info" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:1rem;font-size:12.5px;color:var(--text-m)"></div>
-      <div class="field"><label for="d-req-mpesa-msg">M-Pesa message <span style="font-size:11px;color:#9ca3af;font-weight:400">(paste confirmation text)</span></label>
+      <div class="field"><label for="d-req-mpesa-msg">M-Pesa Message <span style="font-size:11px;color:#9ca3af;font-weight:400">(Paste Confirmation Text)</span></label>
         <textarea id="d-req-mpesa-msg" placeholder="e.g. Confirmed. You have received KES4,500.00 from..." style="min-height:60px"></textarea>
       </div>
       <div class="field"><label>M-Pesa Screenshot <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
         <div class="photo-box" onclick="document.getElementById('d-req-mpesa-file').click()">
-          <div class="photo-ph" id="d-req-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa confirmation screenshot</small></div>
+          <div class="photo-ph" id="d-req-mpesa-ph"><span class="photo-ph-icon">📷</span><span>Tap to attach</span><small>M-Pesa Confirmation Screenshot</small></div>
           <div class="photo-preview" id="d-req-mpesa-preview"><img id="d-req-mpesa-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('d-req-mpesa')">↺ Retake</button></div>
         </div>
         <input type="file" id="d-req-mpesa-file" accept="image/*" onchange="previewPhoto(this,'d-req-mpesa')">
@@ -822,7 +822,7 @@ input[type=file]{display:none}
       <div class="field"><label for="ctr-phone">Your Phone Number<span class="req">*</span></label>
         <input type="tel" id="ctr-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
       </div>
-      <div class="field"><label>Signed contract file (PDF or photo, max 3MB)<span class="req">*</span></label>
+      <div class="field"><label>Signed Contract File (PDF or photo, max 3MB)<span class="req">*</span></label>
         <label for="ctr-file" style="display:block;padding:14px;border:2px dashed var(--border);border-radius:10px;text-align:center;cursor:pointer;color:var(--accent);font-weight:600;background:var(--surface)" id="ctr-file-label">📎 Tap to choose a file</label>
         <input type="file" id="ctr-file" accept="application/pdf,image/*" onchange="document.getElementById('ctr-file-label').textContent = (this.files[0] ? '📄 '+this.files[0].name : '📎 Tap to choose a file')">
       </div>
@@ -1958,7 +1958,7 @@ function addVisit(){
     '<input type="file" id="v-photo-'+id+'-file" accept="image/*" capture="environment" onchange="previewPhoto(this,\'v-photo-'+id+'\',\'r\')"></div>'+
 
     '<div class="field"><label>Client feedback<span class="req">*</span></label>'+
-    '<textarea id="v-feedback-'+id+'" minlength="50" placeholder="Any expected feedback or notes for this visit... (minimum 50 characters)" style="min-height:60px"></textarea></div>';
+    '<textarea id="v-feedback-'+id+'" minlength="30" placeholder="Any expected feedback or notes for this visit... (minimum 30 characters)" style="min-height:60px"></textarea></div>';
   c.appendChild(d);
   calcProgress('r');
 }
