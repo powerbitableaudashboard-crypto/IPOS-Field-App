@@ -717,7 +717,7 @@ input[type=file]{display:none}
         <select id="d-req-devicetype"><option value="H10">H10</option></select>
       </div>
       <div class="field"><label for="d-req-email">Send request to<span class="req">*</span></label>
-        <select id="d-req-email" onchange="renderCcOptions()" onfocus="if(!deviceRequestRecipients.length) loadRecipientsForTrainer();"><option value="">Select recipient…</option></select>
+        <select id="d-req-email" onchange="renderCcOptions()"><option value="">Select recipient…</option></select>
       </div>
       <div class="field"><label>CC <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional, tap to select — multiple allowed)</span></label>
         <div id="d-req-cc-list" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:220px;overflow-y:auto;font-size:13px;color:var(--text-m)">No recipients configured yet.</div>
@@ -1400,7 +1400,7 @@ input[type=file]{display:none}
 </div>
 
 <script>
-var APPS_SCRIPT_URL =  'https://script.google.com/macros/s/AKfycbwYRvjog8-EkvKe2FTM5HaKW567p-kboqnGtcUydwkCThTzCr0LK2WtCHNu3RyDM2Qd/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGO_3aw2o5g7UMxBJnZEYxjh2Lt9rOnA0nM0ZRNLWpF-TPE_psWqONiQACqw0LCff9/exec';
 
 // ── AUTH TOKEN INJECTION ────────────────────────────────────
 // The backend now verifies WHO is calling, not just which email a
@@ -1423,89 +1423,32 @@ var APPS_SCRIPT_URL =  'https://script.google.com/macros/s/AKfycbwYRvjog8-EkvKe2
 // it's what hands out the token in the first place).
 (function(){
   var _origFetch = window.fetch;
-
-  // ── Reliability layer for GET requests to the Apps Script backend ──
-  // Apps Script sometimes answers a request with an HTML error page, a
-  // 5xx, or drops it entirely (cold start, many requests at once on a
-  // slow mobile connection). Every screen used to show "Failed to
-  // load" on the first such hiccup and force a manual page refresh.
-  // Now GETs to the backend (a) run at most 3 at a time instead of all
-  // at once, and (b) are retried automatically up to 2 times. POSTs are
-  // NEVER retried here, so a submission can't be sent twice.
-  var MAX_CONCURRENT_GETS = 3;
-  var MAX_RETRIES = 2;
-  var activeGets = 0;
-  var waiting = [];
-
-  function takeSlot(){
-    return new Promise(function(resolve){
-      if (activeGets < MAX_CONCURRENT_GETS) { activeGets++; resolve(); }
-      else { waiting.push(resolve); }
-    });
-  }
-  function freeSlot(){
-    var next = waiting.shift();
-    if (next) { next(); } else { activeGets--; }
-  }
-  function pause(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
-
-  function looksBroken(res){
-    if (!res) return true;
-    if (!res.ok) return true;
-    var ct = '';
-    try { ct = (res.headers && res.headers.get('content-type')) || ''; } catch(e){}
-    return ct.indexOf('text/html') !== -1;   // backend always replies JSON; HTML = Google error page
-  }
-
-  function getWithRetry(input, init, attempt){
-    return _origFetch.call(window, input, init).then(function(res){
-      if (looksBroken(res) && attempt < MAX_RETRIES) {
-        return pause(700 * (attempt + 1)).then(function(){ return getWithRetry(input, init, attempt + 1); });
-      }
-      return res;
-    }, function(err){
-      if (attempt < MAX_RETRIES) {
-        return pause(700 * (attempt + 1)).then(function(){ return getWithRetry(input, init, attempt + 1); });
-      }
-      throw err;
-    });
-  }
-
   window.fetch = function(input, init){
-    var isBackendGet = false;
     try {
       var urlStr = (typeof input === 'string') ? input : (input && input.url) || '';
-      if (urlStr.indexOf(APPS_SCRIPT_URL) === 0) {
+      if (urlStr.indexOf(APPS_SCRIPT_URL) === 0 && typeof session !== 'undefined' && session && session.authToken) {
         var isPost = init && init.method && String(init.method).toUpperCase() === 'POST';
-        if (typeof session !== 'undefined' && session && session.authToken) {
-          if (isPost && init && typeof init.body === 'string') {
-            try {
-              var bodyObj = JSON.parse(init.body);
-              if (bodyObj && bodyObj.authToken === undefined) {
-                bodyObj.authToken = session.authToken;
-                init.body = JSON.stringify(bodyObj);
-              }
-            } catch(parseErr) {
-              // Body wasn't JSON — never let that break the real request.
+        if (isPost && init && typeof init.body === 'string') {
+          try {
+            var bodyObj = JSON.parse(init.body);
+            if (bodyObj && bodyObj.authToken === undefined) {
+              bodyObj.authToken = session.authToken;
+              init.body = JSON.stringify(bodyObj);
             }
-          } else if (!isPost && urlStr.indexOf('token=') === -1) {
-            var sep = urlStr.indexOf('?') === -1 ? '?' : '&';
-            input = urlStr + sep + 'token=' + encodeURIComponent(session.authToken);
+          } catch(parseErr) {
+            // Body wasn't JSON — shouldn't happen for this backend, but
+            // never let that break the real request.
           }
+        } else if (!isPost && urlStr.indexOf('token=') === -1) {
+          var sep = urlStr.indexOf('?') === -1 ? '?' : '&';
+          input = urlStr + sep + 'token=' + encodeURIComponent(session.authToken);
         }
-        isBackendGet = !isPost;
       }
     } catch(e) {
       // A bug in this wrapper should never take down a real request —
       // fall through and send it exactly as the caller built it.
     }
-
-    if (!isBackendGet) return _origFetch.call(this, input, init);
-
-    return takeSlot().then(function(){
-      return getWithRetry(input, init, 0);
-    }).then(function(res){ freeSlot(); return res; },
-            function(err){ freeSlot(); throw err; });
+    return _origFetch.call(this, input, init);
   };
 })();
 
@@ -1984,7 +1927,7 @@ function addVisit(){
     '<div class="field"><label>Shop Name<span class="req">*</span></label>'+
     '<input type="text" id="v-name-'+id+'" placeholder="Shop name" oninput="calcProgress(\'r\')"></div>'+
 
-    '<div class="field"><label>Location<span class="req">*</span></label><input type="text" id="v-loc-'+id+'" minlength="4" placeholder="Centers/Town" oninput="calcProgress(\'r\')"></div>'+
+    '<div class="field"><label>Location<span class="req">*</span></label><input type="text" id="v-loc-'+id+'" placeholder="Centers/Town" oninput="calcProgress(\'r\')"></div>'+
 
     '<div class="field"><label>Shop owner phone number<span class="req">*</span></label>'+
     '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" inputmode="tel" pattern="^(\\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress(\'r\')"></div>'+
@@ -1997,7 +1940,7 @@ function addVisit(){
     '<input type="file" id="v-photo-'+id+'-file" accept="image/*" capture="environment" onchange="previewPhoto(this,\'v-photo-'+id+'\',\'r\')"></div>'+
 
     '<div class="field"><label>Client feedback<span class="req">*</span></label>'+
-    '<textarea id="v-feedback-'+id+'" minlength="30" placeholder="Any expected feedback or notes for this visit... (minimum 30 characters)" style="min-height:60px"></textarea></div>';
+    '<textarea id="v-feedback-'+id+'" minlength="50" placeholder="Any expected feedback or notes for this visit... (minimum 50 characters)" style="min-height:60px"></textarea></div>';
   c.appendChild(d);
   calcProgress('r');
 }
@@ -2579,7 +2522,7 @@ function openMyVisits(){
   var url = APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent('Route Plans') +
     '&email=' + encodeURIComponent(session.email) + '&role=Trainer';
   fetch(url).then(function(r){return r.json();}).then(function(data){
-    myVisitsData = sortNewestFirst(fillRouteGroupFields(data.rows || []), 'Submitted At');
+    myVisitsData = data.rows || [];
     statusEl.style.display='none';
     renderTodaysCheckouts();
     renderMyVisits();
@@ -2801,7 +2744,7 @@ function openMyAnalytics(){
   var visitsP = myVisitsData.length ? Promise.resolve() :
     fetch(APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent('Route Plans') + '&email=' + encodeURIComponent(session.email) + '&role=Trainer')
       .then(function(r){return r.json();})
-      .then(function(data){ myVisitsData = sortNewestFirst(fillRouteGroupFields(data.rows || []), 'Submitted At'); })
+      .then(function(data){ myVisitsData = data.rows || []; })
       .catch(function(){});
 
   var installsP = (myAnalyticsInstallsCache || allInstalledShops.length) ? Promise.resolve() :
@@ -3342,8 +3285,6 @@ function loadArchivedData(){
     });
   }).then(function(data){
     allArchivedItems = data.rows || [];
-    if(sheetKey==='idempotency') allArchivedItems = sortNewestFirst(allArchivedItems, 'Reserved At');
-    else allArchivedItems = sortNewestFirst(fillRouteGroupFields(allArchivedItems), 'Submitted At');
     statusEl.textContent = allArchivedItems.length + ' archived record(s).';
     var trainerSel = document.getElementById('arv-trainer-filter');
     var names = Array.from(new Set(allArchivedItems.map(function(r){ return r['Trainer Name']; }).filter(Boolean))).sort();
@@ -3454,71 +3395,25 @@ function fmtKsh(n){ n = Number(n)||0; return 'Ksh ' + n.toLocaleString(); }
 
 var deviceRequestRecipients = [];
 
-var RECIPIENTS_CACHE_KEY = 'ipos_recipients_cache';
-var recipientsLoadSeq = 0;
-
-function escHtml_(t){
-  return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function applyRecipients_(list){
-  deviceRequestRecipients = list || [];
-  var toOptions = deviceRequestRecipients.filter(function(r){ return r.canBeTo!==false; });
-  var sel = document.getElementById('d-req-email');
-  var current = sel.value;
-  if(!toOptions.length){
-    sel.innerHTML = '<option value="">No recipients configured — ask your manager</option>';
-  } else {
-    sel.innerHTML = '<option value="">Select recipient…</option>' + toOptions.map(function(r){
-      return '<option value="'+escHtml_(r.email)+'"'+(r.email===current?' selected':'')+'>'+escHtml_(r.name)+' ('+escHtml_(r.email)+')</option>';
-    }).join('');
-  }
-  renderCcOptions();
-}
-
-// Fetches the recipients list. Retries automatically (the Apps Script
-// backend occasionally times out or returns an HTML error page on the
-// first hit), and falls back to the last list that loaded successfully
-// so a flaky connection never leaves the trainer unable to send.
-// Returns a promise that always resolves so callers can chain loaders.
-function loadRecipientsForTrainer(attempt){
-  attempt = attempt || 1;
-  var mySeq = ++recipientsLoadSeq;
-  var sel = document.getElementById('d-req-email');
-  var listEl = document.getElementById('d-req-cc-list');
-  if(attempt === 1){
-    sel.innerHTML = '<option value="">Loading recipients…</option>';
-    if(listEl) listEl.innerHTML = 'Loading recipients…';
-  }
-  return fetch(APPS_SCRIPT_URL + '?action=getRecipients&_=' + Date.now())
-    .then(function(r){ return r.text(); })
-    .then(function(txt){
-      var data;
-      try { data = JSON.parse(txt); } catch(e){ throw new Error('bad-response'); }
-      if(data && data.status === 'error'){
-        var err = new Error(data.message || 'Could not load recipients.');
-        err.fatal = true;
-        throw err;
+function loadRecipientsForTrainer(){
+  fetch(APPS_SCRIPT_URL + '?action=getRecipients')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      deviceRequestRecipients = data.recipients || [];
+      var toOptions = deviceRequestRecipients.filter(function(r){ return r.canBeTo!==false; });
+      var sel = document.getElementById('d-req-email');
+      var current = sel.value;
+      if(!toOptions.length){
+        sel.innerHTML = '<option value="">No recipients configured — ask your manager</option>';
+      } else {
+        sel.innerHTML = '<option value="">Select recipient…</option>' + toOptions.map(function(r){
+          return '<option value="'+r.email+'"'+(r.email===current?' selected':'')+'>'+r.name+' ('+r.email+')</option>';
+        }).join('');
       }
-      if(mySeq !== recipientsLoadSeq) return;
-      var list = (data && data.recipients) || [];
-      try{ localStorage.setItem(RECIPIENTS_CACHE_KEY, JSON.stringify(list)); }catch(e){}
-      applyRecipients_(list);
+      renderCcOptions();
     })
-    .catch(function(err){
-      if(mySeq !== recipientsLoadSeq) return;
-      if(!(err && err.fatal) && attempt < 3){
-        return new Promise(function(res){ setTimeout(res, 800*attempt); })
-          .then(function(){ return loadRecipientsForTrainer(attempt+1); });
-      }
-      var cached = null;
-      try{ cached = JSON.parse(localStorage.getItem(RECIPIENTS_CACHE_KEY)||'null'); }catch(e){}
-      if(cached && cached.length){
-        applyRecipients_(cached);
-        return;
-      }
-      sel.innerHTML = '<option value="">'+escHtml_(err && err.fatal ? err.message : 'Failed to load — tap here to retry')+'</option>';
-      if(listEl) listEl.innerHTML = 'Recipients not loaded.';
+    .catch(function(){
+      document.getElementById('d-req-email').innerHTML = '<option value="">Failed to load — try again</option>';
     });
 }
 
@@ -4066,12 +3961,8 @@ function onPurposeChange(){
     var savedPhone = '';
     try{ savedPhone = localStorage.getItem('ipos_trainer_phone')||''; }catch(e){}
     if(savedPhone && !v('d-req-phone')) setVal('d-req-phone', savedPhone);
-    // Load one after another (recipients first — it's the one the trainer
-    // needs to submit). Firing all three at once made the backend
-    // drop requests on slow connections.
-    loadRecipientsForTrainer()
-      .then(function(){ loadDeviceTypesForTrainer(); return new Promise(function(r){ setTimeout(r, 300); }); })
-      .then(function(){ loadDeviceSettings(); });
+    loadDeviceSettings();
+    loadDeviceTypesForTrainer();    loadRecipientsForTrainer();
   }
 
   if(purpose==='contract'){
@@ -4353,8 +4244,7 @@ function submitDeviceRequest(){
     if(data.status==='success'){
       resetRequestId('devreq');
       document.getElementById('d-submit').style.display='none';
-      document.getElementById('d-meta').innerHTML = 'Shop: <strong>'+reqShopName+'</strong> (ID: '+reqShopId+')<br>Sent to: <strong>'+reqEmail+'</strong><br>'+reqLocation+
-        (data.message ? '<br><span style="color:#b91c1c;font-weight:600">⚠️ '+String(data.message).replace(/</g,'&lt;')+'</span>' : '');
+      document.getElementById('d-meta').innerHTML = 'Shop: <strong>'+reqShopName+'</strong> (ID: '+reqShopId+')<br>Sent to: <strong>'+reqEmail+'</strong><br>'+reqLocation;
       document.getElementById('d-success').style.display='block';
     } else {
       resetRequestId('devreq'); // confirmed error — nothing saved, safe to start fresh next attempt
@@ -4532,19 +4422,14 @@ var formSubmitLock = {};
 // the success screen, etc.), and manually re-enters + resubmits the SAME
 // shop a minute or two later — creating a real, distinct POST request that
 // the backend has no way to know is a repeat. We remember recently
-// submitted visits — keyed by shop name + phone + county + purpose +
-// feedback, so two genuinely different visits to the same shop (different
-// reason, different notes) are never confused for a repeat — in
-// localStorage, so it survives a page reload, and BLOCK a near-identical
-// resubmission outright within the window below. This is a hard stop, not
-// a warn-then-allow: the backend enforces the same rule (see Code.gs), so
-// a bypass here would just be rejected there anyway. If it's genuinely a
-// new visit, the trainer's own notes for it will naturally differ and the
-// key below won't match.
+// submitted visits (by shop name + phone + county) in localStorage — so it
+// survives a page reload — and warn once if a near-identical visit is about
+// to be submitted again soon after. A second tap confirms it's genuinely a
+// new visit and goes through normally.
 var DUPLICATE_VISIT_WINDOW_MIN = 30;
-function visitDupeKey(name, phone, county, purpose, feedback){
-  return (name||'').trim().toLowerCase()+'|'+(phone||'').trim()+'|'+(county||'').trim().toLowerCase()
-    +'|'+(purpose||'').trim().toLowerCase()+'|'+(feedback||'').trim().toLowerCase();
+var dupeVisitConfirmed = {}; // key -> true once the trainer has confirmed past the warning
+function visitDupeKey(name, phone, county){
+  return (name||'').trim().toLowerCase()+'|'+(phone||'').trim()+'|'+(county||'').trim().toLowerCase();
 }
 function getRecentVisitLog(){
   try{ return JSON.parse(localStorage.getItem('recentVisitLog')||'{}'); }catch(e){ return {}; }
@@ -4559,11 +4444,7 @@ function pruneVisitLog(log){
 }
 function recordSubmittedVisits(visits, county){
   var log = pruneVisitLog(getRecentVisitLog());
-  visits.forEach(function(vv){
-    // vv.purpose/vv.feedback for a route visit; vv.notes doubles as the
-    // "feedback" slot for an install, since installs don't collect feedback.
-    log[visitDupeKey(vv.name, vv.phone, county, vv.purpose, vv.feedback || vv.notes)] = Date.now();
-  });
+  visits.forEach(function(vv){ log[visitDupeKey(vv.name, vv.phone, county)] = Date.now(); });
   saveRecentVisitLog(log);
 }
 
@@ -4607,7 +4488,6 @@ function submitForm(type){
       }
       if(!name) missing.push('Visit '+id+' name');
       if(!loc) missing.push('Visit '+id+' location');
-      else if(loc.trim().length < 4) missing.push('Visit '+id+' — Location is too short ('+loc.trim().length+' characters). Please give at least 4 characters');
       if(!phone) missing.push('Visit '+id+' shop owner phone number');
       else if(!isValidKEPhone(phone)) missing.push('Visit '+id+' shop owner phone number (use +254712345678, 254712345678, 0712345678, or 0112345678)');
       if(!feedback) missing.push('Visit '+id+' client feedback');
@@ -4665,33 +4545,29 @@ function submitForm(type){
   if(APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL'){showErr(type,'App not configured. Contact admin.');return;}
 
   // Duplicate-visit / duplicate-install check — catches a trainer re-typing
-  // and resubmitting the SAME visit (same shop, same phone, same purpose,
-  // same feedback/notes, same county) a minute or two later because they
-  // weren't sure the first submission went through. This is a hard block,
-  // not a warning: letting a second tap push it through is exactly how the
-  // duplicate rows happened before. If it's genuinely a new, separate
-  // visit, its own feedback/notes will naturally read differently from the
-  // last one and this key won't match. The backend enforces the identical
-  // rule (see findDuplicateVisit_ in Code.gs), so this is purely a fast,
-  // friendly check — nothing bypasses the real guard on the server.
+  // and resubmitting the same shop a minute or two later because they
+  // weren't sure the first submission went through. Warn once per shop;
+  // a second tap confirms it's genuinely a new entry and goes through.
   if(type==='route'){
     var dupeLog = pruneVisitLog(getRecentVisitLog());
     var dupeMsgs = [];
     payload.visits.forEach(function(vv){
-      var dk = visitDupeKey(vv.name, vv.phone, currentCounty, vv.purpose, vv.feedback);
-      if(dupeLog[dk]){
+      var dk = visitDupeKey(vv.name, vv.phone, currentCounty);
+      if(dupeLog[dk] && !dupeVisitConfirmed[dk]){
         var minsAgo = Math.max(1, Math.round((Date.now()-dupeLog[dk])/60000));
-        dupeMsgs.push('"'+vv.name+'" with this same purpose and feedback was already submitted about '+minsAgo+' minute'+(minsAgo===1?'':'s')+' ago. If this is genuinely a separate visit, update the Client Feedback to reflect what actually happened this time.');
+        dupeMsgs.push('"'+vv.name+'" looks like a visit already submitted about '+minsAgo+' minute'+(minsAgo===1?'':'s')+' ago. Tap Submit again if this is genuinely a separate visit.');
+        dupeVisitConfirmed[dk] = true; // allow the next tap for this shop through
       }
     });
     if(dupeMsgs.length){ showErr(type, dupeMsgs.join(' ')); return; }
   }
   else if(type==='install'){
     var dupeLogI = pruneVisitLog(getRecentVisitLog());
-    var dkI = visitDupeKey(payload.shopName, payload.ownerPhone, currentCounty, payload.deviceType, payload.notes);
-    if(dupeLogI[dkI]){
+    var dkI = visitDupeKey(payload.shopName, payload.ownerPhone, currentCounty);
+    if(dupeLogI[dkI] && !dupeVisitConfirmed[dkI]){
       var minsAgoI = Math.max(1, Math.round((Date.now()-dupeLogI[dkI])/60000));
-      showErr(type, '"'+payload.shopName+'" with this same device type and notes was already submitted about '+minsAgoI+' minute'+(minsAgoI===1?'':'s')+' ago. If this is genuinely a separate visit (e.g. a real re-installation), update the Notes to reflect it.');
+      showErr(type, '"'+payload.shopName+'" looks like an installation/reactivation already submitted about '+minsAgoI+' minute'+(minsAgoI===1?'':'s')+' ago. Tap Submit again if this is genuinely a separate visit (e.g. a real re-installation).');
+      dupeVisitConfirmed[dkI] = true; // allow the next tap through
       return;
     }
   }
@@ -4934,59 +4810,6 @@ function resetInstallForm(){
   showScreen('screen-install');
 }
 
-// ── ORDERING HELPERS (newest first) ─────────────────────────────
-// Backend timestamps are "dd/MM/yyyy, HH:mm:ss" TEXT, so plain string
-// comparison is NOT chronological ("04/10/2026" < "30/09/2026").
-// These sort by the real parsed date. The server now sorts too; this is
-// the safety net so the list is right even against an older deployment.
-// Route Plans only store Date/GPS/Trainer/County/Submitted At on the
-// FIRST visit of a submission, so those are carried down first (guarded
-// by the shared timestamp inside Visit ID: V-<timestamp>-<n>).
-var ROUTE_GROUP_FIELDS = ['Date','GPS','Trainer Name','Trainer Email','County','Submitted At'];
-function routeBatchKey(r){
-  var p = String((r && r['Visit ID']) || '').split('-');
-  return p.length >= 3 ? p[1] : '';
-}
-// Owner row is found by the shared Visit ID timestamp, so it works
-// whichever order the rows arrive in. Rows with no Visit ID (very old
-// data) fall back to carrying down from the nearest owner row above.
-function fillRouteGroupFields(rows){
-  if(!rows || !rows.length) return rows || [];
-  var out = rows.map(function(r){ return Object.assign({}, r); });
-  var owners = {};
-  out.forEach(function(r){
-    var key = routeBatchKey(r);
-    if(key && String(r['Trainer Email'] || '').trim() !== '') owners[key] = r;
-  });
-  var carry = null;
-  out.forEach(function(r){
-    var hasOwner = String(r['Trainer Email'] || '').trim() !== '';
-    var key = routeBatchKey(r);
-    var src = null;
-    if(hasOwner){ carry = r; return; }
-    if(key && owners[key]) src = owners[key];
-    else if(!key && carry) src = carry;
-    if(!src) return;
-    ROUTE_GROUP_FIELDS.forEach(function(k){
-      if((r[k] == null || String(r[k]).trim() === '') && src[k] != null) r[k] = src[k];
-    });
-  });
-  return out;
-}
-function sortNewestFirst(rows, field){
-  if(!rows || rows.length < 2) return rows || [];
-  var w = rows.map(function(r, i){
-    var d = parseAppDate(r[field]);
-    return { r:r, t: d ? d.getTime() : 0, v: Number(r['Visit#']) || 0, i:i };
-  });
-  w.sort(function(a, b){
-    if(b.t !== a.t) return b.t - a.t;
-    if(a.v !== b.v) return a.v - b.v;
-    return a.i - b.i;
-  });
-  return w.map(function(x){ return x.r; });
-}
-
 // ── MANAGER DASHBOARD ───────────────────────────────────────────
 var dashFilter = 'PENDING';
 var dashFormType = 'install';
@@ -5041,15 +4864,7 @@ function setFormType(type){
   document.getElementById('dash-county-filter').value='';
   var showRegionMgr = session.role==='Admin' && (type==='install' || type==='devicepay' || type==='survey');
   document.getElementById('dash-region-manager-wrap').style.display = showRegionMgr ? 'grid' : 'none';
-  if(showRegionMgr){
-    populateRegionManagerFilters();
-    loadAreaManagers(function(){
-      var rs=document.getElementById('dash-region-filter'), ms=document.getElementById('dash-manager-filter');
-      var rv=rs?rs.value:'', mv=ms?ms.value:'';
-      populateRegionManagerFilters();
-      if(rs) rs.value=rv; if(ms) ms.value=mv;
-    });
-  }
+  if(showRegionMgr) populateRegionManagerFilters();
   document.getElementById('dash-region-filter').value='';
   document.getElementById('dash-manager-filter').value='';
   document.getElementById('dash-range-filter').value='all';
@@ -5089,9 +4904,6 @@ function loadDashboard(){
     if(dashFormType==='install') dashAllItems = data.installs || [];
     else if(dashFormType==='users') dashAllItems = data.users || [];
     else dashAllItems = data.rows || [];
-    if(dashFormType==='route') dashAllItems = fillRouteGroupFields(dashAllItems);
-    if(dashFormType==='install') dashAllItems = sortNewestFirst(dashAllItems, 'submittedAt');
-    else if(dashFormType!=='users') dashAllItems = sortNewestFirst(dashAllItems, 'Submitted At');
     if(dashFormType==='install') anInstallsCache = dashAllItems; // keep analytics' installs cache fresh whenever this loads
     anFilledItemsCache = null; // source rows changed — invalidate the forward-fill cache used by analytics
     if(dashFormType!=='users') populateTrainerFilter();
@@ -5150,12 +4962,12 @@ function dashRegionManagerAllowed(county){
   var region = regionEl ? regionEl.value : '';
   var manager = managerEl ? managerEl.value : '';
   if(region){
-    if(region==='__unmapped__'){ if(anRegionOf(county)) return false; }
-    else if(anRegionOf(county) !== region) return false;
+    if(region==='__unmapped__'){ if(AN_COUNTY_TO_REGION[county]) return false; }
+    else if(AN_COUNTY_TO_REGION[county] !== region) return false;
   }
   if(manager){
-    if(manager==='__unmapped__'){ if(anManagerOf(county)) return false; }
-    else if(anManagerOf(county) !== manager) return false;
+    if(manager==='__unmapped__'){ if(AN_COUNTY_TO_MANAGER[county]) return false; }
+    else if(AN_COUNTY_TO_MANAGER[county] !== manager) return false;
   }
   return true;
 }
@@ -5897,76 +5709,18 @@ var INSTALL_PURPOSE_LABEL = 'installation or reactivation';
 // Area Manager filters in analytics — kept as a small static config
 // here since there's no backend endpoint exposing this sheet yet.
 // Update this list if a manager's county coverage or region changes.
-// Area Manager <-> Region <-> County coverage. The source of truth is the
-// "Regions" sheet in the hub spreadsheet (served by ?action=getAreaManagers),
-// so adding a manager or editing their counties there is all that is needed.
-// The list below is only an offline FALLBACK used until/unless that request
-// succeeds. County names are compared in a normalised form (case, spaces,
-// punctuation ignored, plus a few known spelling aliases) so "Bungoma" /
-// "Bugoma" / "Homa Bay" / "Homabay" all match.
-var LEGACY_REGION_LABELS = { 'philip sam':'Western,Nyanza&N.Rift', 'ben a':'Nyanza&S.Rift' };
 var AREA_MANAGERS = [
-  { name:'Philip Sam', email:'', region:'Western,Nyanza&N.Rift',
-    counties:['Kisumu','Siaya','Busia','Kakamega','Bungoma','Uasin Gishu','Trans-Nzoia','Elgeyo-Marakwet'] },
-  { name:'Ben A', email:'', region:'Nyanza&S.Rift',
-    counties:['Kericho','Bomet','Vihiga','Migori','Homabay','Kisii','Nyamira','Nandi'] },
-  { name:'Maende', email:'', region:'Maende Region',
-    counties:['Baringo','Laikipia',"Murang'a",'Nairobi','Nakuru','Narok','Nyandarua','Nyeri'] },
-  { name:'Dan Ndoro', email:'', region:'Dan Ndoro Region',
-    counties:['Embu','Isiolo','Kajiado','Kiambu','Kilifi','Kirinyaga','Kitui','Kwale','Lamu','Machakos','Makueni','Marsabit','Meru','Mombasa','Taita-Taveta','Tana River','Tharaka-Nithi'] }
+  { name:'Philip Sam', email:'philipowino47@gmail.com', region:'Western,Nyanza&N.Rift',
+    counties:['Kisumu','Siaya','Busia','Kakamega','Bugoma','Uasin Gishu','Trans-Nzoia','Elgeyo-Marakwet'] },
+  { name:'Ben A', email:'awinobenard91@gmail.com', region:'Nyanza&S.Rift',
+    counties:['Kericho','Bomet','Vihiga','Migori','Homabay','Kisii','Nyamira','Nandi'] }
 ];
-var AN_COUNTY_ALIASES = { 'bugoma':'bungoma', 'homabay':'homabay', 'homabaycounty':'homabay', 'muranga':'muranga', 'taitataveta':'taitataveta', 'transnzoia':'transnzoia', 'elgeyomarakwet':'elgeyomarakwet', 'tharakanithi':'tharakanithi', 'nairobicity':'nairobi' };
-function anCountyKey(c){
-  var k = String(c==null?'':c).toLowerCase().replace(/[^a-z0-9]/g,'');
-  k = k.replace(/county$/,'');
-  return AN_COUNTY_ALIASES[k] || k;
-}
-var AN_COUNTY_TO_REGION = {};   // normalised county key -> region label
-var AN_COUNTY_TO_MANAGER = {};  // normalised county key -> manager name
-var AN_COUNTY_DISPLAY = {};     // normalised county key -> pretty county name
-function anRegionOf(county){ return AN_COUNTY_TO_REGION[anCountyKey(county)]; }
-function anManagerOf(county){ return AN_COUNTY_TO_MANAGER[anCountyKey(county)]; }
-function rebuildAreaManagerMaps(){
-  AN_COUNTY_TO_REGION = {}; AN_COUNTY_TO_MANAGER = {}; AN_COUNTY_DISPLAY = {};
-  AREA_MANAGERS.forEach(function(m){
-    (m.counties||[]).forEach(function(c){
-      var k = anCountyKey(c); if(!k) return;
-      AN_COUNTY_TO_REGION[k] = m.region; AN_COUNTY_TO_MANAGER[k] = m.name;
-      if(!AN_COUNTY_DISPLAY[k]) AN_COUNTY_DISPLAY[k] = String(c).trim();
-    });
-  });
-}
-rebuildAreaManagerMaps();
+var AN_COUNTY_TO_REGION = {};
+var AN_COUNTY_TO_MANAGER = {};
+AREA_MANAGERS.forEach(function(m){
+  m.counties.forEach(function(c){ AN_COUNTY_TO_REGION[c] = m.region; AN_COUNTY_TO_MANAGER[c] = m.name; });
+});
 
-// Loads the manager list from the backend (Admin/Manager only). Cached for
-// 5 minutes; on any failure the fallback list above stays in effect.
-var areaManagersLoadedAt = 0, areaManagersInFlight = null;
-function loadAreaManagers(cb){
-  cb = cb || function(){};
-  if(areaManagersLoadedAt && (Date.now()-areaManagersLoadedAt) < 300000){ cb(); return; }
-  if(areaManagersInFlight){ areaManagersInFlight.then(cb); return; }
-  areaManagersInFlight = fetch(APPS_SCRIPT_URL + '?action=getAreaManagers&email=' + encodeURIComponent(session.email||'') + '&role=' + encodeURIComponent(session.role||''))
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var list = (data && data.managers) || [];
-      if(list.length){
-        AREA_MANAGERS = list.map(function(m){
-          var nm = String(m.name||m.email||'').trim();
-          return {
-            name: nm,
-            email: String(m.email||'').trim(),
-            region: (m.region && String(m.region).trim()) || LEGACY_REGION_LABELS[nm.toLowerCase()] || (nm + ' Region'),
-            counties: m.counties || []
-          };
-        }).filter(function(m){ return m.name; });
-        rebuildAreaManagerMaps();
-      }
-      areaManagersLoadedAt = Date.now();
-    })
-    .catch(function(){ /* keep fallback list */ })
-    .then(function(){ areaManagersInFlight = null; });
-  areaManagersInFlight.then(cb);
-}
 var anState = { range:'month', dateFrom:'', dateTo:'', county:'', region:'', manager:'' };
 
 // True if `county` passes the current County + (Admin-only) Region /
@@ -5976,14 +5730,14 @@ var anState = { range:'month', dateFrom:'', dateTo:'', county:'', region:'', man
 // any Area Manager yet, so those visits are traceable instead of
 // silently disappearing whenever a specific region is chosen.
 function anCountyAllowed(county){
-  if(anState.county && anCountyKey(county) !== anCountyKey(anState.county)) return false;
+  if(anState.county && county !== anState.county) return false;
   if(session.role==='Admin' && anState.region){
-    if(anState.region==='__unmapped__'){ if(anRegionOf(county)) return false; }
-    else if(anRegionOf(county) !== anState.region) return false;
+    if(anState.region==='__unmapped__'){ if(AN_COUNTY_TO_REGION[county]) return false; }
+    else if(AN_COUNTY_TO_REGION[county] !== anState.region) return false;
   }
   if(session.role==='Admin' && anState.manager){
-    if(anState.manager==='__unmapped__'){ if(anManagerOf(county)) return false; }
-    else if(anManagerOf(county) !== anState.manager) return false;
+    if(anState.manager==='__unmapped__'){ if(AN_COUNTY_TO_MANAGER[county]) return false; }
+    else if(AN_COUNTY_TO_MANAGER[county] !== anState.manager) return false;
   }
   return true;
 }
@@ -6017,11 +5771,6 @@ function openEngagementAnalytics(){
 
   if(anAllTrainersCache && anInstallsCache){ renderEngagementAnalytics(); }
   else { anFetchAnalyticsData(renderEngagementAnalytics); }
-  // Pull the live manager list; re-render once it arrives so the Area
-  // Manager / Region dropdowns show everyone from the Regions sheet.
-  if(session.role==='Admin'){
-    loadAreaManagers(function(){ if(document.getElementById('an-overlay') && anAllTrainersCache && anInstallsCache) renderEngagementAnalytics(); });
-  }
 }
 
 // Fetches whatever of (registered trainers, installations) isn't already
@@ -6177,18 +5926,17 @@ function renderEngagementAnalytics(){
   // County list for the dropdown: every county seen in the data, plus
   // (Admin only) every county from the Region/Manager coverage map, so
   // Admin can pick a county that currently has zero visits too.
-  var counties = [], countySeen = {};
-  function addCounty(c){ var k=anCountyKey(c); if(!k || countySeen[k]) return; countySeen[k]=true; counties.push(String(c).trim()); }
-  sourceItems.forEach(function(r){ if(r['County']) addCounty(r['County']); });
-  if(isAdmin){ Object.keys(AN_COUNTY_DISPLAY).forEach(function(k){ addCounty(AN_COUNTY_DISPLAY[k]); }); }
+  var counties = [];
+  sourceItems.forEach(function(r){ var c=r['County']; if(c && counties.indexOf(c)===-1) counties.push(c); });
+  if(isAdmin){ Object.keys(AN_COUNTY_TO_REGION).forEach(function(c){ if(counties.indexOf(c)===-1) counties.push(c); }); }
   // Narrow further if a Region/Area Manager is already selected.
-  if(isAdmin && anState.region==='__unmapped__') counties = counties.filter(function(c){ return !anRegionOf(c); });
-  else if(isAdmin && anState.region) counties = counties.filter(function(c){ return anRegionOf(c)===anState.region; });
-  if(isAdmin && anState.manager==='__unmapped__') counties = counties.filter(function(c){ return !anManagerOf(c); });
-  else if(isAdmin && anState.manager) counties = counties.filter(function(c){ return anManagerOf(c)===anState.manager; });
+  if(isAdmin && anState.region==='__unmapped__') counties = counties.filter(function(c){ return !AN_COUNTY_TO_REGION[c]; });
+  else if(isAdmin && anState.region) counties = counties.filter(function(c){ return AN_COUNTY_TO_REGION[c]===anState.region; });
+  if(isAdmin && anState.manager==='__unmapped__') counties = counties.filter(function(c){ return !AN_COUNTY_TO_MANAGER[c]; });
+  else if(isAdmin && anState.manager) counties = counties.filter(function(c){ return AN_COUNTY_TO_MANAGER[c]===anState.manager; });
   counties.sort();
   // Selected county may no longer be valid after narrowing by region/manager.
-  if(anState.county && !counties.some(function(c){ return anCountyKey(c)===anCountyKey(anState.county); })) anState.county = '';
+  if(anState.county && counties.indexOf(anState.county)===-1) anState.county = '';
 
   var rowsInPeriod = sourceItems.filter(function(r){
     return anCountyAllowed(r['County']) && anRowInPeriod(r);
