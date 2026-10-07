@@ -120,6 +120,22 @@ body.has-motivation-banners .screen{padding-bottom:calc(3rem + 32px)}
 @media(max-width:400px){.two-col{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
 .filter-tab{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit}
 .filter-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.rt-summary{font-size:12px;color:var(--text-m);margin:2px 2px 8px}
+.rt-day{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--text);margin:14px 2px 8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.rt-day-count{font-size:11px;font-weight:600;color:var(--text-m)}
+.rt-card{padding:12px 14px}
+.rt-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.rt-shop{font-size:14px;font-weight:700;color:var(--text)}
+.rt-time{font-size:11px;color:var(--text-m);white-space:nowrap}
+.rt-meta{font-size:12px;color:var(--text-m);margin-top:3px}
+.rt-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.rt-chip{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--surface-2);color:var(--text)}
+.rt-chip-ok{background:#dcfce7;color:#166534}
+.rt-chip-warn{background:#fef3c7;color:#92400e}
+.rt-feedback{font-size:12.5px;color:var(--text);margin-top:8px;line-height:1.5}
+.rt-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+.rt-links:empty{display:none}
+.rt-link{font-size:12px;font-weight:600;color:var(--accent);text-decoration:none}
 .dash-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
 .dash-item-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
 .dash-item-shop{font-size:14px;font-weight:600;color:var(--text)}
@@ -438,6 +454,7 @@ input[type=file]{display:none}
           <select id="dash-range-filter" onchange="onRangeFilterChange()">
             <option value="all">All Time</option>
             <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
             <option value="week">This Week</option>
             <option value="month">This Month</option>
             <option value="year">This Year</option>
@@ -1400,7 +1417,7 @@ input[type=file]{display:none}
 </div>
 
 <script>
-var APPS_SCRIPT_URL ='https://script.google.com/macros/s/AKfycbwYRvjog8-EkvKe2FTM5HaKW567p-kboqnGtcUydwkCThTzCr0LK2WtCHNu3RyDM2Qd/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYRvjog8-EkvKe2FTM5HaKW567p-kboqnGtcUydwkCThTzCr0LK2WtCHNu3RyDM2Qd/exec';
 
 // ── AUTH TOKEN INJECTION ────────────────────────────────────
 // The backend now verifies WHO is calling, not just which email a
@@ -4867,7 +4884,7 @@ function setFormType(type){
   if(showRegionMgr) populateRegionManagerFilters();
   document.getElementById('dash-region-filter').value='';
   document.getElementById('dash-manager-filter').value='';
-  document.getElementById('dash-range-filter').value='all';
+  document.getElementById('dash-range-filter').value = (type==='route') ? 'today' : 'all';
   document.getElementById('dash-custom-range-wrap').style.display='none';
   document.getElementById('dash-date-from').value='';
   document.getElementById('dash-date-to').value='';
@@ -5030,6 +5047,10 @@ function dateMatches(itemDateStr){
   var now = new Date();
   if(range==='today'){
     return d.toDateString() === now.toDateString();
+  }
+  if(range==='yesterday'){
+    var yest = new Date(now); yest.setDate(now.getDate()-1);
+    return d.toDateString() === yest.toDateString();
   }
   if(range==='week'){
     var startOfWeek = new Date(now); startOfWeek.setDate(now.getDate()-now.getDay()); startOfWeek.setHours(0,0,0,0);
@@ -5223,11 +5244,18 @@ function paymentStatusDot(row){
   return '';
 }
 
+// Route Plans only stores Date/Trainer/County/GPS on the FIRST visit of each
+// submission, so later visits have blank values and would be dropped by the
+// date/trainer filters. Forward-fill them before filtering.
+function dashSourceItems(){
+  return dashFormType==='route' ? anForwardFilledItems() : dashAllItems;
+}
+
 function getFilteredDashItems(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
   var shopFilter = dashFormType==='devicepay' ? (document.getElementById('dash-shop-filter').value||'').trim().toLowerCase() : '';
-  return dashAllItems.filter(function(x){
+  return dashSourceItems().filter(function(x){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
       dashRegionManagerAllowed(x['County']) &&
@@ -5236,11 +5264,99 @@ function getFilteredDashItems(){
   });
 }
 
+// ── CLIENTS ENGAGEMENT TRACKER: revamped visit cards, grouped by day ──
+function dashDayKey(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dashDayLabel(d){
+  var now = new Date(), y = new Date(now); y.setDate(now.getDate()-1);
+  var base = d.toLocaleDateString('en-GB',{weekday:'short', day:'numeric', month:'short', year:'numeric'});
+  if(d.toDateString()===now.toDateString()) return 'Today · '+base;
+  if(d.toDateString()===y.toDateString()) return 'Yesterday · '+base;
+  return base;
+}
+function dashTimeLabel(d){
+  return d.toLocaleTimeString('en-GB',{hour:'2-digit', minute:'2-digit'});
+}
+
+function renderRouteCards(filtered, listEl){
+  var rows = filtered.map(function(r){
+    var d = parseAppDate(r['Date']);
+    return { r:r, d:d, key: d ? dashDayKey(d) : '0000-00-00', t: d ? d.getTime() : 0 };
+  });
+  // Newest day first; inside a day, newest route first, visits in order (1, 2, 3…)
+  rows.sort(function(a,b){
+    if(a.key!==b.key) return a.key < b.key ? 1 : -1;
+    if(a.t!==b.t) return b.t - a.t;
+    return (parseInt(a.r['Visit#'],10)||0) - (parseInt(b.r['Visit#'],10)||0);
+  });
+
+  var counts = {};
+  rows.forEach(function(x){ counts[x.key] = (counts[x.key]||0)+1; });
+
+  if(rows.length){
+    var sum = document.createElement('div');
+    sum.className = 'rt-summary';
+    var trainers = {};
+    rows.forEach(function(x){ var n=x.r['Trainer Name']; if(n) trainers[n]=1; });
+    sum.innerHTML = '<strong>'+rows.length+'</strong> visit'+(rows.length===1?'':'s')+' · <strong>'+Object.keys(trainers).length+'</strong> trainer'+(Object.keys(trainers).length===1?'':'s');
+    listEl.appendChild(sum);
+  }
+
+  var lastKey = null;
+  rows.forEach(function(x){
+    var r = x.r;
+    if(x.key !== lastKey){
+      lastKey = x.key;
+      var head = document.createElement('div');
+      head.className = 'rt-day';
+      head.innerHTML = '<span>'+(x.d ? escapeHtml(dashDayLabel(x.d)) : 'Date unknown')+'</span><span class="rt-day-count">'+counts[x.key]+' visit'+(counts[x.key]===1?'':'s')+'</span>';
+      listEl.appendChild(head);
+    }
+
+    var gpsHtml = '';
+    var gm = String(r['GPS']||'').match(/^(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+    if(gm) gpsHtml = '<a class="rt-link" target="_blank" href="https://www.google.com/maps?q='+gm[1]+','+gm[2]+'">📍 Map</a>';
+    var photoHtml = /^https?:\/\//.test(String(r['Shop Photo URL']||''))
+      ? '<a class="rt-link" target="_blank" href="'+escapeHtml(r['Shop Photo URL'])+'">🖼 Photo</a>' : '';
+    var phone = String(r['Shop Owner Phone']||'').trim();
+    var phoneHtml = phone ? '<a class="rt-link" href="tel:'+escapeHtml(phone)+'">📞 '+escapeHtml(phone)+'</a>' : '';
+
+    var co = String(r['Check Out Time']||'').trim();
+    var coD = co ? parseAppDate(co) : null;
+    var isInstall = String(r['Purpose']||'').trim().toLowerCase()==='installation or reactivation';
+    var coHtml = co ? '<span class="rt-chip rt-chip-ok">✔ Out '+escapeHtml(coD ? dashTimeLabel(coD) : co)+'</span>'
+                    : (isInstall ? '<span class="rt-chip rt-chip-warn">Not checked out</span>' : '');
+
+    var meta = [];
+    if(r['Trainer Name']) meta.push('👤 '+escapeHtml(r['Trainer Name']));
+    if(r['County']) meta.push(escapeHtml(r['County']));
+    if(r['Location']) meta.push('📌 '+escapeHtml(r['Location']));
+
+    var div = document.createElement('div');
+    div.className = 'dash-item rt-card';
+    div.innerHTML =
+      '<div class="rt-top">' +
+        '<div class="rt-shop">'+escapeHtml(r['Shop Name']||'Visit')+'</div>' +
+        '<div class="rt-time">'+(x.d ? escapeHtml(dashTimeLabel(x.d)) : '')+(r['Visit#'] ? ' · #'+escapeHtml(r['Visit#']) : '')+'</div>' +
+      '</div>' +
+      (meta.length ? '<div class="rt-meta">'+meta.join(' · ')+'</div>' : '') +
+      '<div class="rt-chips">' +
+        (r['Purpose'] ? '<span class="rt-chip">'+escapeHtml(r['Purpose'])+'</span>' : '') + coHtml +
+      '</div>' +
+      (r['Client Feedback'] ? '<div class="rt-feedback">“'+escapeHtml(r['Client Feedback'])+'”</div>' : '') +
+      '<div class="rt-links">'+phoneHtml+gpsHtml+photoHtml+'</div>';
+    listEl.appendChild(div);
+  });
+}
+
 function renderGenericList(){
   var filtered = getFilteredDashItems();
   var listEl = document.getElementById('dash-list');
   listEl.innerHTML='';
   document.getElementById('dash-empty').style.display = filtered.length ? 'none' : 'block';
+
+  if(dashFormType==='route'){ renderRouteCards(filtered, listEl); return; }
 
   if(dashFormType==='devicepay' && filtered.length){
     var legend = document.createElement('div');
@@ -5607,7 +5723,7 @@ function exportPdfReport(opts){
 
 function getDashRangeLabel(rangeSelId, fromId, toId){
   var range = document.getElementById(rangeSelId).value;
-  var labels = {all:'All time', today:'Today', week:'This Week', month:'This Month', year:'This Year'};
+  var labels = {all:'All time', today:'Today', yesterday:'Yesterday', week:'This Week', month:'This Month', year:'This Year'};
   if(range==='custom'){
     var f=document.getElementById(fromId).value, t=document.getElementById(toId).value;
     return 'Custom range: ' + (f||'…') + ' to ' + (t||'…');
