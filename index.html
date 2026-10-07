@@ -1417,7 +1417,7 @@ input[type=file]{display:none}
 </div>
 
 <script>
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYRvjog8-EkvKe2FTM5HaKW567p-kboqnGtcUydwkCThTzCr0LK2WtCHNu3RyDM2Qd/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGO_3aw2o5g7UMxBJnZEYxjh2Lt9rOnA0nM0ZRNLWpF-TPE_psWqONiQACqw0LCff9/exec';
 
 // ── AUTH TOKEN INJECTION ────────────────────────────────────
 // The backend now verifies WHO is calling, not just which email a
@@ -4903,7 +4903,10 @@ function setDashFilter(f){
 }
 
 function loadDashboard(){
-  document.getElementById('dash-loading').style.display='block';
+  var myType = dashFormType;
+  var loadEl = document.getElementById('dash-loading');
+  loadEl.style.display='block';
+  loadEl.textContent='Loading…';
   document.getElementById('dash-empty').style.display='none';
   document.getElementById('dash-list').innerHTML='';
 
@@ -4916,19 +4919,54 @@ function loadDashboard(){
     url = APPS_SCRIPT_URL + '?action=getFormData&sheet=' + encodeURIComponent(dashSheetMap[dashFormType]) + '&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
   }
 
-  fetch(url).then(function(r){return r.json();}).then(function(data){
-    document.getElementById('dash-loading').style.display='none';
-    if(dashFormType==='install') dashAllItems = data.installs || [];
-    else if(dashFormType==='users') dashAllItems = data.users || [];
-    else dashAllItems = data.rows || [];
-    if(dashFormType==='install') anInstallsCache = dashAllItems; // keep analytics' installs cache fresh whenever this loads
-    anFilledItemsCache = null; // source rows changed — invalidate the forward-fill cache used by analytics
-    if(dashFormType!=='users') populateTrainerFilter();
-    renderDashList();
-    if(dashFormType==='install') updateBadgeCount();
-  }).catch(function(){
-    document.getElementById('dash-loading').textContent='Failed to load. Pull down to retry.';
-  });
+  function showFail(msg){
+    if(myType!==dashFormType) return;
+    loadEl.style.display='block';
+    loadEl.innerHTML = '<div style="color:#b91c1c;font-weight:600;margin-bottom:6px">Could not load</div>' +
+      '<div style="margin-bottom:10px">'+escapeHtml(msg)+'</div>' +
+      '<button class="submit-btn" style="max-width:180px;margin:0 auto" onclick="loadDashboard()">↻ Retry</button>';
+  }
+
+  var attempt = 0;
+  function fetchOnce(){
+    attempt++;
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 45000) : null;
+    return fetch(url, ctrl ? {signal:ctrl.signal} : undefined)
+      .then(function(r){ if(timer) clearTimeout(timer); return r.text(); })
+      .then(function(t){
+        try { return JSON.parse(t); }
+        catch(e){ throw new Error('The server sent an unexpected response. If you just edited the Apps Script, redeploy it as a NEW version and try again.'); }
+      });
+  }
+
+  fetchOnce()
+    .catch(function(err){ if(attempt < 2) return fetchOnce(); throw err; })
+    .then(function(data){
+      if(myType!==dashFormType) return;          // user switched tabs while loading
+      if(data && data.status==='error') throw new Error(data.message || 'The server reported an error.');
+      loadEl.style.display='none';
+      if(dashFormType==='install') dashAllItems = data.installs || [];
+      else if(dashFormType==='users') dashAllItems = data.users || [];
+      else dashAllItems = data.rows || [];
+      if(dashFormType==='install') anInstallsCache = dashAllItems;
+      anFilledItemsCache = null;
+      try {
+        if(dashFormType!=='users') populateTrainerFilter();
+        renderDashList();
+        if(dashFormType==='install') updateBadgeCount();
+      } catch(renderErr){
+        console.error('Dashboard render error:', renderErr);
+        showFail('Data loaded but could not be displayed: ' + renderErr.message);
+      }
+    })
+    .catch(function(err){
+      console.error('Dashboard load error:', err);
+      var msg = (err && err.name==='AbortError') ? 'The request timed out. Check your connection and retry.'
+              : (err && err.message==='Failed to fetch') ? 'No connection to the server. Check your internet and retry.'
+              : (err && err.message) || 'Unknown error.';
+      showFail(msg);
+    });
 }
 
 function populateTrainerFilter(){
