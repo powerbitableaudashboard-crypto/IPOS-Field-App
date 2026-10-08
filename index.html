@@ -1945,20 +1945,20 @@ function addVisit(){
     '<div class="field"><label>Shop Name<span class="req">*</span></label>'+
     '<input type="text" id="v-name-'+id+'" placeholder="Shop name" oninput="calcProgress(\'r\')"></div>'+
 
-    '<div class="field"><label>Location<span class="req">*</span></label><input type="text" id="v-loc-'+id+'" placeholder="Centers/Town" oninput="calcProgress(\'r\')"></div>'+
+        '<div class="field"><label>Location<span class="req">*</span></label><input type="text" id="v-loc-'+id+'" minlength="4" placeholder="Centers/Town (Minimum of 4 Characters)" oninput="calcProgress(\'r\')"></div>'+
 
-    '<div class="field"><label>Shop owner phone number<span class="req">*</span></label>'+
+    '<div class="field"><label>Shop Owner Phone Number<span class="req">*</span></label>'+
     '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" inputmode="tel" pattern="^(\\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress(\'r\')"></div>'+
 
-    '<div class="field"><label>Front shop picture <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>'+
+    '<div class="field"><label>Front Shop Picture <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>'+
     '<div class="photo-box" onclick="document.getElementById(\'v-photo-'+id+'-file\').click()">'+
     '<div class="photo-ph" id="v-photo-'+id+'-ph"><span class="photo-ph-icon">📸</span><span>Tap to photograph</span><small>Front of the shop</small></div>'+
     '<div class="photo-preview" id="v-photo-'+id+'-preview"><img id="v-photo-'+id+'-img" src="" alt="">'+
     '<button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto(\'v-photo-'+id+'\')">↺ Retake</button></div></div>'+
     '<input type="file" id="v-photo-'+id+'-file" accept="image/*" capture="environment" onchange="previewPhoto(this,\'v-photo-'+id+'\',\'r\')"></div>'+
 
-    '<div class="field"><label>Client feedback<span class="req">*</span></label>'+
-    '<textarea id="v-feedback-'+id+'" minlength="30" placeholder="Any expected feedback or notes for this visit... (minimum 30 characters)" style="min-height:60px"></textarea></div>';
+    '<div class="field"><label>Client Feedback<span class="req">*</span></label>'+
+    '<textarea id="v-feedback-'+id+'" minlength="30" placeholder="Any expected feedback or notes for this visit... (Minimum  of 30 Characters)" style="min-height:60px"></textarea></div>';
   c.appendChild(d);
   calcProgress('r');
 }
@@ -4505,11 +4505,12 @@ function submitForm(type){
         }
       }
       if(!name) missing.push('Visit '+id+' name');
-      if(!loc) missing.push('Visit '+id+' location');
+            if(!loc) missing.push('Visit '+id+' location');
+      else if(loc.trim().length < 4) missing.push('Visit '+id+' — Location is too short ('+loc.trim().length+' characters). Please enter at least 4 characters');
       if(!phone) missing.push('Visit '+id+' shop owner phone number');
       else if(!isValidKEPhone(phone)) missing.push('Visit '+id+' shop owner phone number (use +254712345678, 254712345678, 0712345678, or 0112345678)');
       if(!feedback) missing.push('Visit '+id+' client feedback');
-      else if(feedback.trim().length < 50) missing.push('Visit '+id+' — Client feedback is too short ('+feedback.trim().length+' characters). Please give at least 50 characters');
+      else if(feedback.trim().length <30) missing.push('Visit '+id+' — Client feedback is too short ('+feedback.trim().length+' characters). Please give at least 30 characters');
 
       var displayPurpose = (purpose==='Other' && specifyReason) ? 'Other — ' + specifyReason : purpose;
 
