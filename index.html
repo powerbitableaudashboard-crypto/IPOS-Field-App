@@ -4466,6 +4466,25 @@ function recordSubmittedVisits(visits, county){
   saveRecentVisitLog(log);
 }
 
+// ── Client Engagement cooldown: min gap between route submissions ──
+// The server enforces this too (can't be bypassed); this just gives the
+// trainer an instant, friendly message without a round trip.
+var ROUTE_COOLDOWN_MS = 5 * 60 * 1000;
+function routeCooldownKey(){ return 'ipos_last_route_' + String((session && session.email) || '').toLowerCase(); }
+function routeCooldownLeftMs(){
+  try {
+    var last = parseInt(localStorage.getItem(routeCooldownKey()), 10) || 0;
+    return Math.max(0, ROUTE_COOLDOWN_MS - (Date.now() - last));
+  } catch(e){ return 0; }
+}
+function markRouteSubmitted(){
+  try { localStorage.setItem(routeCooldownKey(), String(Date.now())); } catch(e){}
+}
+function formatCooldown(ms){
+  var sec = Math.ceil(ms/1000), m = Math.floor(sec/60), r = sec % 60;
+  return m + ':' + (r<10?'0':'') + r;
+}
+
 function submitForm(type){
   if(!session){showScreen('screen-login');return;}
   if(formSubmitLock[type]) return; // already submitting — ignore repeat clicks
@@ -4563,6 +4582,14 @@ function submitForm(type){
   if(missing.length){showErr(type,'Please complete: '+missing.join(', '));return;}
   if(APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL'){showErr(type,'App not configured. Contact admin.');return;}
 
+  if(type==='route'){
+    var cdLeft = routeCooldownLeftMs();
+    if(cdLeft > 0){
+      showErr(type, 'Please wait ' + formatCooldown(cdLeft) + ' before submitting another client engagement. Add all the shops you visited into ONE submission instead.');
+      return;
+    }
+  }
+
   // Duplicate-visit / duplicate-install check — catches a trainer re-typing
   // and resubmitting the same shop a minute or two later because they
   // weren't sure the first submission went through. Warn once per shop;
@@ -4602,7 +4629,7 @@ function submitForm(type){
     setLoading(type,false);
     if(data.status==='success'){
       resetRequestId(type); // confirmed saved — next click is a brand new submission
-      if(type==='route'){ recordSubmittedVisits(payload.visits, payload.county); }
+      if(type==='route'){ recordSubmittedVisits(payload.visits, payload.county); markRouteSubmitted(); }
       if(type==='install'){
         recordSubmittedVisits([{name:payload.shopName, phone:payload.ownerPhone}], payload.county);
         startApprovalWait(payload);
