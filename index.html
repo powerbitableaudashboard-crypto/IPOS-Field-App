@@ -4961,7 +4961,7 @@ function setFormType(type){
   document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
   document.getElementById('dash-trainer-filter').value='';
   document.getElementById('dash-county-filter').value='';
-  var showRegionMgr = (session.role==='Admin' || isViewerRole()) && (type==='install' || type==='devicepay' || type==='survey');
+  var showRegionMgr = (session.role==='Admin' || isViewerRole()) && (type==='install' || type==='devicepay' || type==='survey' || type==='route');
   document.getElementById('dash-region-manager-wrap').style.display = showRegionMgr ? 'grid' : 'none';
   if(showRegionMgr) populateRegionManagerFilters();
   document.getElementById('dash-region-filter').value='';
@@ -5070,7 +5070,7 @@ function populateTrainerFilter(){
 }
 
 // Admin-only Region / Area Manager filters for the Installation, Device
-// Payment Report, and Shop Survey list views — driven by the same
+// Payment Report, Shop Survey and Clients Engagement list views — driven by the same
 // static AREA_MANAGERS coverage map used in Engagement Analytics.
 function populateRegionManagerFilters(){
   var regionSel = document.getElementById('dash-region-filter');
