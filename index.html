@@ -492,6 +492,8 @@ input[type=file]{display:none}
             <option value="Trainer">Trainer</option>
             <option value="Manager">Manager</option>
             <option value="Admin">Admin</option>
+            <option value="Customer Care">Customer Care (view &amp; export Device Reports only)</option>
+            <option value="HR">HR (view &amp; export Device Reports only)</option>
           </select></div>
         <div class="field"><label>Counties <span style="font-size:11px;color:#9ca3af;font-weight:400">(trainers only — tick every county this trainer covers)</span></label>
           <div class="uf-county-box" id="uf-county-box"></div>
@@ -1663,7 +1665,7 @@ var MANAGER_MOTIVATION_MESSAGES = {
 };
 
 function todaysMotivationSet(){
-  var isManagerOrAdmin = session && (session.role === 'Manager' || session.role === 'Admin');
+  var isManagerOrAdmin = session && (session.role === 'Manager' || session.role === 'Admin' || isViewerRole());
   var pool = isManagerOrAdmin ? MANAGER_MOTIVATION_MESSAGES : MOTIVATION_MESSAGES;
   return pool[new Date().getDay()] || pool[1];
 }
@@ -1680,7 +1682,7 @@ var TRAINER_BANNER_COLORS = ['#fde047','#5eead4','#f472b6','#fb923c','#a5f3fc','
 var MANAGER_BANNER_COLORS = ['#facc15','#93c5fd','#fca5a5','#c4b5fd','#86efac','#fdba74'];
 
 function motivationColors(){
-  var isManagerOrAdmin = session && (session.role === 'Manager' || session.role === 'Admin');
+  var isManagerOrAdmin = session && (session.role === 'Manager' || session.role === 'Admin' || isViewerRole());
   return isManagerOrAdmin ? MANAGER_BANNER_COLORS : TRAINER_BANNER_COLORS;
 }
 
@@ -1734,11 +1736,19 @@ function doLogout() {
   showScreen('screen-login');
 }
 
+// ── VIEW-ONLY ROLES (Customer Care, HR) ─────────────────────────
+// They can open ONLY the Device Payment Reports (view, filter, export).
+// The server enforces the same rule; this just hides the rest.
+function isViewerRole(){
+  return !!(session && (session.role === 'Customer Care' || session.role === 'HR'));
+}
+
 // ── HOME ─────────────────────────────────────────────────────
 function goHome() {
   if(!session){ showScreen('screen-login'); return; }
   var now = new Date();
-  var isManagerOrAdmin = session.role === 'Manager' || session.role === 'Admin';
+  var isViewer = isViewerRole();
+  var isManagerOrAdmin = session.role === 'Manager' || session.role === 'Admin' || isViewer;
   document.getElementById('home-welcome').textContent = 'Good ' + getTimeOfDay() + ', ' + session.name.split(' ')[0] + '!';
   document.getElementById('home-date-str').textContent = now.toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   document.getElementById('home-county-chip').textContent = '📍 ' + (session.county || (isManagerOrAdmin ? 'All Regions' : 'Unknown'));
@@ -1748,12 +1758,12 @@ function goHome() {
   document.getElementById('home-header-sub').textContent = session.county ? session.county+' County' : 'Field data collection';
 
   document.getElementById('dashboard-card-wrap').style.display = isManagerOrAdmin ? 'block' : 'none';
-  document.getElementById('notif-bell').style.display = isManagerOrAdmin ? 'flex' : 'none';
+  document.getElementById('notif-bell').style.display = (isManagerOrAdmin && !isViewer) ? 'flex' : 'none';
   // Managers/Admin only use the dashboard to view data — they don't fill trainer forms
   document.getElementById('home-forms-grid').style.display = isManagerOrAdmin ? 'none' : 'grid';
   document.getElementById('home-bottom-tabbar').style.display = isManagerOrAdmin ? 'none' : 'flex';
   document.querySelector('#screen-home .home-body').classList.toggle('has-tabbar', !isManagerOrAdmin);
-  if(isManagerOrAdmin) refreshPendingBadge();
+  if(isManagerOrAdmin && !isViewer) refreshPendingBadge();
   startMotivationBanners(); // shown for trainers and managers/admins alike, each with their own tailored message set
 
   document.querySelectorAll('#home-bottom-tabbar .bottom-tab').forEach(function(b){ b.classList.remove('active'); });
@@ -1987,6 +1997,7 @@ function onVisitPurposeChange(id){
 var allShops = [];
 
 function openManageShops(){
+  if(isViewerRole()) return;
   showScreen('screen-shops');
   var statusEl = document.getElementById('shops-status');
   statusEl.textContent='Loading…';
@@ -3204,6 +3215,7 @@ var deviceAmountDefaults = { cash:'', credit:'', depositAmount:'', facilityAmoun
 var allArchivedItems = [];
 
 function openArchiveManager(){
+  if(isViewerRole()) return;
   showScreen('screen-archive-manager');
   var isAdmin = session.role==='Admin';
   document.getElementById('arc-sheet-idem-wrap').style.display = isAdmin ? 'flex' : 'none';
@@ -3565,6 +3577,7 @@ function autoFillDeviceRequestEndDate(){
 }
 
 function openDeviceSettings(){
+  if(isViewerRole()) return;
   showScreen('screen-settings');
   var cashStatus = document.getElementById('set-status-cash');
   var creditStatus = document.getElementById('set-status-credit');
@@ -4480,6 +4493,12 @@ function routeCooldownLeftMs(){
 function markRouteSubmitted(){
   try { localStorage.setItem(routeCooldownKey(), String(Date.now())); } catch(e){}
 }
+// Same shop can't be submitted twice within 12 hours (server enforces this too).
+// Purposes (lowercase) listed here are allowed to repeat — keep in sync with
+// DUPLICATE_SHOP_EXEMPT_PURPOSES in Code.gs.
+var DUP_EXEMPT_PURPOSES = [];
+function normShopName(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+
 function formatCooldown(ms){
   var sec = Math.ceil(ms/1000), m = Math.floor(sec/60), r = sec % 60;
   return m + ':' + (r<10?'0':'') + r;
@@ -4590,6 +4609,22 @@ function submitForm(type){
     }
   }
 
+  // Same shop listed twice in this one submission
+  if(type==='route'){
+    var inFormSeen = {}, inFormDupes = [];
+    payload.visits.forEach(function(vv){
+      var pu = String(vv.purpose||'').trim().toLowerCase();
+      var nn = normShopName(vv.name);
+      if(!nn || DUP_EXEMPT_PURPOSES.indexOf(pu)!==-1) return;
+      if(inFormSeen[nn]) inFormDupes.push('"'+vv.name+'"');
+      inFormSeen[nn] = true;
+    });
+    if(inFormDupes.length){
+      showErr(type, 'Shop already exists in this form: ' + inFormDupes.join(', ') + ' is listed more than once. Remove the duplicate and submit again.');
+      return;
+    }
+  }
+
   // Duplicate-visit / duplicate-install check — catches a trainer re-typing
   // and resubmitting the same shop a minute or two later because they
   // weren't sure the first submission went through. Warn once per shop;
@@ -4599,10 +4634,9 @@ function submitForm(type){
     var dupeMsgs = [];
     payload.visits.forEach(function(vv){
       var dk = visitDupeKey(vv.name, vv.phone, currentCounty);
-      if(dupeLog[dk] && !dupeVisitConfirmed[dk]){
+      if(dupeLog[dk]){
         var minsAgo = Math.max(1, Math.round((Date.now()-dupeLog[dk])/60000));
-        dupeMsgs.push('"'+vv.name+'" looks like a visit already submitted about '+minsAgo+' minute'+(minsAgo===1?'':'s')+' ago. Tap Submit again if this is genuinely a separate visit.');
-        dupeVisitConfirmed[dk] = true; // allow the next tap for this shop through
+        dupeMsgs.push('Shop already exists: "'+vv.name+'" was already submitted about '+minsAgo+' minute'+(minsAgo===1?'':'s')+' ago. The same shop can\'t be submitted twice within 12 hours.');
       }
     });
     if(dupeMsgs.length){ showErr(type, dupeMsgs.join(' ')); return; }
@@ -4868,9 +4902,27 @@ function openDashboard(){
   backToDashMenu();
   // Archive Data is Manager/Admin only; Idempotency Keys within it is Admin-only (technical/internal sheet).
   document.getElementById('dash-archive-card').style.display = (session.role==='Admin' || session.role==='Manager') ? 'block' : 'none';
+  applyViewerRestrictions();
+}
+
+// Customer Care / HR: show only the Device Payment Reports + Signed Contracts cards, and the Home/Payments tabs.
+function applyViewerRestrictions(){
+  var v = isViewerRole();
+  document.querySelectorAll('#dash-menu .form-card').forEach(function(c){
+    var oc = c.getAttribute('onclick')||'';
+    var keep = oc.indexOf("setFormType('devicepay')") !== -1 || oc.indexOf("openSignedContracts()") !== -1;
+    if(v) c.style.display = keep ? '' : 'none';
+    else if(c.id !== 'dash-archive-card') c.style.display = '';
+  });
+  ['tab-install','tab-shops','tab-users'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.style.display = v ? 'none' : '';
+  });
+  var gear = document.querySelector('#screen-dashboard .app-header .header-icon-btn');
+  if(gear) gear.style.display = v ? 'none' : '';
 }
 
 function dashTabGo(tab){
+  if(isViewerRole() && tab!=='home' && tab!=='payments') return;
   document.querySelectorAll('.bottom-tab').forEach(function(b){ b.classList.remove('active'); });
   var btn = document.getElementById('tab-'+tab);
   if(btn) btn.classList.add('active');
@@ -4892,6 +4944,7 @@ function backToDashMenu(){
 }
 
 function setFormType(type){
+  if(isViewerRole() && type!=='devicepay') return;
   dashFormType = type;
   document.querySelectorAll('.bottom-tab').forEach(function(b){ b.classList.remove('active'); });
   var tabMap = { install:'tab-install', devicepay:'tab-payments', users:'tab-users' };
@@ -4908,7 +4961,7 @@ function setFormType(type){
   document.getElementById('add-user-btn').style.display = (type==='users') ? 'block' : 'none';
   document.getElementById('dash-trainer-filter').value='';
   document.getElementById('dash-county-filter').value='';
-  var showRegionMgr = session.role==='Admin' && (type==='install' || type==='devicepay' || type==='survey');
+  var showRegionMgr = (session.role==='Admin' || isViewerRole()) && (type==='install' || type==='devicepay' || type==='survey');
   document.getElementById('dash-region-manager-wrap').style.display = showRegionMgr ? 'grid' : 'none';
   if(showRegionMgr) populateRegionManagerFilters();
   document.getElementById('dash-region-filter').value='';
@@ -4918,7 +4971,7 @@ function setFormType(type){
   document.getElementById('dash-date-from').value='';
   document.getElementById('dash-date-to').value='';
   closeUserForm();
-  document.getElementById('dash-sub').textContent = dashLabels[type] + ' — ' + (session.role==='Admin' ? 'All counties' : (session.county||'') + ' region');
+  document.getElementById('dash-sub').textContent = dashLabels[type] + ' — ' + ((session.role==='Admin' || isViewerRole()) ? 'All counties' : (session.county||'') + ' region');
   loadDashboard();
 }
 
