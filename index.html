@@ -5078,11 +5078,9 @@ function populateRegionManagerFilters(){
   var regionOptions = AREA_MANAGERS.map(function(m){ return m.region; }).filter(function(r,i,arr){ return arr.indexOf(r)===i; });
   var managerOptions = AREA_MANAGERS.map(function(m){ return m.name; });
   regionSel.innerHTML = '<option value="">All Regions</option>' +
-    regionOptions.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('') +
-    '<option value="__unmapped__">Other Counties</option>';
+    regionOptions.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
   managerSel.innerHTML = '<option value="">All managers</option>' +
-    managerOptions.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('') +
-    '<option value="__unmapped__">Other Counties</option>';
+    managerOptions.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('');
 }
 
 // True if `county` passes whatever Region / Area Manager filters are
