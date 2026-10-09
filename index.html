@@ -5077,9 +5077,12 @@ function populateRegionManagerFilters(){
   var managerSel = document.getElementById('dash-manager-filter');
   var regionOptions = AREA_MANAGERS.map(function(m){ return m.region; }).filter(function(r,i,arr){ return arr.indexOf(r)===i; });
   var managerOptions = AREA_MANAGERS.map(function(m){ return m.name; });
-     regionOptions.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
+  regionSel.innerHTML = '<option value="">All Regions</option>' +
+    regionOptions.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('') +
+    '<option value="__unmapped__">Other Counties</option>';
   managerSel.innerHTML = '<option value="">All managers</option>' +
-       managerOptions.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('');
+    managerOptions.map(function(m){ return '<option value="'+m+'">'+m+'</option>'; }).join('') +
+    '<option value="__unmapped__">Other Counties</option>';
 }
 
 // True if `county` passes whatever Region / Area Manager filters are
