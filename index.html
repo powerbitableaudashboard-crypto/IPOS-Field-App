@@ -5213,13 +5213,25 @@ function escapeHtml(str){
   });
 }
 
-// Bold solid-colour summary card — shared by the Admin/Manager/Customer Care/HR
+// Bright, high-contrast summary card — shared by the Admin/Manager/Customer Care/HR
 // Device Payment Reports and the trainer's My Device Payments screen.
-function sumCard(bg, icon, label, big, sub, wide){
-  return '<div style="'+(wide?'grid-column:1/-1;':'')+'background:'+bg+';color:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.2)">' +
-    '<div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.95">'+icon+' '+label+'</div>' +
-    '<div style="font-size:'+(wide?'28':'22')+'px;font-weight:800;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.18)">'+big+'</div>' +
-    '<div style="font-size:11.5px;font-weight:600;opacity:.95;margin-top:2px">'+sub+'</div></div>';
+// Bright screen colours with near-black text (all pass WCAG AAA contrast).
+// The first argument is a colour key; it maps to {bg, accent} below.
+var SUMCARD_PALETTE = {
+  '#0b4ea2': { bg:'#5cc2ff', ac:'#0b6fd1' },   // blue    — devices sold
+  '#0f8a3f': { bg:'#7be08a', ac:'#12984a' },   // green   — cash
+  '#ea7a0c': { bg:'#ffb454', ac:'#e07b00' },   // orange  — credit sales
+  '#9b3aab': { bg:'#d6a4ff', ac:'#8f3fd1' },   // purple  — credit collected
+  '#e0212a': { bg:'#ff8a8a', ac:'#d62828' },   // red     — outstanding
+  '#0e93a8': { bg:'#ffe066', ac:'#d4a800' },   // yellow  — total collected
+  '#5b6470': { bg:'#d5dbe4', ac:'#6b7280' }    // grey    — due on delivery
+};
+function sumCard(colorKey, icon, label, big, sub, wide){
+  var c = SUMCARD_PALETTE[colorKey] || { bg:'#e5e7eb', ac:'#6b7280' };
+  return '<div style="'+(wide?'grid-column:1/-1;':'')+'background:'+c.bg+';color:#0b1220;border-radius:14px;border-left:7px solid '+c.ac+';padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.15)">' +
+    '<div style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#0b1220">'+icon+' '+label+'</div>' +
+    '<div style="font-size:'+(wide?'28':'22')+'px;font-weight:800;margin-top:4px;color:#0b1220">'+big+'</div>' +
+    '<div style="font-size:11.5px;font-weight:700;margin-top:2px;color:#1f2937">'+sub+'</div></div>';
 }
 
 function renderDevicePaySummary(){
