@@ -5070,7 +5070,7 @@ function populateTrainerFilter(){
 }
 
 // Admin-only Region / Area Manager filters for the Installation, Device
-// Payment Report, Shop Survey and Clients Engagement list views — driven by the same
+// Payment Report, and Shop Survey list views — driven by the same
 // static AREA_MANAGERS coverage map used in Engagement Analytics.
 function populateRegionManagerFilters(){
   var regionSel = document.getElementById('dash-region-filter');
@@ -5220,7 +5220,7 @@ function renderDevicePaySummary(){
   });
 
   var totalDevices = filtered.length;
-  var cashCount=0, cashTotal=0, creditCount=0, creditTotal=0, balanceTotal=0;
+  var cashCount=0, cashTotal=0, creditCount=0, creditTotal=0, creditSalesTotal=0, balanceTotal=0;
   var upcoming=[];
   var byTrainer={};
 
@@ -5236,7 +5236,7 @@ function renderDevicePaySummary(){
     byTrainer[trainer].balance+=balance;
 
     if(method==='Cash'){ cashCount++; cashTotal+=price; byTrainer[trainer].cash++; }
-    else { creditCount++; creditTotal+=paid; balanceTotal+=balance; byTrainer[trainer].credit++; } // anything not literally 'Cash' is a credit/installment sale — don't require an exact 'Installment' match
+    else { creditCount++; creditTotal+=paid; creditSalesTotal+=price; balanceTotal+=balance; byTrainer[trainer].credit++; } // anything not literally 'Cash' is a credit/installment sale — don't require an exact 'Installment' match
 
     if(row['Status']==='Balance Due' && row['Next Payment Date']){
       var due=parseAppDate(row['Next Payment Date']);
@@ -5248,12 +5248,18 @@ function renderDevicePaySummary(){
     }
   });
 
+  var salesValue = cashTotal + creditSalesTotal;
   var cardsHtml =
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">' +
-      '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px"><div style="font-size:11px;color:#1e40af;font-weight:600;text-transform:uppercase">📦 Devices Sold</div><div style="font-size:22px;font-weight:700;color:#1e3a8a;margin-top:4px">'+totalDevices+'</div></div>' +
-      '<div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:12px;padding:14px"><div style="font-size:11px;color:#166534;font-weight:600;text-transform:uppercase">💵 Cash</div><div style="font-size:22px;font-weight:700;color:#166534;margin-top:4px">KES '+cashTotal.toLocaleString()+'</div><div style="font-size:11px;color:#166534;opacity:.8">'+cashCount+' sale(s)</div></div>' +
-      '<div style="background:var(--orange-bg);border:1px solid var(--orange-border);border-radius:12px;padding:14px"><div style="font-size:11px;color:#9a3412;font-weight:600;text-transform:uppercase">📇 Credit collected</div><div style="font-size:22px;font-weight:700;color:#9a3412;margin-top:4px">KES '+creditTotal.toLocaleString()+'</div><div style="font-size:11px;color:#9a3412;opacity:.8">'+creditCount+' installment sale(s)</div></div>' +
-      '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px"><div style="font-size:11px;color:#b91c1c;font-weight:600;text-transform:uppercase">⚠️ Outstanding balance</div><div style="font-size:22px;font-weight:700;color:#b91c1c;margin-top:4px">KES '+balanceTotal.toLocaleString()+'</div></div>' +
+      // Total devices = cash + credit
+      '<div style="grid-column:1/-1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px"><div style="font-size:11px;color:#1e40af;font-weight:600;text-transform:uppercase">📦 Devices Sold (Cash + Credit)</div><div style="font-size:22px;font-weight:700;color:#1e3a8a;margin-top:4px">'+totalDevices+'</div><div style="font-size:11px;color:#1e40af;opacity:.85">'+cashCount+' cash + '+creditCount+' credit · Sales value KES '+salesValue.toLocaleString()+'</div></div>' +
+      // Cash sales
+      '<div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:12px;padding:14px"><div style="font-size:11px;color:#166534;font-weight:600;text-transform:uppercase">💵 Cash sales</div><div style="font-size:22px;font-weight:700;color:#166534;margin-top:4px">KES '+cashTotal.toLocaleString()+'</div><div style="font-size:11px;color:#166534;opacity:.8">'+cashCount+' device(s) sold on cash</div></div>' +
+      // Credit sales
+      '<div style="background:var(--orange-bg);border:1px solid var(--orange-border);border-radius:12px;padding:14px"><div style="font-size:11px;color:#9a3412;font-weight:600;text-transform:uppercase">📇 Credit sales</div><div style="font-size:22px;font-weight:700;color:#9a3412;margin-top:4px">KES '+creditSalesTotal.toLocaleString()+'</div><div style="font-size:11px;color:#9a3412;opacity:.8">'+creditCount+' device(s) sold on credit</div></div>' +
+      // Credit collected so far / still owed
+      '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px"><div style="font-size:11px;color:#92400e;font-weight:600;text-transform:uppercase">✅ Credit collected</div><div style="font-size:20px;font-weight:700;color:#92400e;margin-top:4px">KES '+creditTotal.toLocaleString()+'</div><div style="font-size:11px;color:#92400e;opacity:.8">paid so far on credit sales</div></div>' +
+      '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px"><div style="font-size:11px;color:#b91c1c;font-weight:600;text-transform:uppercase">⚠️ Outstanding balance</div><div style="font-size:20px;font-weight:700;color:#b91c1c;margin-top:4px">KES '+balanceTotal.toLocaleString()+'</div><div style="font-size:11px;color:#b91c1c;opacity:.8">still owed on credit sales</div></div>' +
     '</div>';
 
   var trainerRows = Object.keys(byTrainer).sort().map(function(t){
