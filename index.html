@@ -2397,6 +2397,7 @@ function renderMyPayments(){
 
   var totalIssued = filtered.length;
   var totalCollected = 0, dueAmount = 0, outstandingBalance = 0;
+  var cashCount = 0, cashTotal = 0, creditCount = 0, creditSalesTotal = 0, creditCollected = 0;
   var dueSoon = [];   // credit balances due within 3 days (or overdue)
   var completed = []; // fully paid accounts
 
@@ -2404,6 +2405,8 @@ function renderMyPayments(){
 
   filtered.forEach(function(r){
     totalCollected += num(r['Amount Paid']);
+    if(r['Payment Method']==='Cash'){ cashCount++; cashTotal += num(r['Device Price']); }
+    else { creditCount++; creditSalesTotal += num(r['Device Price']); creditCollected += num(r['Amount Paid']); }
     var status = r['Status'];
     var balance = num(r['Balance']);
 
@@ -2426,10 +2429,13 @@ function renderMyPayments(){
 
   var cardsHtml =
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">' +
-      '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px"><div style="font-size:11px;color:#1e40af;font-weight:600;text-transform:uppercase">📦 Total Issued</div><div style="font-size:22px;font-weight:700;color:#1e3a8a;margin-top:4px">'+totalIssued+'</div></div>' +
-      '<div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:12px;padding:14px"><div style="font-size:11px;color:#166534;font-weight:600;text-transform:uppercase">💵 Total Collected</div><div style="font-size:19px;font-weight:700;color:#166534;margin-top:4px">KES '+totalCollected.toLocaleString()+'</div></div>' +
-      '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px"><div style="font-size:11px;color:#1e40af;font-weight:600;text-transform:uppercase">🚚 Due on Delivery</div><div style="font-size:19px;font-weight:700;color:#1e3a8a;margin-top:4px">KES '+dueAmount.toLocaleString()+'</div></div>' +
-      '<div style="background:var(--orange-bg);border:1px solid var(--orange-border);border-radius:12px;padding:14px"><div style="font-size:11px;color:#9a3412;font-weight:600;text-transform:uppercase">📇 Outstanding Balance</div><div style="font-size:19px;font-weight:700;color:#9a3412;margin-top:4px">KES '+outstandingBalance.toLocaleString()+'</div></div>' +
+      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalIssued, cashCount+' cash + '+creditCount+' credit · Sales value KES '+(cashTotal+creditSalesTotal).toLocaleString(), true) +
+      sumCard('#0f8a3f','💵','Cash sales', 'KES '+cashTotal.toLocaleString(), cashCount+' device(s) sold on cash') +
+      sumCard('#ea7a0c','📇','Credit sales', 'KES '+creditSalesTotal.toLocaleString(), creditCount+' device(s) sold on credit') +
+      sumCard('#9b3aab','✅','Credit collected', 'KES '+creditCollected.toLocaleString(), 'paid so far on credit sales') +
+      sumCard('#e0212a','⚠️','Outstanding balance', 'KES '+outstandingBalance.toLocaleString(), 'still owed on credit sales') +
+      sumCard('#0e93a8','💰','Total collected', 'KES '+totalCollected.toLocaleString(), 'cash + credit payments received') +
+      sumCard('#5b6470','🚚','Due on delivery', 'KES '+dueAmount.toLocaleString(), 'cash balance due when delivered') +
     '</div>';
 
   var dueSoonHtml = dueSoon.length ? dueSoon.map(function(x){
@@ -5207,6 +5213,15 @@ function escapeHtml(str){
   });
 }
 
+// Bold solid-colour summary card — shared by the Admin/Manager/Customer Care/HR
+// Device Payment Reports and the trainer's My Device Payments screen.
+function sumCard(bg, icon, label, big, sub, wide){
+  return '<div style="'+(wide?'grid-column:1/-1;':'')+'background:'+bg+';color:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.2)">' +
+    '<div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.95">'+icon+' '+label+'</div>' +
+    '<div style="font-size:'+(wide?'28':'22')+'px;font-weight:800;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.18)">'+big+'</div>' +
+    '<div style="font-size:11.5px;font-weight:600;opacity:.95;margin-top:2px">'+sub+'</div></div>';
+}
+
 function renderDevicePaySummary(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
@@ -5250,12 +5265,6 @@ function renderDevicePaySummary(){
 
   var salesValue = cashTotal + creditSalesTotal;
   // Bold, solid colour cards (dark blue / dark green / orange / purple / bright red)
-  function sumCard(bg, icon, label, big, sub, wide){
-    return '<div style="'+(wide?'grid-column:1/-1;':'')+'background:'+bg+';color:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.2)">' +
-      '<div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.95">'+icon+' '+label+'</div>' +
-      '<div style="font-size:'+(wide?'28':'22')+'px;font-weight:800;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.18)">'+big+'</div>' +
-      '<div style="font-size:11.5px;font-weight:600;opacity:.95;margin-top:2px">'+sub+'</div></div>';
-  }
   var cardsHtml =
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">' +
       sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalDevices, cashCount+' cash + '+creditCount+' credit · Sales value KES '+salesValue.toLocaleString(), true) +
