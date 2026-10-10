@@ -5249,17 +5249,20 @@ function renderDevicePaySummary(){
   });
 
   var salesValue = cashTotal + creditSalesTotal;
+  // Bold, solid colour cards (dark blue / dark green / orange / purple / bright red)
+  function sumCard(bg, icon, label, big, sub, wide){
+    return '<div style="'+(wide?'grid-column:1/-1;':'')+'background:'+bg+';color:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.2)">' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.95">'+icon+' '+label+'</div>' +
+      '<div style="font-size:'+(wide?'28':'22')+'px;font-weight:800;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.18)">'+big+'</div>' +
+      '<div style="font-size:11.5px;font-weight:600;opacity:.95;margin-top:2px">'+sub+'</div></div>';
+  }
   var cardsHtml =
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">' +
-      // Total devices = cash + credit
-      '<div style="grid-column:1/-1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px"><div style="font-size:11px;color:#1e40af;font-weight:600;text-transform:uppercase">📦 Devices Sold (Cash + Credit)</div><div style="font-size:22px;font-weight:700;color:#1e3a8a;margin-top:4px">'+totalDevices+'</div><div style="font-size:11px;color:#1e40af;opacity:.85">'+cashCount+' cash + '+creditCount+' credit · Sales value KES '+salesValue.toLocaleString()+'</div></div>' +
-      // Cash sales
-      '<div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:12px;padding:14px"><div style="font-size:11px;color:#166534;font-weight:600;text-transform:uppercase">💵 Cash sales</div><div style="font-size:22px;font-weight:700;color:#166534;margin-top:4px">KES '+cashTotal.toLocaleString()+'</div><div style="font-size:11px;color:#166534;opacity:.8">'+cashCount+' device(s) sold on cash</div></div>' +
-      // Credit sales
-      '<div style="background:var(--orange-bg);border:1px solid var(--orange-border);border-radius:12px;padding:14px"><div style="font-size:11px;color:#9a3412;font-weight:600;text-transform:uppercase">📇 Credit sales</div><div style="font-size:22px;font-weight:700;color:#9a3412;margin-top:4px">KES '+creditSalesTotal.toLocaleString()+'</div><div style="font-size:11px;color:#9a3412;opacity:.8">'+creditCount+' device(s) sold on credit</div></div>' +
-      // Credit collected so far / still owed
-      '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px"><div style="font-size:11px;color:#92400e;font-weight:600;text-transform:uppercase">✅ Credit collected</div><div style="font-size:20px;font-weight:700;color:#92400e;margin-top:4px">KES '+creditTotal.toLocaleString()+'</div><div style="font-size:11px;color:#92400e;opacity:.8">paid so far on credit sales</div></div>' +
-      '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px"><div style="font-size:11px;color:#b91c1c;font-weight:600;text-transform:uppercase">⚠️ Outstanding balance</div><div style="font-size:20px;font-weight:700;color:#b91c1c;margin-top:4px">KES '+balanceTotal.toLocaleString()+'</div><div style="font-size:11px;color:#b91c1c;opacity:.8">still owed on credit sales</div></div>' +
+      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalDevices, cashCount+' cash + '+creditCount+' credit · Sales value KES '+salesValue.toLocaleString(), true) +
+      sumCard('#0f8a3f','💵','Cash sales', 'KES '+cashTotal.toLocaleString(), cashCount+' device(s) sold on cash') +
+      sumCard('#ea7a0c','📇','Credit sales', 'KES '+creditSalesTotal.toLocaleString(), creditCount+' device(s) sold on credit') +
+      sumCard('#9b3aab','✅','Credit collected', 'KES '+creditTotal.toLocaleString(), 'paid so far on credit sales') +
+      sumCard('#e0212a','⚠️','Outstanding balance', 'KES '+balanceTotal.toLocaleString(), 'still owed on credit sales') +
     '</div>';
 
   var trainerRows = Object.keys(byTrainer).sort().map(function(t){
