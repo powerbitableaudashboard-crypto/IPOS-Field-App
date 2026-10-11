@@ -94,6 +94,20 @@ body.has-motivation-banners .screen{padding-bottom:calc(3rem + 32px)}
 .form-card-icon{font-size:32px;margin-bottom:8px;font-weight:700}
 .form-card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
 .form-card-desc{font-size:11px;color:var(--text-m);line-height:1.5;font-weight:700}
+/* Dashboard menu cards — same bright look as the Device Payment summary cards:
+   bright fill, near-black bold text, thick darker stripe on the left edge. */
+#dash-menu .form-card{text-align:left;border:none;border-left:7px solid var(--ac,#6b7280);background:var(--bg,#e5e7eb);color:#0b1220;box-shadow:0 2px 8px rgba(0,0,0,.15);padding:14px 16px}
+#dash-menu .form-card.blue{--bg:#5cc2ff;--ac:#0b6fd1}
+#dash-menu .form-card.green{--bg:#7be08a;--ac:#12984a}
+#dash-menu .form-card.purple{--bg:#d6a4ff;--ac:#8f3fd1}
+#dash-menu .form-card.orange{--bg:#ffb454;--ac:#e07b00}
+#dash-menu .form-card.yellow{--bg:#ffe066;--ac:#d4a800}
+#dash-menu .form-card.cyan{--bg:#67e8f9;--ac:#0e93a8}
+#dash-menu .form-card.grey{--bg:#d5dbe4;--ac:#6b7280}
+#dash-menu .form-card.red{--bg:#ff8a8a;--ac:#d62828}
+#dash-menu .form-card .form-card-icon{font-size:26px;margin-bottom:6px}
+#dash-menu .form-card .form-card-title{font-size:13.5px;font-weight:800;color:#0b1220}
+#dash-menu .form-card .form-card-desc{font-size:11.5px;font-weight:700;color:#1f2937}
 .logout-btn{width:100%;padding:11px;background:var(--surface-2);color:var(--text-s);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:.5rem}
 
 /* FORM BODY */
@@ -403,22 +417,22 @@ input[type=file]{display:none}
           <div class="form-card-title">Shop Surveys(Owners Onboarding Form)</div>
           <div class="form-card-desc">View Trained  Shop Owners</div>
         </div>
-        <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb" onclick="setFormType('users')">
+        <div class="form-card yellow" onclick="setFormType('users')">
           <div class="form-card-icon">👥</div>
           <div class="form-card-title">Manage Users</div>
           <div class="form-card-desc">Register, Edit or Remove Trainers</div>
         </div>
-        <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb" onclick="openManageShops()">
+        <div class="form-card cyan" onclick="openManageShops()">
           <div class="form-card-icon">🏬</div>
           <div class="form-card-title">Manage Shops</div>
           <div class="form-card-desc">View, edit, or delete shop records</div>
         </div>
-        <div class="form-card" style="background:#f3f4f6;border-color:#e5e7eb" onclick="openSignedContracts()">
+        <div class="form-card grey" onclick="openSignedContracts()">
           <div class="form-card-icon">📑</div>
           <div class="form-card-title">Signed Contracts</div>
           <div class="form-card-desc">View &amp; download uploaded contracts</div>
         </div>
-        <div class="form-card" id="dash-archive-card" style="background:#f3f4f6;border-color:#e5e7eb;display:none" onclick="openArchiveManager()">
+        <div class="form-card red" id="dash-archive-card" style="display:none" onclick="openArchiveManager()">
           <div class="form-card-icon">🗄️</div>
           <div class="form-card-title">Archive Data</div>
           <div class="form-card-desc">Move old records out to keep the app fast</div>
@@ -6740,7 +6754,7 @@ addVisit();
 <script>
 // Bump this text with every upload — it is shown on the login and home screens
 // so you can tell at a glance which copy of the app a phone is running.
-var APP_VERSION = '2026-10-11 · PDF headings fix';
+var APP_VERSION = '2026-10-11 · bright dashboard cards';
 
 if('serviceWorker' in navigator){
   var hadSwController = !!navigator.serviceWorker.controller;
