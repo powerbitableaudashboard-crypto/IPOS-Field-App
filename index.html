@@ -5806,6 +5806,17 @@ function todayStamp(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
+// jsPDF's built-in fonts can't draw emoji/symbols: one such character turns the
+// whole line into garbled, wide-spaced text (e.g. "Ø=ÜÜ") that overflows the page.
+// Strip them before anything is written to the PDF.
+function pdfSafe(str){
+  return String(str == null ? '' : str)
+    .replace(/[\uD800-\uDFFF]/g, '')          // emoji (surrogate pairs)
+    .replace(/[\u2190-\u27BF\u2B00-\u2BFF\uFE0F\u200D]/g, '')   // arrows, dingbats, symbols, joiners
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // opts: { title, subtitle, columns:[{header,dataKey}], rows:[obj...], filename, extraSections:[{heading,columns,rows}] }
 function exportPdfReport(opts){
   var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
@@ -5816,9 +5827,9 @@ function exportPdfReport(opts){
   var pageHeight = doc.internal.pageSize.getHeight();
 
   doc.setFontSize(16); doc.setFont(undefined,'bold');
-  doc.text(opts.title, 40, 40);
+  doc.text(pdfSafe(opts.title), 40, 40);
   doc.setFontSize(9); doc.setFont(undefined,'bold'); doc.setTextColor(107,114,128);
-  doc.text(opts.subtitle||'', 40, 58);
+  doc.text(pdfSafe(opts.subtitle||''), 40, 58);
   doc.text('Generated: ' + new Date().toLocaleString('en-KE'), pageWidth-40, 40, {align:'right'});
   doc.setTextColor(17,24,39);
 
@@ -5827,7 +5838,7 @@ function exportPdfReport(opts){
     doc.autoTable({
       startY: startY,
       head: [opts.columns.map(function(c){return c.header;})],
-      body: opts.rows.map(function(r){ return opts.columns.map(function(c){ var v=r[c.dataKey]; return (v!==undefined && v!==null && v!=='') ? String(v) : '—'; }); }),
+      body: opts.rows.map(function(r){ return opts.columns.map(function(c){ var v=r[c.dataKey]; return (v!==undefined && v!==null && v!=='') ? (pdfSafe(v) || '—') : '—'; }); }),
       styles:{fontSize:8, cellPadding:4, overflow:'linebreak', fontStyle:'bold'},
       headStyles:{fillColor:[37,99,235], textColor:255, fontStyle:'bold'},
       alternateRowStyles:{fillColor:[249,250,251]},
@@ -5842,17 +5853,17 @@ function exportPdfReport(opts){
 
   (opts.extraSections||[]).forEach(function(sec){
     if(startY > pageHeight-100){ doc.addPage(); startY = 40; }
-    doc.setFontSize(11); doc.setFont(undefined,'bold'); doc.setTextColor(17,24,39);
-    var heading = doc.splitTextToSize(sec.heading, pageWidth-80);
+    doc.setFontSize(8.5); doc.setFont(undefined,'bold'); doc.setTextColor(17,24,39);
+    var heading = doc.splitTextToSize(pdfSafe(sec.heading), pageWidth-80);
     doc.text(heading, 40, startY);
-    startY += heading.length*13 + 6;
+    startY += heading.length*11 + 5;
     doc.setFont(undefined,'bold');
 
     if(sec.rows && sec.rows.length){
       doc.autoTable({
         startY:startY,
         head:[sec.columns.map(function(c){return c.header;})],
-        body:sec.rows.map(function(r){return sec.columns.map(function(c){ var v=r[c.dataKey]; return (v!==undefined && v!==null && v!=='') ? String(v) : '—'; });}),
+        body:sec.rows.map(function(r){return sec.columns.map(function(c){ var v=r[c.dataKey]; return (v!==undefined && v!==null && v!=='') ? (pdfSafe(v) || '—') : '—'; });}),
         styles:{fontSize:7.5, cellPadding:3, overflow:'linebreak', fontStyle:'bold'},
         headStyles:{fillColor:[22,163,74], textColor:255, fontStyle:'bold'},
         margin:{left:40,right:40}
@@ -6650,7 +6661,7 @@ function exportDevicePayPdfWithHistory(rows, subtitle, filename, btnId){
 
     var extraSections = relevantSales.map(function(sale){
       return {
-        heading: '📜 ' + (sale.shopName||'Shop') + ' (ID: ' + sale.shopId + ') — ' + (sale.trainerName||'') + ' · ' + (sale.paymentMethod||'') + ' · Balance: KES ' + num(sale.currentBalance).toLocaleString(),
+        heading: (sale.shopName||'Shop') + ' (ID: ' + sale.shopId + ') — ' + (sale.trainerName||'') + ' · ' + (sale.paymentMethod||'') + ' · Balance: KES ' + num(sale.currentBalance).toLocaleString(),
         columns: [
           {header:'Type', dataKey:'type'},
           {header:'Date', dataKey:'date'},
@@ -6696,44 +6707,3 @@ function exportDevicePayPdfWithHistory(rows, subtitle, filename, btnId){
   });
 }
 
-// ── TRAINER: EXPORT PDF (My Device Payments / My Visit History) ──
-function exportMyPaymentsPdf(){
-  var rows = myPaymentsData.filter(function(r){ return myDateMatches(r['Date']); });
-  var subtitle = getDashRangeLabel('my-range-filter','my-date-from','my-date-to') + ' · ' + rows.length + ' record(s)';
-  exportDevicePayPdfWithHistory(rows, subtitle, 'my-device-payments_' + todayStamp() + '.pdf', 'my-payments-export-pdf-btn');
-}
-
-function exportMyVisitsPdf(){
-  var rows = getFilteredMyVisits();
-  exportPdfReport({
-    title: 'My Visit History — Clients Engagement Tracker',
-    subtitle: getDashRangeLabel('mv-range-filter','mv-date-from','mv-date-to') + ' · ' + rows.length + ' visit(s)',
-    columns: [
-      {header:'Date', dataKey:'Date'},
-      {header:'County', dataKey:'County'},
-      {header:'Shop Name', dataKey:'Shop Name'},
-      {header:'Location', dataKey:'Location'},
-      {header:'Owner Phone', dataKey:'Shop Owner Phone'},
-      {header:'Purpose', dataKey:'Purpose'},
-      {header:'Client Feedback', dataKey:'Client Feedback'}
-    ],
-    rows: rows,
-    filename: 'my-visit-history_' + todayStamp() + '.pdf'
-  });
-}
-
-// ── INIT ─────────────────────────────────────────────────────
-if(loadSession()){ goHome(); } else { showScreen('screen-login'); }
-addVisit();
-</script>
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load',function(){
-    navigator.serviceWorker.register('./sw.js').catch(function(){});
-  });
-}
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-</body>
-</html>
