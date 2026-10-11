@@ -6707,3 +6707,66 @@ function exportDevicePayPdfWithHistory(rows, subtitle, filename, btnId){
   });
 }
 
+// ── TRAINER: EXPORT PDF (My Device Payments / My Visit History) ──
+function exportMyPaymentsPdf(){
+  var rows = myPaymentsData.filter(function(r){ return myDateMatches(r['Date']); });
+  var subtitle = getDashRangeLabel('my-range-filter','my-date-from','my-date-to') + ' · ' + rows.length + ' record(s)';
+  exportDevicePayPdfWithHistory(rows, subtitle, 'my-device-payments_' + todayStamp() + '.pdf', 'my-payments-export-pdf-btn');
+}
+
+function exportMyVisitsPdf(){
+  var rows = getFilteredMyVisits();
+  exportPdfReport({
+    title: 'My Visit History — Clients Engagement Tracker',
+    subtitle: getDashRangeLabel('mv-range-filter','mv-date-from','mv-date-to') + ' · ' + rows.length + ' visit(s)',
+    columns: [
+      {header:'Date', dataKey:'Date'},
+      {header:'County', dataKey:'County'},
+      {header:'Shop Name', dataKey:'Shop Name'},
+      {header:'Location', dataKey:'Location'},
+      {header:'Owner Phone', dataKey:'Shop Owner Phone'},
+      {header:'Purpose', dataKey:'Purpose'},
+      {header:'Client Feedback', dataKey:'Client Feedback'}
+    ],
+    rows: rows,
+    filename: 'my-visit-history_' + todayStamp() + '.pdf'
+  });
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+if(loadSession()){ goHome(); } else { showScreen('screen-login'); }
+addVisit();
+</script>
+<script>
+// Bump this text with every upload — it is shown on the login and home screens
+// so you can tell at a glance which copy of the app a phone is running.
+var APP_VERSION = '2026-10-11 · PDF headings fix';
+
+if('serviceWorker' in navigator){
+  var hadSwController = !!navigator.serviceWorker.controller;
+  var swReloaded = false;
+  // When a newer service worker takes over, reload once so the new page is used.
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(!hadSwController || swReloaded) return;
+    swReloaded = true;
+    window.location.reload();
+  });
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js').then(function(reg){ try{ reg.update(); }catch(e){} }).catch(function(){});
+  });
+}
+window.addEventListener('load', function(){
+  ['screen-login','screen-home'].forEach(function(id){
+    var host = document.getElementById(id);
+    if(!host) return;
+    var v = document.createElement('div');
+    v.style.cssText = 'text-align:center;font-size:10px;color:#9ca3af;margin:14px 0 6px';
+    v.textContent = 'Version ' + APP_VERSION;
+    host.appendChild(v);
+  });
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</body>
+</html>
