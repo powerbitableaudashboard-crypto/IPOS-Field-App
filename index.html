@@ -425,12 +425,12 @@ input[type=file]{display:none}
         <div class="form-card cyan" onclick="openManageShops()">
           <div class="form-card-icon">🏬</div>
           <div class="form-card-title">Manage Shops</div>
-          <div class="form-card-desc">View, Edit, or delete shop Records</div>
+          <div class="form-card-desc">View, edit, or delete shop records</div>
         </div>
         <div class="form-card grey" onclick="openSignedContracts()">
           <div class="form-card-icon">📑</div>
           <div class="form-card-title">Signed Contracts</div>
-          <div class="form-card-desc">View &amp; Download Uploaded Contracts</div>
+          <div class="form-card-desc">View &amp; download uploaded contracts</div>
         </div>
         <div class="form-card red" id="dash-archive-card" style="display:none" onclick="openArchiveManager()">
           <div class="form-card-icon">🗄️</div>
@@ -1067,7 +1067,7 @@ input[type=file]{display:none}
 <!-- ══════════════════════════ MANAGER/ADMIN: INSTALLED SHOPS (from Installation form) -->
 <div class="screen" id="screen-installed-shops">
   <div class="app-header">
-    <div><h1>Installed/Reactivated Shops</h1><p>From the Installation form — view, Edit, or Delete</p></div>
+    <div><h1>Installed/Reactivated Shops</h1><p>From the Installation form — view, edit, or delete</p></div>
     <button class="back-btn" onclick="showScreen('screen-shops')">← Back</button>
   </div>
   <div class="form-body">
@@ -1116,7 +1116,7 @@ input[type=file]{display:none}
 <!-- ══════════════════════════ MANAGER: SIGNED CONTRACTS -->
 <div class="screen" id="screen-contracts-manager">
   <div class="app-header">
-    <div><h1>Signed Contracts</h1><p>View &amp; Download Uploaded Contracts</p></div>
+    <div><h1>Signed Contracts</h1><p>View &amp; download uploaded contracts</p></div>
     <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
   </div>
   <div class="form-body">
@@ -1161,7 +1161,7 @@ input[type=file]{display:none}
       <label>Archive records that are…</label>
       <select id="arc-mode" onchange="document.getElementById('arc-custom-wrap').style.display = this.value==='custom' ? 'grid' : 'none'">
         <option value="2months">Older than 2 months</option>
-        <option value="custom">Date Range</option>
+        <option value="custom">From a custom date range</option>
       </select>
     </div>
     <div class="two-col" id="arc-custom-wrap" style="display:none">
@@ -1457,6 +1457,38 @@ var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYRvjog8-EkvKe2F
 // it's what hands out the token in the first place).
 (function(){
   var _origFetch = window.fetch;
+
+  // Safe auto-retry for submissions. Every submission carries a clientRequestId, so the
+  // server never saves the same one twice (a retry of something already saved just
+  // answers "success"). If the reply is NOT a real result — the server's "API is running"
+  // check text, a Google error/redirect page, or "still being processed" — we wait and
+  // ask again instead of telling the trainer it failed. If it still can't be confirmed we
+  // fail like a network error, which keeps the same request ID so a manual retry is safe.
+  function resilientPost(origFetch, input, init){
+    var attempt = 0, MAX = 4;
+    function isAmbiguous(text){
+      var d;
+      try { d = JSON.parse(text); } catch(e){ return true; }
+      if(!d) return true;
+      if(d.status === 'ok') return true;
+      if(d.status === 'error' && /still being processed/i.test(d.message || '')) return true;
+      return false;
+    }
+    function once(){
+      attempt++;
+      return origFetch.call(window, input, init).then(function(res){
+        return res.clone().text().then(function(text){
+          if(!isAmbiguous(text)) return res;
+          if(attempt < MAX){
+            return new Promise(function(r){ setTimeout(r, 3000 * attempt); }).then(once);
+          }
+          return Promise.reject(new Error('Submission could not be confirmed'));
+        });
+      });
+    }
+    return once();
+  }
+
   window.fetch = function(input, init){
     try {
       var urlStr = (typeof input === 'string') ? input : (input && input.url) || '';
@@ -1482,6 +1514,14 @@ var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYRvjog8-EkvKe2F
       // A bug in this wrapper should never take down a real request —
       // fall through and send it exactly as the caller built it.
     }
+    try {
+      var postUrl = (typeof input === 'string') ? input : (input && input.url) || '';
+      if (postUrl.indexOf(APPS_SCRIPT_URL) === 0 && init && init.method &&
+          String(init.method).toUpperCase() === 'POST' && typeof init.body === 'string' &&
+          init.body.indexOf('"clientRequestId"') !== -1) {
+        return resilientPost(_origFetch, input, init);
+      }
+    } catch(e2) {}
     return _origFetch.call(this, input, init);
   };
 })();
@@ -2433,7 +2473,7 @@ function renderMyPayments(){
         var nd = parseAppDate(nextDate);
         if(!isNaN(nd.getTime())){
           var diffDays = Math.ceil((nd - new Date())/(1000*60*60*24));
-          if(diffDays <= 3) dueSoon.push({ row:r, overdue: diffDays<0 });
+          if(diffDays <= 3) dueSoon.push({ row:r, overdue: diffDays<0, days:diffDays });
         }
       }
     } else if(status==='Paid'){
@@ -2454,10 +2494,7 @@ function renderMyPayments(){
 
   var dueSoonHtml = dueSoon.length ? dueSoon.map(function(x){
     var r = x.row;
-    return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;'+(x.overdue?'background:#fef2f2':'')+'">'+
-      '<div style="color:#dc2626;font-weight:700">'+(x.overdue?'🔴 Overdue':'⏰ Due soon')+' — '+(r['Customer Name']||'Customer')+' · '+(r['Customer Phone']||'')+'<br><span style="color:#6b7280;font-weight:600">'+(r['Shop Name']||'')+'</span></div>'+
-      '<div style="text-align:right;color:#2563eb;font-weight:700">KES '+num(r['Balance']).toLocaleString()+'<br><span style="color:#2563eb;font-weight:600">'+(r['Next Payment Date']||'')+'</span></div>'+
-    '</div>';
+    return followUpRowHtml({ overdue:x.overdue, days:x.days, shop:r['Shop Name'], shopId:r['Shop ID'], customer:r['Customer Name'], phone:r['Customer Phone'], trainer:r['Trainer Name'], balance:r['Balance'], paid:r['Amount Paid'], price:r['Device Price'], installment:r['Installment Amount'], due:r['Next Payment Date'] });
   }).join('') : '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No credit payments due within 3 days.</div>';
 
   var completedHtml = completed.length ? completed.slice(0,20).map(function(r){
@@ -5227,6 +5264,30 @@ function escapeHtml(str){
   });
 }
 
+// One row of the "3-day credit follow-ups" list (Admin/Manager/HR/Customer Care dashboard and
+// the trainer's My Device Payments). Shows everything needed to chase the payment.
+function followUpRowHtml(f){
+  var due = String(f.due||'').replace(/,\s*00:00(:00)?$/, '');
+  var phone = String(f.phone||'').trim();
+  var nDays = Math.abs(f.days||0);
+  var late = f.overdue ? '<div style="color:#b91c1c;font-weight:700;font-size:11px">'+nDays+' day'+(nDays===1?'':'s')+' overdue</div>' : '';
+  var inst = num(f.installment) > 0 ? '<div style="color:#374151;font-size:11px;font-weight:600">Installment KES '+num(f.installment).toLocaleString()+'</div>' : '';
+  return '<div style="display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;line-height:1.55">' +
+    '<div style="min-width:0">' +
+      '<div style="color:#dc2626;font-weight:800">'+(f.overdue?'🔴 Overdue':'⏰ Due soon')+'</div>' +
+      '<div style="color:#111827;font-weight:700">🏪 '+escapeHtml(String(f.shop||'—'))+(f.shopId?' <span style="color:#6b7280;font-weight:600">(ID: '+escapeHtml(String(f.shopId))+')</span>':'')+'</div>' +
+      '<div style="color:#111827">👤 '+escapeHtml(String(f.customer||'Customer'))+(phone?' · <a href="tel:'+escapeHtml(phone)+'" style="color:#2563eb;font-weight:700;text-decoration:none">📞 '+escapeHtml(phone)+'</a>':'')+'</div>' +
+      '<div style="color:#6b7280;font-weight:600">Trainer: '+escapeHtml(String(f.trainer||'—'))+'</div>' +
+    '</div>' +
+    '<div style="text-align:right;flex-shrink:0">' +
+      '<div style="color:#2563eb;font-weight:800;font-size:14px">KES '+num(f.balance).toLocaleString()+'</div>' +
+      '<div style="color:#6b7280;font-size:10px;font-weight:600">balance due</div>' +
+      '<div style="color:#374151;font-size:11px;font-weight:600;margin-top:3px">Paid KES '+num(f.paid).toLocaleString()+' of KES '+num(f.price).toLocaleString()+'</div>' +
+      inst +
+      '<div style="color:#2563eb;font-size:11px;font-weight:600">Due: '+escapeHtml(due)+'</div>' + late +
+    '</div></div>';
+}
+
 // Bright, high-contrast summary card — shared by the Admin/Manager/Customer Care/HR
 // Device Payment Reports and the trainer's My Device Payments screen.
 // Bright screen colours with near-black text (all pass WCAG AAA contrast).
@@ -5284,7 +5345,7 @@ function renderDevicePaySummary(){
       var now=new Date();
       var diffDays=Math.ceil((due-now)/(1000*60*60*24));
       if(!isNaN(due.getTime()) && diffDays<=3){
-        upcoming.push({trainer:trainer,customer:row['Customer Name'],phone:row['Customer Phone'],due:row['Next Payment Date'],balance:balance,overdue:diffDays<0});
+        upcoming.push({trainer:trainer,customer:row['Customer Name'],phone:row['Customer Phone'],shop:row['Shop Name'],shopId:row['Shop ID'],due:row['Next Payment Date'],balance:balance,paid:paid,price:price,installment:row['Installment Amount'],days:diffDays,overdue:diffDays<0});
       }
     }
   });
@@ -5309,10 +5370,7 @@ function renderDevicePaySummary(){
   }).join('') || '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No records for this filter.</div>';
 
   var upcomingHtml = upcoming.length ? upcoming.map(function(u){
-    return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">'+
-      '<div style="color:#dc2626;font-weight:700">'+(u.overdue?'🔴 Overdue':'⏰ Due soon')+' — '+(u.customer||'Customer')+' · '+(u.phone||'')+'<br><span style="color:#6b7280;font-weight:600">Trainer: '+u.trainer+'</span></div>'+
-      '<div style="text-align:right;color:#2563eb;font-weight:700">KES '+num(u.balance).toLocaleString()+'<br><span style="color:#2563eb;font-weight:600">'+u.due+'</span></div>'+
-    '</div>';
+    return followUpRowHtml(u);
   }).join('') : '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No credit payments due in the next 3 days.</div>';
 
   document.getElementById('dash-devicepay-summary').innerHTML =
@@ -6754,7 +6812,7 @@ addVisit();
 <script>
 // Bump this text with every upload — it is shown on the login and home screens
 // so you can tell at a glance which copy of the app a phone is running.
-var APP_VERSION = '2026-10-11 · bright cards everywhere';
+var APP_VERSION = '2026-10-12 · follow-up details';
 
 if('serviceWorker' in navigator){
   var hadSwController = !!navigator.serviceWorker.controller;
