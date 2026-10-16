@@ -424,7 +424,7 @@ input[type=file]{display:none}
         <div class="form-card red" onclick="openRepossessions()">
           <div class="form-card-icon">↩️</div>
           <div class="form-card-title">Repossessed Devices</div>
-          <div class="form-card-desc">Condition, photos &amp; resale status</div>
+          <div class="form-card-desc">Condition, Photos &amp; Resale Status</div>
         </div>
         <div class="form-card orange" onclick="setFormType('survey')">
           <div class="form-card-icon">🏪</div>
@@ -439,12 +439,12 @@ input[type=file]{display:none}
         <div class="form-card cyan" onclick="openManageShops()">
           <div class="form-card-icon">🏬</div>
           <div class="form-card-title">Manage Shops</div>
-          <div class="form-card-desc">View, edit, or delete shop records</div>
+          <div class="form-card-desc">View, edit, or Delete Shop Records</div>
         </div>
         <div class="form-card grey" onclick="openSignedContracts()">
           <div class="form-card-icon">📑</div>
           <div class="form-card-title">Signed Contracts</div>
-          <div class="form-card-desc">View &amp; download uploaded contracts</div>
+          <div class="form-card-desc">View &amp; Download Uploaded Contracts</div>
         </div>
         <div class="form-card red" id="dash-archive-card" style="display:none" onclick="openArchiveManager()">
           <div class="form-card-icon">🗄️</div>
@@ -520,16 +520,16 @@ input[type=file]{display:none}
             <option value="Trainer">Trainer</option>
             <option value="Manager">Manager</option>
             <option value="Admin">Admin</option>
-            <option value="Customer Care">Customer Care (view &amp; export Device Reports only)</option>
-            <option value="HR">HR (view &amp; export Device Reports only)</option>
+            <option value="Customer Care">Customer Care (View &amp; Export Device Reports)</option>
+            <option value="HR">HR (View &amp; Export Device Reports )</option>
           </select></div>
         <div class="field"><label>Counties <span style="font-size:11px;color:#9ca3af;font-weight:400">(trainers only — tick every county this trainer covers)</span></label>
           <div class="uf-county-box" id="uf-county-box"></div>
           <div class="uf-county-actions">
-            <button type="button" onclick="ufCountySelectAll(true)">Select all</button>
+            <button type="button" onclick="ufCountySelectAll(true)">Select All</button>
             <button type="button" onclick="ufCountySelectAll(false)">Clear</button>
           </div>
-          <div class="uf-county-summary" id="uf-county-summary">No counties selected</div>
+          <div class="uf-county-summary" id="uf-county-summary">No Counties Selected</div>
         </div>
         <div class="field"><label>Manager Email <span style="font-size:11px;color:#9ca3af;font-weight:400">(who this user reports to)</span></label>
           <input type="email" id="uf-manager-email" placeholder="manager@enduring.co.ke"></div>
@@ -580,7 +580,7 @@ input[type=file]{display:none}
       <div class="progress-bar"><div class="progress-fill" id="r-fill"></div></div>
     </div>
     <div class="section">
-      <div class="section-title">📍 Auto-captured</div>
+      <div class="section-title">📍 Auto-Captured</div>
       <div class="field"><label>Date &amp; Time</label>
         <div class="auto-field"><span>📅</span><span class="auto-val" id="r-date">—</span><span class="badge badge-green">Captured</span></div>
       </div>
@@ -607,7 +607,7 @@ input[type=file]{display:none}
     <div class="error-msg" id="r-error"></div>
     <div class="success-banner" id="r-success">
       <div class="success-icon">✅</div><h2>Clients Engagement Submitted!</h2>
-      <p>Saved to Google Sheets and your manager has been notified.</p>
+      <p>Saved, Your manager has been Notified.</p>
       <div class="success-meta" id="r-meta"></div>
       <button class="home-btn" onclick="submitAnotherRoute()" style="background:var(--accent);color:#fff">➕ Submit Another Visit</button>
       <button class="home-btn" onclick="resetForm('route')">← Back to Home</button>
@@ -767,7 +767,7 @@ input[type=file]{display:none}
       <div class="field"><label for="d-req-email">Send request to<span class="req">*</span></label>
         <select id="d-req-email" onchange="renderCcOptions()"><option value="">Select recipient…</option></select>
       </div>
-      <div class="field"><label>CC <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional, tap to select — multiple allowed)</span></label>
+      <div class="field"><label>CC <span style="font-size:11px;color:#9ca3af;font-weight:400">(Optional, Tap to Select )</span></label>
         <div id="d-req-cc-list" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:220px;overflow-y:auto;font-size:13px;color:var(--text-m)">No recipients configured yet.</div>
       </div>
       <div class="two-col">
@@ -830,7 +830,7 @@ input[type=file]{display:none}
       <div class="error-msg" id="d-error"></div>
       <div class="success-banner" id="d-success">
         <div class="success-icon">✅</div><h2>Device Request Submitted!</h2>
-        <p>Emailed to the device team and saved to Google Sheets.</p>
+        <p>Email Request Successfully sent to the device team .</p>
         <div class="success-meta" id="d-meta"></div>
         <button class="home-btn" onclick="resetForm('devicepay')">← Back to Home</button>
       </div>
@@ -888,17 +888,17 @@ input[type=file]{display:none}
             <div class="field"><label for="rp-serial">Device Serial No</label>
               <input type="text" id="rp-serial" placeholder="e.g. SN-00123456">
             </div>
-            <div class="field"><label for="rp-date">Date repossessed<span class="req">*</span></label>
+            <div class="field"><label for="rp-date">Date Repossessed<span class="req">*</span></label>
               <input type="date" id="rp-date">
             </div>
           </div>
           <div class="field"><label for="rp-reason">Reason<span class="req">*</span></label>
             <select id="rp-reason">
               <option value="">Select…</option>
-              <option value="Unable to pay">Unable to pay</option>
-              <option value="Shop closed">Shop closed</option>
-              <option value="Customer could not be reached">Customer could not be reached</option>
-              <option value="Customer returned the device">Customer returned the device</option>
+              <option value="Unable to pay">Unable to Pay</option>
+              <option value="Shop closed">Shop Closed</option>
+              <option value="Customer could not be reached">Customer Could not be Reached</option>
+              <option value="Customer returned the device">Customer Returned the Device</option>
               <option value="Other">Other</option>
             </select>
           </div>
@@ -913,11 +913,11 @@ input[type=file]{display:none}
           <div class="field"><label for="rp-power">Powers on</label>
             <select id="rp-power"><option value="Not tested">Not tested</option><option value="Yes">Yes</option><option value="No">No</option></select>
           </div>
-          <div class="field"><label for="rp-notes">Message / condition notes</label>
+          <div class="field"><label for="rp-notes">Note down the Device Condition(Status)</label>
             <textarea id="rp-notes" style="min-height:60px" placeholder="Write a short message about the repossession and the device condition…"></textarea>
             <small style="color:var(--text-m);font-size:11px">This message is emailed to the people tagged on the original device request, your manager, HR and Customer Care.</small>
           </div>
-          <div class="field"><label>Device photo<span class="req">*</span></label>
+          <div class="field"><label>Device Photo<span class="req">*</span></label>
             <div class="photo-box" onclick="document.getElementById('rp-photo-file').click()">
               <div class="photo-ph" id="rp-photo-ph"><span class="photo-ph-icon">📷</span><span>Tap to take photo</span><small>Photo of the repossessed device</small></div>
               <div class="photo-preview" id="rp-photo-preview"><img id="rp-photo-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('rp-photo')">↺ Retake</button></div>
@@ -939,7 +939,7 @@ input[type=file]{display:none}
 <div class="screen" id="screen-my-payments">
   <div class="app-header">
     <div class="app-header-icon" style="background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px">📊</div>
-    <div><h1>My Device Payments</h1><p>Your own totals &amp; accounts</p></div>
+    <div><h1>My Device Payments</h1><p>Your own Totals &amp; Accounts</p></div>
     <button class="back-btn" onclick="showScreen('screen-devicepay')">← Back</button>
   </div>
   <div class="form-body">
@@ -1009,7 +1009,7 @@ input[type=file]{display:none}
 <!-- ══════════════════════════ MANAGER: DEVICE SETTINGS -->
 <div class="screen" id="screen-settings">
   <div class="app-header">
-    <div><h1>Device Settings</h1><p>Default device request amounts</p></div>
+    <div><h1>Device Settings</h1><p>Default device Request Amounts</p></div>
     <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
   </div>
   <div class="form-body">
@@ -1147,7 +1147,7 @@ input[type=file]{display:none}
 <!-- ══════════════════════════ MANAGER/ADMIN: INSTALLED SHOPS (from Installation form) -->
 <div class="screen" id="screen-installed-shops">
   <div class="app-header">
-    <div><h1>Installed/Reactivated Shops</h1><p>From the Installation form — view, edit, or delete</p></div>
+    <div><h1>Installed/Reactivated Shops</h1><p>From the Installation form — View, Edit, or Delete</p></div>
     <button class="back-btn" onclick="showScreen('screen-shops')">← Back</button>
   </div>
   <div class="form-body">
@@ -1196,7 +1196,7 @@ input[type=file]{display:none}
 <!-- ══════════════════════════ MANAGER: SIGNED CONTRACTS -->
 <div class="screen" id="screen-contracts-manager">
   <div class="app-header">
-    <div><h1>Signed Contracts</h1><p>View &amp; download uploaded contracts</p></div>
+    <div><h1>Signed Contracts</h1><p>View &amp; Download Uploaded Contracts</p></div>
     <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
   </div>
   <div class="form-body">
@@ -1227,7 +1227,7 @@ input[type=file]{display:none}
       <div class="field" style="margin-bottom:0"><label>Status</label>
         <select id="dreq-status-filter" onchange="renderDeviceRequests()">
           <option value="">All</option>
-          <option value="pending">Awaiting reply</option>
+          <option value="pending">Awaiting Reply</option>
           <option value="replied">Replied</option>
         </select>
       </div>
@@ -1240,7 +1240,7 @@ input[type=file]{display:none}
 <!-- ══════════════════════════ REPOSSESSED DEVICES -->
 <div class="screen" id="screen-repossessions">
   <div class="app-header">
-    <div><h1>↩️ Repossessed Devices</h1><p id="rps-sub">Devices taken back from credit sales</p></div>
+    <div><h1>↩️ Repossessed Devices</h1><p id="rps-sub">Devices Taken Back from Credit Sales</p></div>
     <button class="back-btn" onclick="openDashboard()">← Back</button>
   </div>
   <div class="form-body">
@@ -1251,7 +1251,7 @@ input[type=file]{display:none}
       <div class="field" style="margin-bottom:0"><label>Status</label>
         <select id="rps-status" onchange="renderRepossessions()">
           <option value="">All</option>
-          <option value="REPOSSESSED">With company (not resold)</option>
+          <option value="REPOSSESSED">With Company(Not Resold)</option>
           <option value="RESOLD">Resold</option>
           <option value="UNDONE">Undone</option>
         </select>
@@ -1277,7 +1277,7 @@ input[type=file]{display:none}
     </p>
 
     <div class="field">
-      <label>Sheets to archive</label>
+      <label>Sheets to Archive</label>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0">
         <input type="checkbox" id="arc-sheet-route" checked style="width:16px;height:16px"> Route Plans (Clients Engagement Tracker)
       </label>
@@ -1287,10 +1287,10 @@ input[type=file]{display:none}
     </div>
 
     <div class="field">
-      <label>Archive records that are…</label>
+      <label>Archive Records that are…</label>
       <select id="arc-mode" onchange="document.getElementById('arc-custom-wrap').style.display = this.value==='custom' ? 'grid' : 'none'">
-        <option value="2months">Older than 2 months</option>
-        <option value="custom">From a custom date range</option>
+        <option value="2months">Older than 2 Months</option>
+        <option value="custom">From a Custom Date Range</option>
       </select>
     </div>
     <div class="two-col" id="arc-custom-wrap" style="display:none">
@@ -1362,17 +1362,17 @@ input[type=file]{display:none}
       <div class="progress-bar"><div class="progress-fill" id="s-fill"></div></div>
     </div>
     <div class="section">
-      <div class="section-title">📍 Auto-captured</div>
-      <div class="field"><label>Date &amp; time</label>
+      <div class="section-title">📍 Auto-Captured</div>
+      <div class="field"><label>Date &amp; Time</label>
         <div class="auto-field"><span>📅</span><span class="auto-val" id="s-date">—</span><span class="badge badge-green">Captured</span></div>
       </div>
-      <div class="field"><label>GPS location</label>
-        <div class="auto-field"><span>📌</span><span class="auto-val" id="s-gps">Getting location…</span><span class="badge badge-yellow" id="s-gps-badge">Pending</span></div>
+      <div class="field"><label>GPS Location</label>
+        <div class="auto-field"><span>📌</span><span class="auto-val" id="s-gps">Getting Location…</span><span class="badge badge-yellow" id="s-gps-badge">Pending</span></div>
         <button id="s-gps-retry" onclick="retryGPS('s')" style="display:none;margin-top:8px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">📍 Retry GPS</button>
       </div>
     </div>
     <div class="section">
-      <div class="section-title">👤 Trainer (auto-filled)</div>
+      <div class="section-title">👤 Trainer (Auto-Filled)</div>
       <div class="two-col">
         <div class="field"><label>Name</label><input type="text" id="s-trainer" readonly></div>
         <div class="field"><label>County</label><input type="text" id="s-county" readonly></div>
@@ -1443,7 +1443,7 @@ input[type=file]{display:none}
         <div class="auto-field"><span>📅</span><span class="auto-val" id="i-date">—</span><span class="badge badge-green">Captured</span></div>
       </div>
       <div class="field"><label>GPS Location</label>
-        <div class="auto-field"><span>📌</span><span class="auto-val" id="i-gps">Getting location…</span><span class="badge badge-yellow" id="i-gps-badge">Pending</span></div>
+        <div class="auto-field"><span>📌</span><span class="auto-val" id="i-gps">Getting Location…</span><span class="badge badge-yellow" id="i-gps-badge">Pending</span></div>
         <button id="i-gps-retry" onclick="retryGPS('i')" style="display:none;margin-top:8px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">📍 Retry GPS</button>
       </div>
     </div>
@@ -1487,16 +1487,16 @@ input[type=file]{display:none}
     </div>
     <div class="section">
       <div class="section-title">📷 Installation/Reactivation Photos</div>
-      <div class="field"><label>Shop exterior photo(Capturing Shop Name)<span class="req">*</span></label>
+      <div class="field"><label>Shop Exterior Photo(Capturing Shop Name)<span class="req">*</span></label>
         <div class="photo-box" onclick="document.getElementById('i-ext-file').click()">
-          <div class="photo-ph" id="i-ext-ph"><span class="photo-ph-icon">📸</span><span>Tap to photograph</span><small>Outside of the shop</small></div>
+          <div class="photo-ph" id="i-ext-ph"><span class="photo-ph-icon">📸</span><span>Tap to Photograph</span><small>Outside of the Shop</small></div>
           <div class="photo-preview" id="i-ext-preview"><img id="i-ext-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-ext')">↺ Retake</button></div>
         </div>
         <input type="file" id="i-ext-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-ext','i')">
       </div>
       <div class="field" style="margin-top:1rem"><label>Shelve / Interior Photo<span class="req">*</span></label>
         <div class="photo-box" onclick="document.getElementById('i-int-file').click()">
-          <div class="photo-ph" id="i-int-ph"><span class="photo-ph-icon">🏠</span><span>Tap to photograph</span><small>Interior shelve setup</small></div>
+          <div class="photo-ph" id="i-int-ph"><span class="photo-ph-icon">🏠</span><span>Tap to Photograph</span><small>Interior shelve setup</small></div>
           <div class="photo-preview" id="i-int-preview"><img id="i-int-img" src="" alt=""><button class="retake-btn" onclick="event.stopPropagation();clearPhoto('i-int')">↺ Retake</button></div>
         </div>
         <input type="file" id="i-int-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'i-int','i')">
@@ -1525,7 +1525,7 @@ input[type=file]{display:none}
     <div class="error-msg" id="i-error"></div>
     <div id="i-waiting" style="display:none;text-align:center;padding:2rem 1rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;margin-top:1rem">
       <div style="font-size:40px;margin-bottom:10px" id="i-waiting-icon">⏳</div>
-      <h2 style="font-size:16px;color:#1d4ed8;font-weight:600;margin-bottom:6px" id="i-waiting-title">Waiting for manager approval…</h2>
+      <h2 style="font-size:16px;color:#1d4ed8;font-weight:600;margin-bottom:6px" id="i-waiting-title">Waiting for Manager approval…</h2>
       <p style="font-size:13px;color:#1e40af;line-height:1.6" id="i-waiting-desc">Your installation has been sent to your area manager. This screen updates automatically once they respond.</p>
 
       <div style="background:#fff;border:1px solid #dbeafe;border-radius:12px;margin-top:16px;text-align:left;overflow:hidden">
@@ -2035,7 +2035,7 @@ function setupCountyField(prefix, rawCountyStr){
     el = sel;
   }
   var prevVal = countySelForPrefix[prefix] || '';
-  el.innerHTML = '<option value="">Select county for this visit…</option>' +
+  el.innerHTML = '<option value="">Select County for this visit…</option>' +
     counties.map(function(c){ return '<option value="'+c+'"'+(c===prevVal?' selected':'')+'>'+c+'</option>'; }).join('');
   el.onchange = function(){ countySelForPrefix[prefix] = el.value; };
 }
@@ -2615,13 +2615,13 @@ function renderMyPayments(){
 
   var cardsHtml =
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">' +
-      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalIssued, cashCount+' cash + '+creditCount+' credit · Sales value KES '+(cashTotal+creditSalesTotal).toLocaleString(), true) +
-      sumCard('#0f8a3f','💵','Cash sales', 'KES '+cashTotal.toLocaleString(), cashCount+' device(s) sold on cash') +
-      sumCard('#ea7a0c','📇','Credit sales', 'KES '+creditSalesTotal.toLocaleString(), creditCount+' device(s) sold on credit') +
-      sumCard('#9b3aab','✅','Credit collected', 'KES '+creditCollected.toLocaleString(), 'paid so far on credit sales') +
-      sumCard('#e0212a','⚠️','Outstanding balance', 'KES '+outstandingBalance.toLocaleString(), 'still owed on credit sales') +
-      sumCard('#0e93a8','💰','Total collected', 'KES '+totalCollected.toLocaleString(), 'cash + credit payments received') +
-      sumCard('#5b6470','🚚','Due on delivery', 'KES '+dueAmount.toLocaleString(), 'cash balance due when delivered') +
+      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalIssued, cashCount+' cash + '+creditCount+' Credit · Sales value KES '+(cashTotal+creditSalesTotal).toLocaleString(), true) +
+      sumCard('#0f8a3f','💵','Cash Sales', 'KES '+cashTotal.toLocaleString(), cashCount+' Device(s) Sold on Cash') +
+      sumCard('#ea7a0c','📇','Credit Sales', 'KES '+creditSalesTotal.toLocaleString(), creditCount+' Device(s) Sold on Credit') +
+      sumCard('#9b3aab','✅','Credit Collected', 'KES '+creditCollected.toLocaleString(), 'Paid so far on Credit Sales') +
+      sumCard('#e0212a','⚠️','Outstanding Balance', 'KES '+outstandingBalance.toLocaleString(), 'Still Owed on Credit Sales') +
+      sumCard('#0e93a8','💰','Total Collected', 'KES '+totalCollected.toLocaleString(), 'Cash + credit Payments Received') +
+      sumCard('#5b6470','🚚','Due on Delivery', 'KES '+dueAmount.toLocaleString(), 'Cash Balance Due When Delivered') +
     '</div>';
 
   var dueSoonHtml = dueSoon.length ? dueSoon.map(function(x){
@@ -3782,7 +3782,7 @@ function postRepossessionAction(payload, okMsg){
 }
 
 function markRepossessionResold(btn){
-  var note = prompt('Resold to which shop / customer? (optional)');
+  var note = prompt('Resold to which Shop Customer? (optional)');
   if(note === null) return;
   postRepossessionAction({ formType:'markRepossessionResold', repossessionId: btn.getAttribute('data-id'), note: note, requestedBy: session.email, requestedByRole: session.role }, 'Marked as resold.');
 }
@@ -3867,14 +3867,14 @@ function runArchiveData(){
   var sheets = [];
   if(document.getElementById('arc-sheet-route').checked) sheets.push('Route Plans');
   if(session.role==='Admin' && document.getElementById('arc-sheet-idem').checked) sheets.push('Idempotency Keys');
-  if(!sheets.length){ document.getElementById('arc-status').textContent = '⚠️ Select at least one sheet to archive.'; return; }
+  if(!sheets.length){ document.getElementById('arc-status').textContent = '⚠️ Select at least one sheet to Archive.'; return; }
 
   var mode = document.getElementById('arc-mode').value;
   var dateFrom='', dateTo='';
   if(mode==='custom'){
     dateFrom = document.getElementById('arc-date-from').value;
     dateTo = document.getElementById('arc-date-to').value;
-    if(!dateFrom || !dateTo){ document.getElementById('arc-status').textContent = '⚠️ Pick both a From and To date for a custom range.'; return; }
+    if(!dateFrom || !dateTo){ document.getElementById('arc-status').textContent = '⚠️ Pick both a From and To date for a Custom Range.'; return; }
   }
   var purpose = document.getElementById('arc-purpose').value;
 
@@ -4770,11 +4770,11 @@ function calcNewSaleBalance(){
     var nextStr = nd.toLocaleDateString('en-KE',{weekday:'short',day:'numeric',month:'short'});
     balEl.style.display='block';
     balEl.innerHTML = balance>0
-      ? '💰 Balance: <strong>KES '+balance.toLocaleString()+'</strong> &nbsp;·&nbsp; ⏰ Next payment reminder: <strong>'+nextStr+'</strong> (in 30 days)'
-      : '✅ Fully paid off';
+      ? '💰 Balance: <strong>KES '+balance.toLocaleString()+'</strong> &nbsp;·&nbsp; ⏰ Next payment Reminder: <strong>'+nextStr+'</strong> (in 30 days)'
+      : '✅ Fully Paid Off';
   } else {
     balEl.style.display='block';
-    balEl.innerHTML = '✅ Paid in full (Cash) — KES '+price.toLocaleString();
+    balEl.innerHTML = '✅ Paid in Full (Cash) — KES '+price.toLocaleString();
   }
 }
 
@@ -4828,7 +4828,7 @@ function submitNewSale(){
     document.getElementById('ns-submit').style.display='flex';
     if(data.status==='success'){
       resetRequestId('ns');
-      document.getElementById('ns-success').textContent='✅ New device sale recorded.';
+      document.getElementById('ns-success').textContent='✅ New Device Sale Recorded.';
       document.getElementById('ns-success').style.display='block';
       setTimeout(function(){ resetForm('devicepay'); }, 1800);
     } else {
