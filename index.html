@@ -105,6 +105,7 @@ body.has-motivation-banners .screen{padding-bottom:calc(3rem + 32px)}
 #dash-menu .form-card.cyan, #home-forms-grid .form-card.cyan{--bg:#67e8f9;--ac:#0e93a8}
 #dash-menu .form-card.grey, #home-forms-grid .form-card.grey{--bg:#d5dbe4;--ac:#6b7280}
 #dash-menu .form-card.red, #home-forms-grid .form-card.red{--bg:#ff8a8a;--ac:#d62828}
+#dash-menu .form-card.pink, #home-forms-grid .form-card.pink{--bg:#f9a8d4;--ac:#be185d}
 #dash-menu .form-card .form-card-icon, #home-forms-grid .form-card .form-card-icon{font-size:26px;margin-bottom:6px}
 #dash-menu .form-card .form-card-title, #home-forms-grid .form-card .form-card-title{font-size:13.5px;font-weight:800;color:#0b1220}
 #dash-menu .form-card .form-card-desc, #home-forms-grid .form-card .form-card-desc{font-size:11.5px;font-weight:700;color:#1f2937}
@@ -328,6 +329,9 @@ input[type=file]{display:none}
     <div id="notif-bell" onclick="event.stopPropagation();openDashboard()" style="display:none;position:relative;background:rgba(255,255,255,0.2);border-radius:8px;width:36px;height:36px;align-items:center;justify-content:center;cursor:pointer;margin-left:8px;flex-shrink:0;font-size:16px">
       🔔<span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:16px;height:16px;align-items:center;justify-content:center;padding:0 3px">0</span>
     </div>
+    <div id="req-bell" title="Device requests" onclick="event.stopPropagation();openDeviceRequests()" style="display:none;position:relative;background:rgba(34,197,94,0.45);border-radius:8px;width:36px;height:36px;align-items:center;justify-content:center;cursor:pointer;margin-left:8px;flex-shrink:0;font-size:16px">
+      🔔<span id="req-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:16px;height:16px;align-items:center;justify-content:center;padding:0 3px">0</span>
+    </div>
   </div>
   <div class="home-body has-tabbar">
     <div class="welcome-banner">
@@ -411,6 +415,16 @@ input[type=file]{display:none}
           <div class="form-card-icon">💳</div>
           <div class="form-card-title">Device Payment Reports</div>
           <div class="form-card-desc">Payments, Balances &amp; Requests</div>
+        </div>
+        <div class="form-card pink" onclick="openDeviceRequests()">
+          <div class="form-card-icon">📦</div>
+          <div class="form-card-title">Device Requests <span id="dash-req-count" style="display:none;background:#dc2626;color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 7px;margin-left:4px;vertical-align:middle">0</span></div>
+          <div class="form-card-desc">View requests &amp; reply with dispatch schedule</div>
+        </div>
+        <div class="form-card red" onclick="openRepossessions()">
+          <div class="form-card-icon">↩️</div>
+          <div class="form-card-title">Repossessed Devices</div>
+          <div class="form-card-desc">Condition, photos &amp; resale status</div>
         </div>
         <div class="form-card orange" onclick="setFormType('survey')">
           <div class="form-card-icon">🏪</div>
@@ -632,6 +646,7 @@ input[type=file]{display:none}
           <option value="repayment">💳 Device Repayment</option>
           <option value="request">📦 Device Request</option>
           <option value="contract">📄 Contract</option>
+          <option value="repossession">⚠️ Device Repossession</option>
         </select>
       </div>
     </div>
@@ -851,6 +866,71 @@ input[type=file]{display:none}
         <p id="ctr-meta"></p>
         <button class="home-btn" onclick="resetForm('devicepay')">← Back to Home</button>
       </div>
+    </div>
+
+    <!-- ═══ PURPOSE 4: DEVICE REPOSSESSION ═══ -->
+    <div class="section" id="purpose-repossession" style="display:none">
+      <div class="section-title">⚠️ Device Repossession</div>
+      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Credit sales only. Search the shop, note the device condition and take a photo. The balance is removed from overdue / credit; the deposit and payments already made stay on record.</p>
+      <div class="field">
+        <label for="rp-search">Search by Shop ID or Shop Name</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="rp-search" placeholder="e.g. 456 or Kamau General Store" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();searchRepossessShops();}">
+          <button type="button" onclick="searchRepossessShops()" style="padding:0 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;white-space:nowrap">Search</button>
+        </div>
+      </div>
+      <div id="rp-search-status" style="font-size:12px;color:var(--text-m);margin-bottom:6px"></div>
+      <div id="rp-results"></div>
+      <div id="rp-selected" style="display:none;margin-top:12px">
+        <div id="rp-selected-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px"></div>
+        <div id="rp-fields">
+          <div class="two-col">
+            <div class="field"><label for="rp-serial">Device Serial No</label>
+              <input type="text" id="rp-serial" placeholder="e.g. SN-00123456">
+            </div>
+            <div class="field"><label for="rp-date">Date repossessed<span class="req">*</span></label>
+              <input type="date" id="rp-date">
+            </div>
+          </div>
+          <div class="field"><label for="rp-reason">Reason<span class="req">*</span></label>
+            <select id="rp-reason">
+              <option value="">Select…</option>
+              <option value="Unable to pay">Unable to pay</option>
+              <option value="Shop closed">Shop closed</option>
+              <option value="Customer could not be reached">Customer could not be reached</option>
+              <option value="Customer returned the device">Customer returned the device</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="two-col">
+            <div class="field"><label for="rp-charger">Charger<span class="req">*</span></label>
+              <select id="rp-charger"><option value="">Select…</option><option value="Yes">Has charger</option><option value="No">No charger</option></select>
+            </div>
+            <div class="field"><label for="rp-screen">Screen<span class="req">*</span></label>
+              <select id="rp-screen"><option value="">Select…</option><option value="Not broken">Not broken</option><option value="Cracked">Cracked</option><option value="Broken">Broken</option></select>
+            </div>
+          </div>
+          <div class="field"><label for="rp-power">Powers on</label>
+            <select id="rp-power"><option value="Not tested">Not tested</option><option value="Yes">Yes</option><option value="No">No</option></select>
+          </div>
+          <div class="field"><label for="rp-notes">Message / condition notes</label>
+            <textarea id="rp-notes" style="min-height:60px" placeholder="Write a short message about the repossession and the device condition…"></textarea>
+            <small style="color:var(--text-m);font-size:11px">This message is emailed to the people tagged on the original device request, your manager, HR and Customer Care.</small>
+          </div>
+          <div class="field"><label>Device photo<span class="req">*</span></label>
+            <div class="photo-box" onclick="document.getElementById('rp-photo-file').click()">
+              <div class="photo-ph" id="rp-photo-ph"><span class="photo-ph-icon">📷</span><span>Tap to take photo</span><small>Photo of the repossessed device</small></div>
+              <div class="photo-preview" id="rp-photo-preview"><img id="rp-photo-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('rp-photo')">↺ Retake</button></div>
+            </div>
+            <input type="file" id="rp-photo-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'rp-photo')">
+          </div>
+          <button type="button" class="submit-btn" id="rp-submit" style="background:#b91c1c" onclick="submitRepossession()">
+            <div class="spinner" id="rp-spinner"></div><span>Submit Repossession</span>
+          </button>
+        </div>
+      </div>
+      <div class="error-msg" id="rp-error"></div>
+      <div id="rp-success" style="display:none;background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:14px;margin-top:10px;text-align:center;color:#166534;font-weight:600"></div>
     </div>
   </div>
 </div>
@@ -1130,6 +1210,55 @@ input[type=file]{display:none}
     </div>
     <div id="contracts-status" style="font-size:12px;color:var(--text-m);margin:10px 0"></div>
     <div id="contracts-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ DEVICE REQUESTS (HR / Customer Care reply) -->
+<div class="screen" id="screen-device-requests">
+  <div class="app-header">
+    <div><h1>📦 Device Requests</h1><p id="dreq-sub">Requests from trainers</p></div>
+    <button class="back-btn" onclick="deviceRequestsBack()">← Back</button>
+  </div>
+  <div class="form-body">
+    <div class="two-col">
+      <div class="field" style="margin-bottom:0"><label>Search</label>
+        <input type="text" id="dreq-search" placeholder="Shop, trainer, customer or county…" oninput="renderDeviceRequests()">
+      </div>
+      <div class="field" style="margin-bottom:0"><label>Status</label>
+        <select id="dreq-status-filter" onchange="renderDeviceRequests()">
+          <option value="">All</option>
+          <option value="pending">Awaiting reply</option>
+          <option value="replied">Replied</option>
+        </select>
+      </div>
+    </div>
+    <div id="dreq-status" style="font-size:12px;color:var(--text-m);margin:10px 0"></div>
+    <div id="dreq-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ REPOSSESSED DEVICES -->
+<div class="screen" id="screen-repossessions">
+  <div class="app-header">
+    <div><h1>↩️ Repossessed Devices</h1><p id="rps-sub">Devices taken back from credit sales</p></div>
+    <button class="back-btn" onclick="openDashboard()">← Back</button>
+  </div>
+  <div class="form-body">
+    <div class="two-col">
+      <div class="field" style="margin-bottom:0"><label>Search</label>
+        <input type="text" id="rps-search" placeholder="Shop, customer, serial or trainer…" oninput="renderRepossessions()">
+      </div>
+      <div class="field" style="margin-bottom:0"><label>Status</label>
+        <select id="rps-status" onchange="renderRepossessions()">
+          <option value="">All</option>
+          <option value="REPOSSESSED">With company (not resold)</option>
+          <option value="RESOLD">Resold</option>
+          <option value="UNDONE">Undone</option>
+        </select>
+      </div>
+    </div>
+    <div id="rps-info" style="font-size:12px;color:var(--text-m);margin:10px 0"></div>
+    <div id="rps-list"></div>
   </div>
 </div>
 
@@ -1818,6 +1947,9 @@ function goHome() {
   document.getElementById('home-bottom-tabbar').style.display = isManagerOrAdmin ? 'none' : 'flex';
   document.querySelector('#screen-home .home-body').classList.toggle('has-tabbar', !isManagerOrAdmin);
   if(isManagerOrAdmin && !isViewer) refreshPendingBadge();
+  document.getElementById('req-bell').style.display = 'flex';
+  refreshDeviceRequestAlerts();
+  startDeviceRequestPolling();
   startMotivationBanners(); // shown for trainers and managers/admins alike, each with their own tailored message set
 
   document.querySelectorAll('#home-bottom-tabbar .bottom-tab').forEach(function(b){ b.classList.remove('active'); });
@@ -3131,8 +3263,8 @@ function renderMyAnalytics(){
 }
 
 function statusDot(status){
-  var color = status==='overdue' ? '#dc2626' : status==='credit' ? '#f59e0b' : status==='pending' ? '#2563eb' : '#16a34a';
-  var label = status==='overdue' ? 'Overdue' : status==='credit' ? 'Credit' : status==='pending' ? 'Pending Delivery' : 'Cash';
+  var color = status==='overdue' ? '#dc2626' : status==='credit' ? '#f59e0b' : status==='pending' ? '#2563eb' : status==='repossessed' ? '#6b7280' : '#16a34a';
+  var label = status==='overdue' ? 'Overdue' : status==='credit' ? 'Credit' : status==='pending' ? 'Pending Delivery' : status==='repossessed' ? 'Repossessed' : 'Cash';
   return '<span title="'+label+'" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:6px;vertical-align:middle"></span>';
 }
 
@@ -3222,6 +3354,443 @@ function deleteShopPrompt(filteredIndex){
     else { alert(data.message || 'Failed to delete shop.'); }
   })
   .catch(function(){ alert('Network error — please try again.'); });
+}
+
+// ── DEVICE REQUESTS ─────────────────────────────────────────────
+// HR / Customer Care (and Admin) read every trainer's request and reply here.
+// Trainers and managers read the replies. The server emails the trainer and
+// copies the manager, the original To/CC recipients, HR and Customer Care.
+var allDeviceRequests = [];
+var dreqDraft = {};
+var dreqOpenId = '';
+var dreqFrom = 'home';
+var dreqPollTimer = null;
+
+function canReplyDeviceRequests(){
+  return isViewerRole() || (session && session.role === 'Admin');
+}
+
+function setReqBadge(n){
+  n = Number(n) || 0;
+  var badge = document.getElementById('req-badge');
+  var dash = document.getElementById('dash-req-count');
+  if(badge){
+    badge.textContent = n > 99 ? '99+' : n;
+    badge.style.display = n > 0 ? 'flex' : 'none';
+  }
+  if(dash){
+    dash.textContent = n > 99 ? '99+' : n;
+    dash.style.display = n > 0 ? 'inline-block' : 'none';
+  }
+}
+
+function refreshDeviceRequestAlerts(){
+  if(!session) return;
+  fetch(APPS_SCRIPT_URL + '?action=getDeviceRequests&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
+    .then(function(r){ return r.json(); })
+    .then(function(data){ setReqBadge(data.alertCount || 0); })
+    .catch(function(){});
+}
+
+function startDeviceRequestPolling(){
+  if(dreqPollTimer) clearInterval(dreqPollTimer);
+  dreqPollTimer = setInterval(function(){
+    if(session) refreshDeviceRequestAlerts();
+  }, 60000);
+}
+
+function openDeviceRequests(){
+  if(!session) return;
+  var active = document.querySelector('.screen.active');
+  dreqFrom = (active && active.id === 'screen-dashboard') ? 'dash' : 'home';
+  showScreen('screen-device-requests');
+  var sub = canReplyDeviceRequests() ? 'Reply to trainers — everyone is copied'
+          : (session.role === 'Trainer' ? 'Your requests and replies' : 'Requests and replies in your region');
+  document.getElementById('dreq-sub').textContent = sub;
+  loadDeviceRequests();
+}
+
+function deviceRequestsBack(){
+  if(dreqFrom === 'dash') openDashboard(); else goHome();
+}
+
+function loadDeviceRequests(){
+  var statusEl = document.getElementById('dreq-status');
+  statusEl.textContent = 'Loading…';
+  document.getElementById('dreq-list').innerHTML = '';
+  fetch(APPS_SCRIPT_URL + '?action=getDeviceRequests&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.status === 'error'){ statusEl.textContent = data.message || 'Failed to load device requests.'; return; }
+      allDeviceRequests = data.requests || [];
+      setReqBadge(data.alertCount || 0);
+      var waiting = allDeviceRequests.filter(function(r){ return String(r['Reply Status']||'') !== 'REPLIED'; }).length;
+      statusEl.textContent = allDeviceRequests.length + ' request(s) — ' + waiting + ' awaiting reply.';
+      renderDeviceRequests();
+      markDeviceRepliesSeen();
+    })
+    .catch(function(){ statusEl.textContent = 'Failed to load device requests.'; });
+}
+
+// Trainers and managers: opening the list clears the bell (the NEW tags stay visible on this view).
+function markDeviceRepliesSeen(){
+  if(canReplyDeviceRequests()) return;
+  var ids = allDeviceRequests.filter(function(r){ return r.unread; }).map(function(r){ return r['Request ID']; });
+  if(!ids.length) return;
+  fetch(APPS_SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({ formType:'markDeviceRepliesSeen', requestIds: ids, requestedBy: session.email, requestedByRole: session.role })
+  }).then(function(){ setReqBadge(0); }).catch(function(){});
+}
+
+function renderDeviceRequests(){
+  var q = (v('dreq-search') || '').toLowerCase();
+  var st = document.getElementById('dreq-status-filter').value;
+  var canReply = canReplyDeviceRequests();
+  var filtered = allDeviceRequests.filter(function(r){
+    var replied = String(r['Reply Status']||'') === 'REPLIED';
+    if(st === 'pending' && replied) return false;
+    if(st === 'replied' && !replied) return false;
+    if(!q) return true;
+    var hay = [r['Shop Name'], r['Shop ID'], r['Trainer Name'], r['Customer Name'], r['County']].join(' ').toLowerCase();
+    return hay.indexOf(q) !== -1;
+  });
+  var listEl = document.getElementById('dreq-list');
+  if(!filtered.length){
+    listEl.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:10px 0">No device requests match.</div>';
+    return;
+  }
+  listEl.innerHTML = filtered.map(function(r){
+    var id = String(r['Request ID'] || '');
+    var eid = escapeHtml(id);
+    var replied = String(r['Reply Status']||'') === 'REPLIED';
+    var pill = replied ? '<span class="badge badge-green">Replied</span>' : '<span class="badge badge-yellow">Awaiting reply</span>';
+    var newTag = r.unread ? ' <span class="badge badge-red">New reply</span>' : '';
+    var amount = r['Payment Amount'] ? ' · KES ' + escapeHtml(Number(r['Payment Amount']).toLocaleString()) : '';
+    var html =
+      '<div class="dash-item">' +
+        '<div class="dash-item-top">' +
+          '<div><div class="dash-item-shop">🏪 ' + escapeHtml(r['Shop Name'] || '—') + '</div>' +
+          '<div class="dash-item-ref">ID: ' + escapeHtml(r['Shop ID'] || '—') + ' · ' + escapeHtml(r['Submitted At'] || '') + '</div></div>' +
+          '<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">' + pill + newTag + '</div>' +
+        '</div>' +
+        '<div class="dash-item-body">' +
+          '👤 ' + escapeHtml(r['Trainer Name'] || '—') + (r['Trainer Phone'] ? ' · 📞 ' + escapeHtml(r['Trainer Phone']) : '') + '<br>' +
+          '📍 ' + escapeHtml(r['County'] || '') + (r['Shipping Location'] ? ' — ' + escapeHtml(r['Shipping Location']) : '') + '<br>' +
+          '🧑 Customer: ' + escapeHtml(r['Customer Name'] || '—') + (r['Customer Phone'] ? ' · ' + escapeHtml(r['Customer Phone']) : '') + '<br>' +
+          '📦 ' + escapeHtml(r['Device Type'] || 'H10') + ' · ' + escapeHtml(r['Payment Type'] || '') + amount + '<br>' +
+          (r['Start Date'] ? '🗓️ ' + escapeHtml(r['Start Date']) + ' to ' + escapeHtml(r['End Date'] || '—') + '<br>' : '') +
+          (r['Message'] ? '💬 ' + escapeHtml(r['Message']) : '') +
+        '</div>';
+    if(replied){
+      html += '<div style="margin-top:8px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;white-space:pre-wrap">' +
+        (r['Dispatch Date'] ? '<strong>🚚 Scheduled dispatch: ' + escapeHtml(r['Dispatch Date']) + '</strong>\n' : '') +
+        escapeHtml(r['Reply Message'] || '') + '</div>';
+    }
+    if(canReply){
+      html += '<div class="dash-item-actions" style="margin-top:8px">' +
+        '<button class="dash-approve-btn" style="background:var(--accent)" data-id="' + eid + '" onclick="toggleDreqReply(this)">' + (replied ? '↩️ Reply again' : '↩️ Reply') + '</button></div>' +
+        '<div id="dreq-form-' + eid + '" style="display:' + (dreqOpenId === id ? 'block' : 'none') + ';margin-top:10px">' +
+          '<div class="field"><label>Reply message</label>' +
+          '<textarea rows="4" data-id="' + eid + '" data-kind="msg" oninput="dreqSetDraft(this)" placeholder="e.g. Device dispatched via courier, expected on Thursday.">' + escapeHtml(dreqDraft['m:' + id] || '') + '</textarea></div>' +
+          '<div class="field"><label>Scheduled dispatch date <span style="font-weight:400;color:var(--text-m)">(optional)</span></label>' +
+          '<input type="date" data-id="' + eid + '" data-kind="date" oninput="dreqSetDraft(this)" value="' + escapeHtml(dreqDraft['d:' + id] || '') + '"></div>' +
+          '<div style="font-size:11px;color:var(--text-m);margin-bottom:8px">The trainer gets this by email. Their manager, the original To/CC recipients, HR and Customer Care are copied.</div>' +
+          '<button class="dash-approve-btn" style="background:var(--green,#16a34a);width:100%" data-id="' + eid + '" onclick="sendDeviceRequestReply(this)">📨 Send reply</button>' +
+        '</div>';
+    }
+    return html + '</div>';
+  }).join('');
+}
+
+function dreqSetDraft(el){
+  dreqDraft[(el.getAttribute('data-kind') === 'date' ? 'd:' : 'm:') + el.getAttribute('data-id')] = el.value;
+}
+
+function toggleDreqReply(btn){
+  var id = btn.getAttribute('data-id');
+  var form = document.getElementById('dreq-form-' + id);
+  if(!form) return;
+  var open = form.style.display === 'none';
+  form.style.display = open ? 'block' : 'none';
+  dreqOpenId = open ? id : '';
+}
+
+function sendDeviceRequestReply(btn){
+  var id = btn.getAttribute('data-id');
+  var msgEl = document.querySelector('textarea[data-id="' + id + '"]');
+  var dateEl = document.querySelector('input[data-id="' + id + '"]');
+  var msg = msgEl ? msgEl.value.trim() : '';
+  if(!msg){ alert('Type a reply message first.'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  fetch(APPS_SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({
+      formType:'replyDeviceRequest', requestId:id, message:msg,
+      dispatchDate: dateEl ? dateEl.value : '',
+      requestedBy: session.email, requestedByRole: session.role
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.status === 'success'){
+      delete dreqDraft['m:' + id]; delete dreqDraft['d:' + id];
+      dreqOpenId = '';
+      alert(data.emailSent ? 'Reply sent. The trainer and everyone copied have been emailed.' : 'Reply saved in the app, but the email could not be sent.');
+      loadDeviceRequests();
+    } else {
+      alert(data.message || 'Failed to send the reply.');
+      btn.disabled = false; btn.textContent = '📨 Send reply';
+    }
+  })
+  .catch(function(){
+    alert('Network error — please try again.');
+    btn.disabled = false; btn.textContent = '📨 Send reply';
+  });
+}
+
+// ── DEVICE REPOSSESSION (trainer form, credit sales only) ───────
+var rpMatches = [];
+var rpSelected = null;
+
+function rpTodayStr(){
+  var d = new Date();
+  d = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+  return d.toISOString().slice(0,10);
+}
+
+function resetRepossessionUI(){
+  rpSelected = null; rpMatches = [];
+  setVal('rp-search',''); setVal('rp-serial',''); setVal('rp-notes','');
+  ['rp-reason','rp-charger','rp-screen'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  var pw = document.getElementById('rp-power'); if(pw) pw.value='Not tested';
+  var r = document.getElementById('rp-results'); if(r) r.innerHTML='';
+  var st = document.getElementById('rp-search-status'); if(st) st.textContent='';
+  var sel = document.getElementById('rp-selected'); if(sel) sel.style.display='none';
+  var er = document.getElementById('rp-error'); if(er) er.style.display='none';
+  var su = document.getElementById('rp-success'); if(su) su.style.display='none';
+  clearPhoto('rp-photo');
+}
+
+function searchRepossessShops(){
+  var q = v('rp-search');
+  var statusEl = document.getElementById('rp-search-status');
+  var resultsEl = document.getElementById('rp-results');
+  resultsEl.innerHTML = '';
+  document.getElementById('rp-selected').style.display = 'none';
+  rpSelected = null; rpMatches = [];
+  if(!q){ statusEl.textContent = 'Enter a Shop ID or Shop Name to search.'; return; }
+  statusEl.textContent = 'Searching…';
+  var url = APPS_SCRIPT_URL + '?action=searchShop&query=' + encodeURIComponent(q) +
+    '&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role);
+  fetch(url).then(function(r){ return r.json(); }).then(function(data){
+    // Credit sales only: cash orders awaiting delivery are not repossessed here.
+    var matches = (data.matches || []).filter(function(m){ return m.paymentMethod !== 'Cash' && m.status !== 'pending'; });
+    rpMatches = matches;
+    if(!matches.length){
+      statusEl.textContent = 'No credit sale with an outstanding balance matches "' + q + '".';
+      return;
+    }
+    statusEl.textContent = matches.length + ' credit sale(s) found — tap one to select:';
+    resultsEl.innerHTML = matches.map(function(m, i){
+      var overdue = m.status === 'overdue';
+      return '<div onclick="selectRepossessShop(' + i + ')" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:start">' +
+        '<div>' + statusDot(m.status) + '<strong>' + escapeHtml(m.shopName || '—') + '</strong> <span style="color:var(--text-m);font-size:12px">(ID: ' + escapeHtml(m.shopId || '—') + ')</span><br>' +
+        '<span style="font-size:12px;color:var(--text-m);margin-left:15px">' + escapeHtml(m.customerName || '') + ' · ' + escapeHtml(m.customerPhone || '') + '</span></div>' +
+        '<div style="text-align:right;color:#b91c1c;font-weight:700">KES ' + Number(m.balance || 0).toLocaleString() + '<div style="font-size:10px;color:var(--text-m);font-weight:400">' + (overdue ? 'overdue' : 'balance') + '</div></div>' +
+        '</div></div>';
+    }).join('');
+  }).catch(function(){ statusEl.textContent = 'Search failed — check your connection and try again.'; });
+}
+
+function selectRepossessShop(i){
+  var m = rpMatches[i];
+  if(!m) return;
+  document.getElementById('rp-results').innerHTML = '';
+  document.getElementById('rp-error').style.display = 'none';
+  document.getElementById('rp-success').style.display = 'none';
+  var card = document.getElementById('rp-selected-card');
+  if(!m.paymentId){
+    rpSelected = null;
+    card.innerHTML = '<strong>' + escapeHtml(m.shopName || '—') + '</strong><br><span style="color:#b91c1c">⚠️ This record was created before payment tracking was added and can\'t be repossessed here. Ask your manager.</span>';
+    document.getElementById('rp-fields').style.display = 'none';
+    document.getElementById('rp-selected').style.display = 'block';
+    return;
+  }
+  rpSelected = m;
+  card.innerHTML =
+    '<strong>' + escapeHtml(m.shopName || '—') + '</strong> <span style="color:var(--text-m)">(ID: ' + escapeHtml(m.shopId || '—') + ')</span><br>' +
+    'Customer: ' + escapeHtml(m.customerName || '') + ' · ' + escapeHtml(m.customerPhone || '') + '<br>' +
+    'Location: ' + escapeHtml(m.location || '') + '<br>' +
+    'Paid so far (kept): <strong>KES ' + Number(m.amountPaid || 0).toLocaleString() + '</strong><br>' +
+    'Balance to be removed: <strong style="color:#b91c1c">KES ' + Number(m.balance || 0).toLocaleString() + '</strong>';
+  document.getElementById('rp-fields').style.display = 'block';
+  document.getElementById('rp-selected').style.display = 'block';
+  document.getElementById('rp-search-status').textContent = 'Sale selected.';
+  setVal('rp-serial', m.deviceSerial || '');
+  setVal('rp-date', rpTodayStr());
+  setVal('rp-notes', '');
+  ['rp-reason','rp-charger','rp-screen'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('rp-power').value = 'Not tested';
+  clearPhoto('rp-photo');
+}
+
+function submitRepossession(){
+  var errEl = document.getElementById('rp-error');
+  errEl.style.display = 'none';
+  function fail(msg){ errEl.textContent = msg; errEl.style.display = 'block'; }
+  if(!rpSelected){ fail('Select a shop first.'); return; }
+  if(!v('rp-date')){ fail('Pick the date the device was repossessed.'); return; }
+  if(!v('rp-reason')){ fail('Select the reason for repossession.'); return; }
+  if(!v('rp-charger')){ fail('Say whether the device has a charger.'); return; }
+  if(!v('rp-screen')){ fail('Select the screen condition.'); return; }
+  if(!photos['rp-photo']){ fail('Take a photo of the device before submitting.'); return; }
+  if(!confirm('Record this device as repossessed?\n\nKES ' + Number(rpSelected.balance || 0).toLocaleString() + ' will be removed from the credit balance. The deposit and payments already made stay on record.')) return;
+
+  document.getElementById('rp-submit').style.display = 'none';
+  document.getElementById('rp-spinner').style.display = 'block';
+
+  var payload = {
+    formType: 'repossession',
+    paymentId: rpSelected.paymentId,
+    deviceSerial: v('rp-serial'),
+    repossessDate: v('rp-date'),
+    reason: v('rp-reason'),
+    hasCharger: v('rp-charger'),
+    screenCondition: v('rp-screen'),
+    poweredOn: v('rp-power'),
+    notes: v('rp-notes'),
+    photo: photos['rp-photo'],
+    trainerName: session.name,
+    trainerEmail: session.email,
+    requestedBy: session.email,
+    county: session.county,
+    clientRequestId: getRequestId('repossess')
+  };
+
+  fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    document.getElementById('rp-spinner').style.display = 'none';
+    document.getElementById('rp-submit').style.display = 'flex';
+    if(data.status === 'success'){
+      resetRequestId('repossess');
+      var removed = Number(data.balanceRemoved || 0).toLocaleString();
+      resetRepossessionUI();
+      var su = document.getElementById('rp-success');
+      su.textContent = '✅ Repossession recorded. KES ' + removed + ' removed from the credit balance; the deposit and payments are kept.';
+      su.style.display = 'block';
+    } else {
+      resetRequestId('repossess');
+      fail(data.message || 'Failed to record the repossession.');
+    }
+  })
+  .catch(function(){
+    // keep the same request ID so a retry can't create a duplicate
+    document.getElementById('rp-spinner').style.display = 'none';
+    document.getElementById('rp-submit').style.display = 'flex';
+    fail('Network error — please try again.');
+  });
+}
+
+// ── REPOSSESSED DEVICES LIST (dashboard: managers, admin, HR, customer care) ──
+var allRepossessions = [];
+
+function canManageRepossessions(){
+  return session && (session.role === 'Manager' || session.role === 'Admin');
+}
+
+function openRepossessions(){
+  if(!session) return;
+  showScreen('screen-repossessions');
+  loadRepossessions();
+}
+
+function loadRepossessions(){
+  var info = document.getElementById('rps-info');
+  info.textContent = 'Loading…';
+  document.getElementById('rps-list').innerHTML = '';
+  fetch(APPS_SCRIPT_URL + '?action=getRepossessions&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.status === 'error'){ info.textContent = data.message || 'Failed to load.'; return; }
+      allRepossessions = data.repossessions || [];
+      renderRepossessions();
+    })
+    .catch(function(){ info.textContent = 'Failed to load repossessed devices.'; });
+}
+
+function renderRepossessions(){
+  var q = (v('rps-search') || '').toLowerCase();
+  var st = document.getElementById('rps-status').value;
+  var manage = canManageRepossessions();
+  var filtered = allRepossessions.filter(function(r){
+    if(st && r['Status'] !== st) return false;
+    if(!q) return true;
+    var hay = [r['Shop Name'], r['Shop ID'], r['Customer Name'], r['Device Serial No'], r['Trainer Name'], r['County']].join(' ').toLowerCase();
+    return hay.indexOf(q) !== -1;
+  });
+  var withCo = allRepossessions.filter(function(r){ return r['Status'] === 'REPOSSESSED'; }).length;
+  var resold = allRepossessions.filter(function(r){ return r['Status'] === 'RESOLD'; }).length;
+  document.getElementById('rps-info').textContent = allRepossessions.length + ' repossession(s): ' + withCo + ' with the company, ' + resold + ' resold.';
+  var listEl = document.getElementById('rps-list');
+  if(!filtered.length){ listEl.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:10px 0">No repossessed devices match.</div>'; return; }
+  listEl.innerHTML = filtered.map(function(r){
+    var id = escapeHtml(r['Repossession ID'] || '');
+    var status = r['Status'];
+    var pill = status === 'RESOLD' ? '<span class="badge badge-green">Resold</span>'
+             : status === 'UNDONE' ? '<span class="badge badge-red">Undone</span>'
+             : '<span class="badge badge-yellow">With company</span>';
+    var dateTxt = String(r['Date Repossessed'] || '').split(',')[0];
+    var html =
+      '<div class="dash-item">' +
+        '<div class="dash-item-top"><div><div class="dash-item-shop">🏪 ' + escapeHtml(r['Shop Name'] || '—') + '</div>' +
+        '<div class="dash-item-ref">ID: ' + escapeHtml(r['Shop ID'] || '—') + ' · repossessed ' + escapeHtml(dateTxt) + '</div></div>' + pill + '</div>' +
+        '<div class="dash-item-body">' +
+          '🧑 ' + escapeHtml(r['Customer Name'] || '—') + (r['Customer Phone'] ? ' · ' + escapeHtml(r['Customer Phone']) : '') + '<br>' +
+          '👤 ' + escapeHtml(r['Trainer Name'] || '—') + ' · ' + escapeHtml(r['County'] || '') + '<br>' +
+          '📟 Serial: ' + escapeHtml(r['Device Serial No'] || 'not recorded') + '<br>' +
+          'Reason: ' + escapeHtml(r['Reason'] || '—') + '<br>' +
+          '🔌 Charger: <strong>' + escapeHtml(r['Has Charger'] || '—') + '</strong> · 📱 Screen: <strong>' + escapeHtml(r['Screen Condition'] || '—') + '</strong> · Powers on: ' + escapeHtml(r['Powers On'] || '—') + '<br>' +
+          (r['Condition Notes'] ? '📝 ' + escapeHtml(r['Condition Notes']) + '<br>' : '') +
+          '💰 Paid (kept): KES ' + Number(r['Amount Paid Kept'] || 0).toLocaleString() + ' · Balance removed: KES ' + Number(r['Balance Removed'] || 0).toLocaleString() +
+          (r['Device Photo URL'] ? '<br>📷 <a href="' + escapeHtml(r['Device Photo URL']) + '" target="_blank" rel="noopener" style="color:var(--accent)">View device photo</a>' : '') +
+        '</div>';
+    if(status === 'RESOLD'){
+      html += '<div style="margin-top:8px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px">Resold ' + escapeHtml(String(r['Resold At'] || '').split(',')[0]) +
+        (r['Resold To Shop'] ? ' to ' + escapeHtml(r['Resold To Shop']) : '') + (r['Resold Note'] ? '<br>' + escapeHtml(r['Resold Note']) : '') + '</div>';
+    }
+    if(manage && status === 'REPOSSESSED'){
+      html += '<div class="dash-item-actions" style="margin-top:8px;display:flex;gap:8px">' +
+        '<button class="dash-approve-btn" style="background:#16a34a" data-id="' + id + '" onclick="markRepossessionResold(this)">✅ Mark resold</button>' +
+        '<button class="dash-approve-btn" style="background:#6b7280" data-id="' + id + '" data-bal="' + escapeHtml(r['Balance Removed'] || 0) + '" onclick="undoRepossession(this)">↩️ Undo</button></div>';
+    }
+    return html + '</div>';
+  }).join('');
+}
+
+function postRepossessionAction(payload, okMsg){
+  fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.status === 'success'){ alert(okMsg); loadRepossessions(); }
+      else alert(data.message || 'Action failed.');
+    })
+    .catch(function(){ alert('Network error — please try again.'); });
+}
+
+function markRepossessionResold(btn){
+  var note = prompt('Resold to which shop / customer? (optional)');
+  if(note === null) return;
+  postRepossessionAction({ formType:'markRepossessionResold', repossessionId: btn.getAttribute('data-id'), note: note, requestedBy: session.email, requestedByRole: session.role }, 'Marked as resold.');
+}
+
+function undoRepossession(btn){
+  var bal = Number(btn.getAttribute('data-bal') || 0).toLocaleString();
+  if(!confirm('Undo this repossession?\n\nKES ' + bal + ' goes back on the shop\'s credit balance.')) return;
+  postRepossessionAction({ formType:'undoRepossession', repossessionId: btn.getAttribute('data-id'), requestedBy: session.email, requestedByRole: session.role }, 'Repossession undone. The balance is back on the shop.');
 }
 
 // ── SIGNED CONTRACTS (Manager/Admin view) ───────────────────────
@@ -4042,6 +4611,7 @@ function onPurposeChange(){
   document.getElementById('purpose-repayment').style.display = purpose==='repayment' ? 'block' : 'none';
   document.getElementById('purpose-request').style.display = purpose==='request' ? 'block' : 'none';
   document.getElementById('purpose-contract').style.display = purpose==='contract' ? 'block' : 'none';
+  document.getElementById('purpose-repossession').style.display = purpose==='repossession' ? 'block' : 'none';
 
   if(purpose==='request'){
     setVal('d-req-name', session ? session.name : '');
@@ -4138,6 +4708,8 @@ function resetPurposeUI(){
   document.getElementById('purpose-repayment').style.display='none';
   document.getElementById('purpose-request').style.display='none';
   document.getElementById('purpose-contract').style.display='none';
+  document.getElementById('purpose-repossession').style.display='none';
+  resetRepossessionUI();
   // repayment sub-widgets
   setVal('cr-search',''); document.getElementById('cr-results').innerHTML='';
   document.getElementById('cr-search-status').textContent='';
@@ -4967,7 +5539,7 @@ function applyViewerRestrictions(){
   var v = isViewerRole();
   document.querySelectorAll('#dash-menu .form-card').forEach(function(c){
     var oc = c.getAttribute('onclick')||'';
-    var keep = oc.indexOf("setFormType('devicepay')") !== -1 || oc.indexOf("openSignedContracts()") !== -1;
+    var keep = oc.indexOf("setFormType('devicepay')") !== -1 || oc.indexOf("openSignedContracts()") !== -1 || oc.indexOf("openDeviceRequests()") !== -1 || oc.indexOf("openRepossessions()") !== -1;
     if(v) c.style.display = keep ? '' : 'none';
     else if(c.id !== 'dash-archive-card') c.style.display = '';
   });
@@ -5322,7 +5894,7 @@ function renderDevicePaySummary(){
   });
 
   var totalDevices = filtered.length;
-  var cashCount=0, cashTotal=0, creditCount=0, creditTotal=0, creditSalesTotal=0, balanceTotal=0;
+  var cashCount=0, cashTotal=0, creditCount=0, creditTotal=0, creditSalesTotal=0, balanceTotal=0, repoCount=0;
   var upcoming=[];
   var byTrainer={};
 
@@ -5331,6 +5903,7 @@ function renderDevicePaySummary(){
     var price = num(row['Device Price']);
     var paid = num(row['Amount Paid']);
     var balance = num(row['Balance']);
+    if(row['Status']==='Repossessed') repoCount++;
     var trainer = row['Trainer Name']||'Unknown';
 
     if(!byTrainer[trainer]) byTrainer[trainer]={devices:0,cash:0,credit:0,balance:0};
@@ -5359,6 +5932,7 @@ function renderDevicePaySummary(){
       sumCard('#ea7a0c','📇','Credit sales', 'KES '+creditSalesTotal.toLocaleString(), creditCount+' device(s) sold on credit') +
       sumCard('#9b3aab','✅','Credit collected', 'KES '+creditTotal.toLocaleString(), 'paid so far on credit sales') +
       sumCard('#e0212a','⚠️','Outstanding balance', 'KES '+balanceTotal.toLocaleString(), 'still owed on credit sales') +
+      sumCard('#6b7280','↩️','Repossessed', repoCount, 'balance removed — deposit & payments kept') +
     '</div>';
 
   var trainerRows = Object.keys(byTrainer).sort().map(function(t){
@@ -5460,6 +6034,9 @@ function paymentStatusDot(row){
     return isOverdue
       ? '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#ef4444;margin-right:6px" title="Overdue"></span>'
       : '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#f97316;margin-right:6px" title="Credit"></span>';
+  }
+  if(status==='Repossessed'){
+    return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#6b7280;margin-right:6px" title="Repossessed"></span>';
   }
   return '';
 }
