@@ -2615,13 +2615,13 @@ function renderMyPayments(){
 
   var cardsHtml =
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">' +
-      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalIssued, cashCount+' cash + '+creditCount+' credit · Sales value KES '+(cashTotal+creditSalesTotal).toLocaleString(), true) +
-      sumCard('#0f8a3f','💵','Cash sales', 'KES '+cashTotal.toLocaleString(), cashCount+' device(s) sold on cash') +
-      sumCard('#ea7a0c','📇','Credit sales', 'KES '+creditSalesTotal.toLocaleString(), creditCount+' device(s) sold on credit') +
-      sumCard('#9b3aab','✅','Credit collected', 'KES '+creditCollected.toLocaleString(), 'paid so far on credit sales') +
-      sumCard('#e0212a','⚠️','Outstanding balance', 'KES '+outstandingBalance.toLocaleString(), 'still owed on credit sales') +
-      sumCard('#0e93a8','💰','Total collected', 'KES '+totalCollected.toLocaleString(), 'cash + credit payments received') +
-      sumCard('#5b6470','🚚','Due on delivery', 'KES '+dueAmount.toLocaleString(), 'cash balance due when delivered') +
+      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalIssued, cashCount+' Cash + '+creditCount+' Credit · Sales Value KES '+(cashTotal+creditSalesTotal).toLocaleString(), true) +
+      sumCard('#0f8a3f','💵','Cash Cales', 'KES '+cashTotal.toLocaleString(), cashCount+' Device(s) Sold on Cash') +
+      sumCard('#ea7a0c','📇','Credit Sales', 'KES '+creditSalesTotal.toLocaleString(), creditCount+' Device(s) Sold on Credit') +
+      sumCard('#9b3aab','✅','Credit Collected', 'KES '+creditCollected.toLocaleString(), 'Paid so far on Credit Sales') +
+      sumCard('#e0212a','⚠️','Outstanding Balance', 'KES '+outstandingBalance.toLocaleString(), 'Still Owed on Credit Sales') +
+      sumCard('#0e93a8','💰','Total Collected', 'KES '+totalCollected.toLocaleString(), 'Cash + Credit Payments Received') +
+      sumCard('#5b6470','🚚','Due on Delivery', 'KES '+dueAmount.toLocaleString(), 'Cash Balance Due when Delivered') +
     '</div>';
 
   var dueSoonHtml = dueSoon.length ? dueSoon.map(function(x){
