@@ -478,6 +478,13 @@ input[type=file]{display:none}
             <select id="dash-manager-filter" onchange="renderDashList()"><option value="">All Managers</option></select>
           </div>
         </div>
+        <div class="field" id="dash-paytype-wrap" style="margin-bottom:0;display:none"><label>Payment Type</label>
+          <select id="dash-paytype-filter" onchange="renderDashList()">
+            <option value="">All Payment Types</option>
+            <option value="Cash">Cash</option>
+            <option value="Credit">Credit</option>
+          </select>
+        </div>
         <div class="field" style="margin-bottom:0"><label>Date Range</label>
           <select id="dash-range-filter" onchange="onRangeFilterChange()">
             <option value="all">All Time</option>
@@ -712,7 +719,7 @@ input[type=file]{display:none}
         </div>
         <div class="two-col">
           <div class="field"><label for="ns-phone">Customer Phone Number<span class="req">*</span></label>
-            <input type="tel" id="ns-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
+            <input type="tel" id="ns-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,}|\+?256[37][0-9]{8})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
           </div>
           <div class="field"><label for="ns-shopid">Shop ID<span class="req">*</span></label>
             <input type="text" id="ns-shopid" placeholder="e.g. 456">
@@ -758,7 +765,7 @@ input[type=file]{display:none}
           <input type="text" id="d-req-custname" placeholder="e.g. Jane Wambui">
         </div>
         <div class="field"><label for="d-req-custphone">Customer Phone Number<span class="req">*</span></label>
-          <input type="tel" id="d-req-custphone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
+          <input type="tel" id="d-req-custphone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,}|\+?256[37][0-9]{8})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
         </div>
       </div>
       <div class="field"><label for="d-req-devicetype">Device Type<span class="req">*</span></label>
@@ -806,7 +813,7 @@ input[type=file]{display:none}
           <input type="text" id="d-req-name" readonly>
         </div>
         <div class="field"><label for="d-req-phone">Trainer Phone Number<span class="req">*</span></label>
-          <input type="tel" id="d-req-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
+          <input type="tel" id="d-req-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,}|\+?256[37][0-9]{8})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
         </div>
       </div>
       <div class="field"><label for="d-req-shipping">Shipping Location<span class="req">*</span></label>
@@ -851,7 +858,7 @@ input[type=file]{display:none}
         </div>
       </div>
       <div class="field"><label for="ctr-phone">Your Phone Number<span class="req">*</span></label>
-        <input type="tel" id="ctr-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
+        <input type="tel" id="ctr-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,}|\+?256[37][0-9]{8})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this)">
       </div>
       <div class="field"><label>Signed Contract File (PDF or photo, max 3MB)<span class="req">*</span></label>
         <label for="ctr-file" style="display:block;padding:14px;border:2px dashed var(--border);border-radius:10px;text-align:center;cursor:pointer;color:var(--accent);font-weight:600;background:var(--surface)" id="ctr-file-label">📎 Tap to choose a file</label>
@@ -1394,7 +1401,7 @@ input[type=file]{display:none}
       </div>
       <div class="two-col">
         <div class="field"><label for="s-phone">Owner Phone<span class="req">*</span></label>
-          <input type="tel" id="s-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress('s')">
+          <input type="tel" id="s-phone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,}|\+?256[37][0-9]{8})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress('s')">
         </div>
         <div class="field"><label for="s-transactions">No. of Transactions<span class="req">*</span></label>
           <input type="text" id="s-transactions" placeholder="e.g. 25" inputmode="numeric" oninput="calcProgress('s')">
@@ -1466,7 +1473,7 @@ input[type=file]{display:none}
         <input type="text" id="i-ownername" placeholder="e.g. John Kamau" oninput="calcProgress('i')">
       </div>
       <div class="field"><label for="i-ownerphone">Shop Owner Phone<span class="req">*</span></label>
-        <input type="tel" id="i-ownerphone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress('i')">
+        <input type="tel" id="i-ownerphone" placeholder="0712 345 678" inputmode="tel" pattern="^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,}|\+?256[37][0-9]{8})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress('i')">
       </div>
       <div class="field"><label for="i-location">Shop Location<span class="req">*</span></label>
         <input type="text" id="i-location" placeholder="e.g. Nakuru Town, Kenyatta Ave" oninput="calcProgress('i')">
@@ -1672,7 +1679,7 @@ function nowKEFrontend() {
   return weekday + ', ' + day + ' ' + month + ' ' + year + ', ' + hour + ':' + min;
 }
 
-var KENYA_COUNTIES = ['Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa','Homabay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa',"Murang'a",'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans-Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot'];
+var KENYA_COUNTIES = ['Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa','Homabay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa',"Murang'a",'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans-Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot','Northern Region (UG)','North Eastern Region (UG)','Eastern Region (UG)','Western Region (UG)','Central Region (UG)'];
 function countyOptionsHTML(selected){
   return '<option value="">Select county…</option>' + KENYA_COUNTIES.map(function(c){
     return '<option'+(c===selected?' selected':'')+'>'+c+'</option>';
@@ -2144,7 +2151,7 @@ function addVisit(){
         '<div class="field"><label>Location<span class="req">*</span></label><input type="text" id="v-loc-'+id+'" minlength="4" placeholder="Centers/Town (Minimum of 4 Characters)" oninput="calcProgress(\'r\')"></div>'+
 
     '<div class="field"><label>Shop Owner Phone Number<span class="req">*</span></label>'+
-    '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" inputmode="tel" pattern="^(\\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress(\'r\')"></div>'+
+    '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" inputmode="tel" pattern="^(\\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,}|\\+?256[37][0-9]{8})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress(\'r\')"></div>'+
 
     '<div class="field"><label>Front Shop Picture <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>'+
     '<div class="photo-box" onclick="document.getElementById(\'v-photo-'+id+'-file\').click()">'+
@@ -3367,7 +3374,7 @@ var dreqFrom = 'home';
 var dreqPollTimer = null;
 
 function canReplyDeviceRequests(){
-  return isViewerRole() || (session && session.role === 'Admin');
+  return isViewerRole() || (session && (session.role === 'Admin' || session.role === 'Manager'));
 }
 
 function setReqBadge(n){
@@ -3434,7 +3441,7 @@ function loadDeviceRequests(){
 
 // Trainers and managers: opening the list clears the bell (the NEW tags stay visible on this view).
 function markDeviceRepliesSeen(){
-  if(canReplyDeviceRequests()) return;
+  if(isViewerRole() || (session && session.role === 'Admin')) return;
   var ids = allDeviceRequests.filter(function(r){ return r.unread; }).map(function(r){ return r['Request ID']; });
   if(!ids.length) return;
   fetch(APPS_SCRIPT_URL, {
@@ -4792,7 +4799,7 @@ function submitNewSale(){
   if(!method) missing.push('Payment method');
   if(!custName) missing.push('Customer name');
   if(!phone) missing.push('Customer phone');
-  else if(!isValidKEPhone(phone)) missing.push('Customer phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
+  else if(!isValidKEPhone(phone)) missing.push('Customer phone (use +254712345678, 254712345678, 0712345678, 0112345678, or Uganda +256772123456)');
   if(!shopId) missing.push('Shop ID');
   if(!shopName) missing.push('Shop name');
   if(!loc) missing.push('Location');
@@ -4860,14 +4867,14 @@ function submitDeviceRequest(){
   if(!reqShopName) missing.push('Shop name');
   if(!reqCustName) missing.push('Customer name');
   if(!reqCustPhone) missing.push('Customer phone');
-  else if(!isValidKEPhone(reqCustPhone)) missing.push('Customer phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
+  else if(!isValidKEPhone(reqCustPhone)) missing.push('Customer phone (use +254712345678, 254712345678, 0712345678, 0112345678, or Uganda +256772123456)');
   if(!reqDeviceType) missing.push('Device type');
   if(!reqEmail) missing.push('Send-to email');
   if(!reqAmount) missing.push('Device amount');
   if(!reqPaytype) missing.push('Payment type');
   if(!reqLocation) missing.push('Location');
   if(!reqPhone) missing.push('Trainer phone');
-  else if(!isValidKEPhone(reqPhone)) missing.push('Trainer phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
+  else if(!isValidKEPhone(reqPhone)) missing.push('Trainer phone (use +254712345678, 254712345678, 0712345678, 0112345678, or Uganda +256772123456)');
   if(!reqShipping) missing.push('Shipping location');
   if(!reqStart) missing.push('Start date');
   if(!getCurrentCountyValue('d')) missing.push('County — please select which county this request is for');
@@ -5039,7 +5046,7 @@ function sanitizePhoneInput(el){
 // matching real Kenyan mobile numbers. Anything else (letters, "N/N",
 // punctuation, too short) is rejected.
 function isValidKEPhone(str){
-  return /^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,})$/.test(String(str||'').trim());
+  return /^(\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,}|\+?256[37][0-9]{8})$/.test(String(str||'').trim());
 }
 
 // ── SUBMIT ────────────────────────────────────────────────────
@@ -5175,7 +5182,7 @@ function submitForm(type){
             if(!loc) missing.push('Visit '+id+' location');
       else if(loc.trim().length < 4) missing.push('Visit '+id+' — Location is too short ('+loc.trim().length+' characters). Please enter at least 4 characters');
       if(!phone) missing.push('Visit '+id+' shop owner phone number');
-      else if(!isValidKEPhone(phone)) missing.push('Visit '+id+' shop owner phone number (use +254712345678, 254712345678, 0712345678, or 0112345678)');
+      else if(!isValidKEPhone(phone)) missing.push('Visit '+id+' shop owner phone number (use +254712345678, 254712345678, 0712345678, 0112345678, or Uganda +256772123456)');
       if(!feedback) missing.push('Visit '+id+' client feedback');
       else if(feedback.trim().length <30) missing.push('Visit '+id+' — Client feedback is too short ('+feedback.trim().length+' characters). Please give at least 30 characters');
 
@@ -5203,7 +5210,7 @@ function submitForm(type){
     if(!payload.ownerName) missing.push('Owner name');
     if(!payload.shopLocation) missing.push('Shop location');
     if(!payload.ownerPhone) missing.push('Owner phone');
-    else if(!isValidKEPhone(payload.ownerPhone)) missing.push('Owner phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
+    else if(!isValidKEPhone(payload.ownerPhone)) missing.push('Owner phone (use +254712345678, 254712345678, 0712345678, 0112345678, or Uganda +256772123456)');
     if(!payload.numTransactions) missing.push('No. of transactions');
     if(!payload.ownerImage) missing.push('Owner app photo');
   }
@@ -5217,7 +5224,7 @@ function submitForm(type){
     if(!payload.shopName) missing.push('Shop name');
     if(!payload.ownerName) missing.push('Shop owner name');
     if(!payload.ownerPhone) missing.push('Shop owner phone');
-    else if(!isValidKEPhone(payload.ownerPhone)) missing.push('Shop owner phone (use +254712345678, 254712345678, 0712345678, or 0112345678)');
+    else if(!isValidKEPhone(payload.ownerPhone)) missing.push('Shop owner phone (use +254712345678, 254712345678, 0712345678, 0112345678, or Uganda +256772123456)');
     if(!payload.shopLocation) missing.push('Shop location');
     if(!payload.deviceType) missing.push('Device type');
     if(!payload.exteriorImage) missing.push('Exterior photo');
@@ -5605,6 +5612,8 @@ function setFormType(type){
   document.getElementById('install-status-tabs').style.display = (type==='install') ? 'flex' : 'none';
   document.getElementById('dash-devicepay-summary').style.display = (type==='devicepay') ? 'block' : 'none';
   document.getElementById('dash-shop-filter-wrap').style.display = (type==='devicepay') ? 'block' : 'none';
+  document.getElementById('dash-paytype-wrap').style.display = (type==='devicepay') ? 'block' : 'none';
+  document.getElementById('dash-paytype-filter').value='';
   document.getElementById('dash-export-pdf-wrap').style.display = (type==='devicepay' || type==='route') ? 'block' : 'none';
   document.getElementById('dash-analytics-wrap').style.display = (type==='route') ? 'block' : 'none';
   document.getElementById('dash-filters').style.display = (type==='users') ? 'none' : 'flex';
@@ -5902,6 +5911,14 @@ function sumCard(colorKey, icon, label, big, sub, wide){
     '<div style="font-size:11.5px;font-weight:700;margin-top:2px;color:#1f2937">'+sub+'</div></div>';
 }
 
+function dashPayTypeAllowed(row){
+  var el = document.getElementById('dash-paytype-filter');
+  var f = el ? el.value : '';
+  if(!f || dashFormType!=='devicepay') return true;
+  var isCash = (row['Payment Method']||'')==='Cash';
+  return f==='Cash' ? isCash : !isCash;
+}
+
 function renderDevicePaySummary(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
@@ -5910,6 +5927,7 @@ function renderDevicePaySummary(){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
       dashRegionManagerAllowed(x['County']) &&
+      dashPayTypeAllowed(x) &&
       (!shopFilter || String(x['Shop ID']||'').toLowerCase().indexOf(shopFilter)!==-1 || String(x['Shop Name']||'').toLowerCase().indexOf(shopFilter)!==-1) &&
       dateMatches(x['Date']);
   });
@@ -5939,7 +5957,7 @@ function renderDevicePaySummary(){
       var now=new Date();
       var diffDays=Math.ceil((due-now)/(1000*60*60*24));
       if(!isNaN(due.getTime()) && diffDays<=3){
-        upcoming.push({trainer:trainer,customer:row['Customer Name'],phone:row['Customer Phone'],shop:row['Shop Name'],shopId:row['Shop ID'],due:row['Next Payment Date'],balance:balance,paid:paid,price:price,installment:row['Installment Amount'],days:diffDays,overdue:diffDays<0});
+        upcoming.push({trainerEmail:String(row['Trainer Email']||'').trim().toLowerCase(),trainer:trainer,customer:row['Customer Name'],phone:row['Customer Phone'],shop:row['Shop Name'],shopId:row['Shop ID'],due:row['Next Payment Date'],balance:balance,paid:paid,price:price,installment:row['Installment Amount'],days:diffDays,overdue:diffDays<0});
       }
     }
   });
@@ -5964,15 +5982,105 @@ function renderDevicePaySummary(){
     '</div>';
   }).join('') || '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No records for this filter.</div>';
 
-  var upcomingHtml = upcoming.length ? upcoming.map(function(u){
-    return followUpRowHtml(u);
+  fuItems = upcoming.slice();
+  var upcomingHtml = upcoming.length ? upcoming.map(function(u, ui){
+    return followUpRowHtml(u) + '<div style="text-align:right;padding:0 0 8px;border-bottom:1px solid var(--border)"><button type="button" onclick="openReminderEmail('+ui+')" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer">✉️ Email reminder</button></div>';
   }).join('') : '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No credit payments due in the next 3 days.</div>';
 
   document.getElementById('dash-devicepay-summary').innerHTML =
     cardsHtml +
     '<div class="section" style="margin-bottom:10px"><div class="section-title">👤 By trainer</div>'+trainerRows+'</div>' +
-    '<div class="section"><div class="section-title" style="color:#16a34a;font-weight:700">⏰ 3-day credit follow-ups</div>'+upcomingHtml+'</div>' +
+    '<div class="section"><div class="section-title" style="color:#16a34a;font-weight:700">⏰ 3-day credit follow-ups</div>'+(upcoming.length>1?'<div style="margin-bottom:8px"><button type="button" onclick="openReminderEmail(-1)" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">✉️ Email all '+upcoming.length+' follow-ups</button></div>':'')+upcomingHtml+'</div>' +
     '<div class="section-title" style="margin-top:1rem">📄 Individual records</div>';
+}
+
+
+// ── PAYMENT REMINDER EMAIL (HR / Customer Care / Manager / Admin) ──
+// Type a short note and email the chief officer and others (To / CC)
+// about a due or 3-day follow-up payment. Sent by the backend.
+var fuItems = [];
+var reminderRecipients = null;
+function fuEsc(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function fuLine(u){
+  var due = String(u.due||'').replace(/,\s*00:00(:00)?$/, '');
+  var n = Math.abs(u.days||0);
+  return (u.shop||'Shop')+(u.shopId?' (ID '+u.shopId+')':'')+' — '+(u.customer||'Customer')+(u.phone?' '+u.phone:'')+
+    ' — balance KES '+num(u.balance).toLocaleString()+', due '+due+(u.overdue?' ('+n+' day'+(n===1?'':'s')+' overdue)':'')+' — Trainer: '+(u.trainer||'—');
+}
+function openReminderEmail(idx){
+  var items = idx<0 ? fuItems.slice() : (fuItems[idx] ? [fuItems[idx]] : []);
+  if(!items.length) return;
+  window._fuSending = items;
+  var overdue = items.filter(function(u){return u.overdue;}).length;
+  var subject = 'Payment reminder — ' + (items.length===1 ? (items[0].shop||'Shop')+(items[0].overdue?' (overdue)':' (due soon)') : items.length+' credit follow-ups'+(overdue?' ('+overdue+' overdue)':''));
+  var msg = items.length===1
+    ? 'Please follow up on this credit payment.'
+    : 'Please follow up on the credit payments below.';
+  var seenT={}, toNames=items.filter(function(u){ var k=u.trainerEmail||u.trainer; if(seenT[k]) return false; seenT[k]=1; return true; }).map(function(u){
+    return '👤 <strong>'+fuEsc(u.trainer||'Trainer')+'</strong> <span style="color:#9ca3af;font-size:11px">('+(u.trainerEmail?fuEsc(u.trainerEmail):'<span style="color:#b91c1c">no email on record</span>')+')</span>';
+  }).join('<br>');
+  var overlay = document.createElement('div');
+  overlay.className='ph-overlay'; overlay.id='fu-overlay';
+  overlay.onclick=function(e){ if(e.target===overlay) closeReminderEmail(); };
+  var inp='width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box';
+  overlay.innerHTML =
+    '<div class="ph-modal"><div class="ph-modal-head"><div><div class="ph-modal-title">✉️ Email payment reminder</div>'+
+    '<div class="ph-modal-sub">'+items.length+' follow-up(s) will be listed in the email</div></div>'+
+    '<button class="ph-modal-close" onclick="closeReminderEmail()">✕</button></div>'+
+    '<div class="ph-modal-body">'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">To (the trainer)</div>'+
+      '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;background:var(--surface-2)">'+toNames+'</div>'+
+      '<div style="font-size:11px;color:var(--text-m);margin:-4px 0 10px">Everyone you choose below is copied (CC).</div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">CC</div>'+
+      '<div id="fu-cc-list" style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin-bottom:6px;font-size:12.5px">Loading…</div>'+
+      '<input type="text" id="fu-cc-extra" placeholder="Other CC emails (comma separated)" style="'+inp+';margin-bottom:10px">'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Subject</div>'+
+      '<input type="text" id="fu-subject" value="'+fuEsc(subject)+'" style="'+inp+';margin-bottom:10px">'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Short message</div>'+
+      '<textarea id="fu-msg" rows="3" maxlength="1500" style="'+inp+';margin-bottom:10px">'+fuEsc(msg)+'</textarea>'+
+      '<div style="font-size:11px;color:var(--text-m);margin-bottom:10px">The follow-up details are added under your message automatically.</div>'+
+      '<button type="button" id="fu-send-btn" onclick="sendReminderEmail()" style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">📨 Send email</button>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+  var fill=function(list){
+    var mk=function(kind){ return list.filter(function(r){ return kind==='to' ? r.canBeTo!==false : r.canBeCc!==false; }).map(function(r){
+      return '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer"><input type="checkbox" class="fu-'+kind+'" value="'+fuEsc(r.email)+'" style="width:16px;height:16px"> '+fuEsc(r.name)+' <span style="color:#9ca3af;font-size:11px">('+fuEsc(r.email)+')</span></label>'; }).join('') || '<span style="color:var(--text-m)">No saved recipients — use the box below.</span>'; };
+    var c=document.getElementById('fu-cc-list');
+    if(c) c.innerHTML=mk('cc');
+  };
+  if(reminderRecipients){ fill(reminderRecipients); return; }
+  fetch(APPS_SCRIPT_URL+'?action=getRecipients').then(function(r){return r.json();}).then(function(d){
+    reminderRecipients = d.recipients || []; fill(reminderRecipients);
+  }).catch(function(){ fill([]); });
+}
+function closeReminderEmail(){ var el=document.getElementById('fu-overlay'); if(el) el.remove(); }
+function sendReminderEmail(){
+  var cc=[]; document.querySelectorAll('.fu-cc:checked').forEach(function(cb){ cc.push(cb.value); });
+  String(document.getElementById('fu-cc-extra').value||'').split(/[,;\s]+/).forEach(function(e){ if(e) cc.push(e.toLowerCase()); });
+  cc=cc.filter(function(e,i,a){ return a.indexOf(e)===i; });
+  var bad=cc.filter(function(e){ return !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); });
+  if(bad.length){ alert('Check these CC emails: '+bad.join(', ')); return; }
+  var msg=document.getElementById('fu-msg').value.trim();
+  if(!msg){ alert('Type a short message.'); return; }
+  var all=window._fuSending||[];
+  var noEmail=all.filter(function(u){ return !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(u.trainerEmail||''); });
+  if(noEmail.length){ alert('No email on record for: '+noEmail.map(function(u){return u.trainer;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join(', ')); return; }
+  var groups={}; all.forEach(function(u){ (groups[u.trainerEmail]=groups[u.trainerEmail]||[]).push(u); });
+  var subject=document.getElementById('fu-subject').value.trim();
+  var btn=document.getElementById('fu-send-btn'); btn.disabled=true; btn.textContent='Sending…';
+  var keys=Object.keys(groups), failed=[];
+  var sendOne=function(k){
+    return fetch(APPS_SCRIPT_URL,{ method:'POST', body: JSON.stringify({
+      formType:'sendPaymentReminder', to:k, cc:cc.filter(function(e){return e!==k;}).join(','),
+      subject: subject, message: msg, items: groups[k].map(function(u){ return { line: fuLine(u) }; }),
+      requestedBy: session.email, requestedByRole: session.role, requestedByName: session.name
+    })}).then(function(r){return r.json();}).then(function(d){ if(d.status!=='success') failed.push(groups[k][0].trainer+': '+(d.message||'failed')); })
+      .catch(function(){ failed.push(groups[k][0].trainer+': network error'); });
+  };
+  keys.reduce(function(chain,k){ return chain.then(function(){ return sendOne(k); }); }, Promise.resolve()).then(function(){
+    if(!failed.length){ closeReminderEmail(); alert('Reminder emailed to '+keys.length+' trainer(s), with your CC list copied.'); }
+    else { alert('Some emails failed:\n'+failed.join('\n')); btn.disabled=false; btn.textContent='📨 Send email'; }
+  });
 }
 
 function renderInstallList(){
@@ -6077,6 +6185,7 @@ function getFilteredDashItems(){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
       dashRegionManagerAllowed(x['County']) &&
+      dashPayTypeAllowed(x) &&
       (!shopFilter || String(x['Shop ID']||'').toLowerCase().indexOf(shopFilter)!==-1 || String(x['Shop Name']||'').toLowerCase().indexOf(shopFilter)!==-1) &&
       dateMatches(x['Date']);
   });
@@ -6596,6 +6705,8 @@ function buildDashSubtitle(countLabel){
   var managerFilter = managerEl ? managerEl.value : '';
   if(trainerFilter) bits.push('Trainer: '+trainerFilter);
   if(countyFilter) bits.push('County: '+countyFilter);
+  var ptEl = document.getElementById('dash-paytype-filter');
+  if(ptEl && ptEl.value && dashFormType==='devicepay') bits.push('Payment: '+ptEl.value);
   if(regionFilter) bits.push('Region: '+regionFilter);
   if(managerFilter) bits.push('Area Manager: '+managerFilter);
   if(shopFilter) bits.push('Shop search: "'+shopFilter+'"');
@@ -6665,6 +6776,7 @@ var AREA_MANAGERS = [
     counties:['Embu','Isiolo','Kajiado','Kiambu','Kilifi','Kirinyaga','Kitui','Kwale','Lamu','Machakos','Makueni','Marsabit','Meru','Mombasa','Taita-Taveta','Tana River','Tharaka-Nithi','Wajir'] }
 
 ];
+AREA_MANAGERS.push({ name:'DenisAdmira', email:'denisadmiral8@gmail.com', region:'Uganda Region', counties:['Northern Region (UG)','North Eastern Region (UG)','Eastern Region (UG)','Western Region (UG)','Central Region (UG)'] });
 var AN_COUNTY_TO_REGION = {};
 var AN_COUNTY_TO_MANAGER = {};
 AREA_MANAGERS.forEach(function(m){
