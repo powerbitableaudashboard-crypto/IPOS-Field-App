@@ -279,6 +279,34 @@ input[type=file]{display:none}
 .success-meta{margin-top:10px;background:#dcfce7;border-radius:8px;padding:10px 14px;font-size:12px;color:#15803d;text-align:left;line-height:1.9}
 .error-msg{display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:13px;color:#b91c1c;margin-top:1rem}
 .home-btn{width:100%;padding:11px;background:var(--surface-2);color:var(--text-s);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;margin-top:10px;font-family:inherit}
+
+/* ── Regional performance chart ── */
+.rp-chart{--rp-cash:#2a78d6;--rp-credit:#1baf7a;--rp-overdue:#eb6834;--rp-ink:#111827;--rp-ink2:#52514e;--rp-track:#f3f4f6}
+.rp-legend{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}
+.rp-chip{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:6px 11px;border-radius:999px;border:1.5px solid var(--border-strong);background:var(--surface);color:var(--rp-ink2);cursor:pointer}
+.rp-chip i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.rp-chip.on{color:var(--rp-ink);border-color:var(--rp-ink2);background:var(--surface-2)}
+.rp-chip:not(.on){opacity:.55}
+.rp-chip:not(.on) i{background:transparent !important;border:1.5px solid var(--border-strong)}
+.rp-plot{display:flex;align-items:flex-start}
+.rp-axis{position:relative;flex:0 0 38px;height:150px;margin-top:40px;font-size:10px;color:var(--rp-ink2)}
+.rp-axis span{position:absolute;right:6px;transform:translateY(50%);white-space:nowrap}
+.rp-scroll{flex:1;min-width:0;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.rp-inner{position:relative;display:flex;gap:6px;width:max-content;min-width:100%;padding-top:40px;align-items:flex-start}
+.rp-inner>i{position:absolute;left:0;right:0;height:0;border-top:1px solid var(--border)}
+.rp-g{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+.rp-bars{display:flex;align-items:flex-end;justify-content:center;gap:3px;height:150px}
+.rp-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:20px;position:relative}
+.rp-v{position:absolute;bottom:100%;left:50%;font-size:10px;font-weight:700;color:var(--rp-ink);writing-mode:vertical-rl;transform:translateX(-50%) rotate(180deg);white-space:nowrap;margin-bottom:3px}
+.rp-bar{width:18px;border-radius:4px 4px 0 0}
+.rp-lbl{margin-top:6px;font-size:10.5px;font-weight:700;color:var(--rp-ink);text-align:center;line-height:1.25;word-break:break-word}
+.rp-lbl small{display:block;font-weight:500;color:var(--rp-ink2);font-size:9.5px}
+.rp-tab{font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--rp-ink2);cursor:pointer;font-weight:600}
+.rp-tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.rp-table{width:100%;border-collapse:collapse;font-size:12px}
+.rp-table th,.rp-table td{padding:7px 6px;border-bottom:1px solid var(--border);text-align:right;color:var(--rp-ink)}
+.rp-table th:first-child,.rp-table td:first-child{text-align:left}
+.rp-table th{font-size:10.5px;text-transform:uppercase;color:var(--rp-ink2)}
 </style>
 </head>
 <body>
@@ -477,6 +505,13 @@ input[type=file]{display:none}
           <div class="field" style="margin-bottom:0"><label>Area Manager</label>
             <select id="dash-manager-filter" onchange="renderDashList()"><option value="">All Managers</option></select>
           </div>
+        </div>
+        <div class="field" id="dash-country-wrap" style="margin-bottom:0;display:none"><label>Country</label>
+          <select id="dash-country-filter" onchange="renderDashList()">
+            <option value="">All Countries (shown in KES)</option>
+            <option value="Kenya">Kenya (KES)</option>
+            <option value="Uganda">Uganda (UGX)</option>
+          </select>
         </div>
         <div class="field" id="dash-paytype-wrap" style="margin-bottom:0;display:none"><label>Payment Type</label>
           <select id="dash-paytype-filter" onchange="renderDashList()">
@@ -682,7 +717,7 @@ input[type=file]{display:none}
           <div class="field"><label for="cr-device-serial">Device Serial No <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
             <input type="text" id="cr-device-serial" placeholder="e.g. SN-00123456">
           </div>
-          <div class="field"><label for="cr-amount">Amount Received (KES)<span class="req">*</span></label>
+          <div class="field"><label for="cr-amount">Amount Received (<span class="cur-label">KES</span>)<span class="req">*</span></label>
             <input type="text" id="cr-amount" inputmode="numeric" placeholder="e.g. Ksh 10,000">
           </div>
           <div class="field"><label for="cr-mpesa-msg">M-Pesa Message<span class="req">*</span></label>
@@ -710,7 +745,7 @@ input[type=file]{display:none}
             <select id="ns-method" onchange="onNewSaleMethodChange()"><option value="">Select…</option>
             <option value="Cash">Cash</option><option value="Installment">Installment (Credit)</option></select>
           </div>
-          <div class="field"><label for="ns-price">Device Price (KES)</label>
+          <div class="field"><label for="ns-price">Device Price (<span class="cur-label">KES</span>)</label>
             <input type="text" id="ns-price" inputmode="numeric" placeholder="e.g. Ksh 18,200" oninput="calcNewSaleBalance()">
           </div>
         </div>
@@ -736,7 +771,7 @@ input[type=file]{display:none}
             <select id="ns-county"></select>
           </div>
         </div>
-        <div class="field" id="ns-paid-wrap" style="display:none"><label for="ns-paid">Amount Paid Now (KES)</label>
+        <div class="field" id="ns-paid-wrap" style="display:none"><label for="ns-paid">Amount Paid Now (<span class="cur-label">KES</span>)</label>
           <input type="text" id="ns-paid" inputmode="numeric" placeholder="e.g. Ksh 8,500" oninput="calcNewSaleBalance()">
         </div>
         <div id="ns-balance" style="display:none;font-size:12px;color:var(--text-s);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:6px"></div>
@@ -778,7 +813,7 @@ input[type=file]{display:none}
         <div id="d-req-cc-list" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:220px;overflow-y:auto;font-size:13px;color:var(--text-m)">No recipients configured yet.</div>
       </div>
       <div class="two-col">
-        <div class="field"><label for="d-req-amount">Device Amount (KES)<span class="req">*</span></label>
+        <div class="field"><label for="d-req-amount">Device Amount (<span class="cur-label">KES</span>)<span class="req">*</span></label>
           <input type="text" id="d-req-amount" inputmode="numeric" placeholder="e.g. Ksh 23,620" oninput="deviceAmountEdited=true">
           <small id="d-req-amount-hint" style="display:none;color:var(--text-m);font-size:11px">Prefilled with the area's default — you can change it.</small>
         </div>
@@ -790,7 +825,7 @@ input[type=file]{display:none}
           </select>
         </div>
       </div>
-      <div id="d-req-deposit-wrap" style="display:none" class="field"><label for="d-req-deposit">Deposit / Amount Already Collected (KES) <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
+      <div id="d-req-deposit-wrap" style="display:none" class="field"><label for="d-req-deposit">Deposit / Amount Already Collected (<span class="cur-label">KES</span>) <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>
         <input type="text" id="d-req-deposit" inputmode="numeric" placeholder="e.g. Ksh 7,500" oninput="depositAmountEdited=true">
         <small id="d-req-deposit-hint" style="color:var(--text-m);font-size:11px">Leave blank if nothing has been collected yet. This is deducted from the balance owed.</small>
       </div>
@@ -1020,10 +1055,25 @@ input[type=file]{display:none}
     <button class="back-btn" onclick="showScreen('screen-dashboard')">← Back</button>
   </div>
   <div class="form-body">
+    <div class="section" id="set-currency-wrap">
+      <div class="section-title">🌍 Country / Currency</div>
+      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Each country has its own default amounts. Trainers in Uganda see the UGX amounts; trainers in Kenya see the KES amounts.</p>
+      <div class="field"><select id="set-currency" onchange="fillSettingsFields()">
+        <option value="KES">Kenya — KES</option>
+        <option value="UGX">Uganda — UGX</option>
+      </select></div>
+      <div id="set-fx-wrap" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:6px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px">Exchange rate (Admin only)</div>
+        <div style="display:flex;gap:8px;align-items:center;font-size:13px">1 KES = <input type="text" id="set-fx" inputmode="decimal" style="width:90px;padding:9px;border:1px solid var(--border);border-radius:8px;font-size:13px"> UGX
+          <button type="button" onclick="saveExchangeRate()" style="padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">💾 Save</button></div>
+        <div style="font-size:11px;color:var(--text-m);margin-top:6px">Used only to show Uganda amounts in KES when a dashboard is set to All Countries. Saved records are never changed.</div>
+        <div id="set-status-fx" style="font-size:12px;color:var(--text-m);margin-top:6px"></div>
+      </div>
+    </div>
     <div class="section">
       <div class="section-title">💵 Default Amount — Cash</div>
       <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Auto-fills "Device amount" when a trainer selects <strong>Cash</strong> as the payment type on their Device Request form. Trainers can still edit it per request.</p>
-      <div class="field"><label for="set-device-amount-cash">Amount (KES)</label>
+      <div class="field"><label for="set-device-amount-cash">Amount (<span class="set-cur-label">KES</span>)</label>
         <input type="text" id="set-device-amount-cash" inputmode="numeric" placeholder="e.g. Ksh 18,200">
       </div>
       <div style="display:flex;gap:10px">
@@ -1036,7 +1086,7 @@ input[type=file]{display:none}
     <div class="section">
       <div class="section-title">📇 Default Amount — Credit</div>
       <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Auto-fills "Device amount" when a trainer selects <strong>Credit</strong> as the payment type on their Device Request form.</p>
-      <div class="field"><label for="set-device-amount-credit">Amount (KES)</label>
+      <div class="field"><label for="set-device-amount-credit">Amount (<span class="set-cur-label">KES</span>)</label>
         <input type="text" id="set-device-amount-credit" inputmode="numeric" placeholder="e.g. Ksh 23,620">
       </div>
       <div style="display:flex;gap:10px">
@@ -1050,13 +1100,13 @@ input[type=file]{display:none}
       <div class="section-title">📆 Credit Facility Terms</div>
       <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Shown to trainers as the repayment plan on Credit device requests (e.g. deposit now, then a fixed installment amount over N months).</p>
       <div class="two-col">
-        <div class="field"><label for="set-deposit">Deposit (KES)</label>
+        <div class="field"><label for="set-deposit">Deposit (<span class="set-cur-label">KES</span>)</label>
           <input type="text" id="set-deposit" inputmode="numeric" placeholder="e.g. Ksh 7,500"></div>
-        <div class="field"><label for="set-facility">Facility Amount (KES)</label>
+        <div class="field"><label for="set-facility">Facility Amount (<span class="set-cur-label">KES</span>)</label>
           <input type="text" id="set-facility" inputmode="numeric" placeholder="e.g. Ksh23,620"></div>
       </div>
       <div class="two-col">
-        <div class="field"><label for="set-installment-amount">Installment Amount (KES)</label>
+        <div class="field"><label for="set-installment-amount">Installment Amount (<span class="set-cur-label">KES</span>)</label>
           <input type="text" id="set-installment-amount" inputmode="numeric" placeholder="e.g. Ksh 4,030"></div>
         <div class="field"><label for="set-installment-count"># of installments</label>
           <input type="text" id="set-installment-count" inputmode="numeric" placeholder="e.g. 4"></div>
@@ -2061,6 +2111,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
+  try{ applyCurLabels(); }catch(e){}
 }
 
 // ── GPS ──────────────────────────────────────────────────────
@@ -2310,7 +2361,7 @@ function exportShopsPdf(){
         {header:'Status', dataKey:'status'},
         {header:'Installed Date', dataKey:'installedDateDisplay'},
         {header:'Records', dataKey:'recordCount'},
-        {header:'Balance (KES)', dataKey:'totalBalanceDisplay'}
+        {header:'Balance ('+K()+')', dataKey:'totalBalanceDisplay'}
       ],
       rows: rows.map(function(s){
         return {
@@ -2622,13 +2673,13 @@ function renderMyPayments(){
 
   var cardsHtml =
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">' +
-      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalIssued, cashCount+' Cash + '+creditCount+' Credit · Sales Value KES '+(cashTotal+creditSalesTotal).toLocaleString(), true) +
-      sumCard('#0f8a3f','💵','Cash Cales', 'KES '+cashTotal.toLocaleString(), cashCount+' Device(s) Sold on Cash') +
-      sumCard('#ea7a0c','📇','Credit Sales', 'KES '+creditSalesTotal.toLocaleString(), creditCount+' Device(s) Sold on Credit') +
-      sumCard('#9b3aab','✅','Credit Collected', 'KES '+creditCollected.toLocaleString(), 'Paid so far on Credit Sales') +
-      sumCard('#e0212a','⚠️','Outstanding Balance', 'KES '+outstandingBalance.toLocaleString(), 'Still Owed on Credit Sales') +
-      sumCard('#0e93a8','💰','Total Collected', 'KES '+totalCollected.toLocaleString(), 'Cash + Credit Payments Received') +
-      sumCard('#5b6470','🚚','Due on Delivery', 'KES '+dueAmount.toLocaleString(), 'Cash Balance Due when Delivered') +
+      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalIssued, cashCount+' Cash + '+creditCount+' Credit · Sales Value ' + K() + ' ' +(cashTotal+creditSalesTotal).toLocaleString(), true) +
+      sumCard('#0f8a3f','💵','Cash Cales', '' + K() + ' ' +cashTotal.toLocaleString(), cashCount+' Device(s) Sold on Cash') +
+      sumCard('#ea7a0c','📇','Credit Sales', '' + K() + ' ' +creditSalesTotal.toLocaleString(), creditCount+' Device(s) Sold on Credit') +
+      sumCard('#9b3aab','✅','Credit Collected', '' + K() + ' ' +creditCollected.toLocaleString(), 'Paid so far on Credit Sales') +
+      sumCard('#e0212a','⚠️','Outstanding Balance', '' + K() + ' ' +outstandingBalance.toLocaleString(), 'Still Owed on Credit Sales') +
+      sumCard('#0e93a8','💰','Total Collected', '' + K() + ' ' +totalCollected.toLocaleString(), 'Cash + Credit Payments Received') +
+      sumCard('#5b6470','🚚','Due on Delivery', '' + K() + ' ' +dueAmount.toLocaleString(), 'Cash Balance Due when Delivered') +
     '</div>';
 
   var dueSoonHtml = dueSoon.length ? dueSoon.map(function(x){
@@ -2639,7 +2690,7 @@ function renderMyPayments(){
   var completedHtml = completed.length ? completed.slice(0,20).map(function(r){
     return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">'+
       '<div><strong>'+(r['Shop Name']||'—')+'</strong><br><span style="color:var(--text-m)">'+(r['Customer Name']||'')+' · '+(r['Payment Method']||'')+'</span></div>'+
-      '<div style="text-align:right;color:#16a34a;font-weight:600">KES '+num(r['Amount Paid']).toLocaleString()+'</div>'+
+      '<div style="text-align:right;color:#16a34a;font-weight:600">' + K() + ' ' +num(r['Amount Paid']).toLocaleString()+'</div>'+
     '</div>';
   }).join('') : '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No completed accounts yet.</div>';
 
@@ -3286,7 +3337,7 @@ function renderShopsList(){
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">'+
       '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px">'+
       '<div>'+statusDot(s.status)+'<strong>'+(s.shopName||'—')+'</strong> <span style="color:var(--text-m);font-size:12px">(ID: '+(s.shopId||'—')+')</span><br>'+
-      '<span style="font-size:12px;color:var(--text-m);margin-left:15px">'+(s.county||'')+' · '+(s.trainerName||'')+' · '+s.recordCount+' record(s)'+(s.totalBalance>0?' · balance KES '+Number(s.totalBalance).toLocaleString():'')+(installedDate?' · installed '+installedDate:'')+'</span><br>'+
+      '<span style="font-size:12px;color:var(--text-m);margin-left:15px">'+(s.county||'')+' · '+(s.trainerName||'')+' · '+s.recordCount+' record(s)'+(s.totalBalance>0?' · balance ' + K() + ' ' +Number(s.totalBalance).toLocaleString():'')+(installedDate?' · installed '+installedDate:'')+'</span><br>'+
       '<span style="font-size:12px;color:var(--text-m);margin-left:15px">📟 Device Serial No: '+(s.deviceSerial?('<strong>'+s.deviceSerial+'</strong>'):'<em>not set</em>')+'</span></div>'+
       '<div style="display:flex;gap:6px;flex-shrink:0">'+
       '<button type="button" onclick="viewShopDetails('+i+')" title="View" style="border:none;background:#eff6ff;color:#1d4ed8;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px">👁️</button>'+
@@ -3473,7 +3524,7 @@ function renderDeviceRequests(){
     var replied = String(r['Reply Status']||'') === 'REPLIED';
     var pill = replied ? '<span class="badge badge-green">Replied</span>' : '<span class="badge badge-yellow">Awaiting reply</span>';
     var newTag = r.unread ? ' <span class="badge badge-red">New reply</span>' : '';
-    var amount = r['Payment Amount'] ? ' · KES ' + escapeHtml(Number(r['Payment Amount']).toLocaleString()) : '';
+    var amount = r['Payment Amount'] ? ' · ' + K() + ' ' + escapeHtml(Number(r['Payment Amount']).toLocaleString()) : '';
     var html =
       '<div class="dash-item">' +
         '<div class="dash-item-top">' +
@@ -3606,7 +3657,7 @@ function searchRepossessShops(){
         '<div style="display:flex;justify-content:space-between;align-items:start">' +
         '<div>' + statusDot(m.status) + '<strong>' + escapeHtml(m.shopName || '—') + '</strong> <span style="color:var(--text-m);font-size:12px">(ID: ' + escapeHtml(m.shopId || '—') + ')</span><br>' +
         '<span style="font-size:12px;color:var(--text-m);margin-left:15px">' + escapeHtml(m.customerName || '') + ' · ' + escapeHtml(m.customerPhone || '') + '</span></div>' +
-        '<div style="text-align:right;color:#b91c1c;font-weight:700">KES ' + Number(m.balance || 0).toLocaleString() + '<div style="font-size:10px;color:var(--text-m);font-weight:400">' + (overdue ? 'overdue' : 'balance') + '</div></div>' +
+        '<div style="text-align:right;color:#b91c1c;font-weight:700">' + K(m.county) + ' ' + Number(m.balance || 0).toLocaleString() + '<div style="font-size:10px;color:var(--text-m);font-weight:400">' + (overdue ? 'overdue' : 'balance') + '</div></div>' +
         '</div></div>';
     }).join('');
   }).catch(function(){ statusEl.textContent = 'Search failed — check your connection and try again.'; });
@@ -3631,8 +3682,8 @@ function selectRepossessShop(i){
     '<strong>' + escapeHtml(m.shopName || '—') + '</strong> <span style="color:var(--text-m)">(ID: ' + escapeHtml(m.shopId || '—') + ')</span><br>' +
     'Customer: ' + escapeHtml(m.customerName || '') + ' · ' + escapeHtml(m.customerPhone || '') + '<br>' +
     'Location: ' + escapeHtml(m.location || '') + '<br>' +
-    'Paid so far (kept): <strong>KES ' + Number(m.amountPaid || 0).toLocaleString() + '</strong><br>' +
-    'Balance to be removed: <strong style="color:#b91c1c">KES ' + Number(m.balance || 0).toLocaleString() + '</strong>';
+    'Paid so far (kept): <strong>' + K(m.county) + ' ' + Number(m.amountPaid || 0).toLocaleString() + '</strong><br>' +
+    'Balance to be removed: <strong style="color:#b91c1c">' + K(m.county) + ' ' + Number(m.balance || 0).toLocaleString() + '</strong>';
   document.getElementById('rp-fields').style.display = 'block';
   document.getElementById('rp-selected').style.display = 'block';
   document.getElementById('rp-search-status').textContent = 'Sale selected.';
@@ -3654,7 +3705,7 @@ function submitRepossession(){
   if(!v('rp-charger')){ fail('Say whether the device has a charger.'); return; }
   if(!v('rp-screen')){ fail('Select the screen condition.'); return; }
   if(!photos['rp-photo']){ fail('Take a photo of the device before submitting.'); return; }
-  if(!confirm('Record this device as repossessed?\n\nKES ' + Number(rpSelected.balance || 0).toLocaleString() + ' will be removed from the credit balance. The deposit and payments already made stay on record.')) return;
+  if(!confirm('Record this device as repossessed?\n\n' + K(rpSelected.county) + ' ' + Number(rpSelected.balance || 0).toLocaleString() + ' will be removed from the credit balance. The deposit and payments already made stay on record.')) return;
 
   document.getElementById('rp-submit').style.display = 'none';
   document.getElementById('rp-spinner').style.display = 'block';
@@ -3687,7 +3738,7 @@ function submitRepossession(){
       var removed = Number(data.balanceRemoved || 0).toLocaleString();
       resetRepossessionUI();
       var su = document.getElementById('rp-success');
-      su.textContent = '✅ Repossession recorded. KES ' + removed + ' removed from the credit balance; the deposit and payments are kept.';
+      su.textContent = '✅ Repossession recorded. ' + K(rpSelected && rpSelected.county) + ' ' + removed + ' removed from the credit balance; the deposit and payments are kept.';
       su.style.display = 'block';
     } else {
       resetRequestId('repossess');
@@ -3762,7 +3813,7 @@ function renderRepossessions(){
           'Reason: ' + escapeHtml(r['Reason'] || '—') + '<br>' +
           '🔌 Charger: <strong>' + escapeHtml(r['Has Charger'] || '—') + '</strong> · 📱 Screen: <strong>' + escapeHtml(r['Screen Condition'] || '—') + '</strong> · Powers on: ' + escapeHtml(r['Powers On'] || '—') + '<br>' +
           (r['Condition Notes'] ? '📝 ' + escapeHtml(r['Condition Notes']) + '<br>' : '') +
-          '💰 Paid (kept): KES ' + Number(r['Amount Paid Kept'] || 0).toLocaleString() + ' · Balance removed: KES ' + Number(r['Balance Removed'] || 0).toLocaleString() +
+          '💰 Paid (kept): ' + K(r['County']) + ' ' + Number(r['Amount Paid Kept'] || 0).toLocaleString() + ' · Balance removed: ' + K(r['County']) + ' ' + Number(r['Balance Removed'] || 0).toLocaleString() +
           (r['Device Photo URL'] ? '<br>📷 <a href="' + escapeHtml(r['Device Photo URL']) + '" target="_blank" rel="noopener" style="color:var(--accent)">View device photo</a>' : '') +
         '</div>';
     if(status === 'RESOLD'){
@@ -3796,7 +3847,7 @@ function markRepossessionResold(btn){
 
 function undoRepossession(btn){
   var bal = Number(btn.getAttribute('data-bal') || 0).toLocaleString();
-  if(!confirm('Undo this repossession?\n\nKES ' + bal + ' goes back on the shop\'s credit balance.')) return;
+  if(!confirm('Undo this repossession?\n\n' + K() + ' ' + bal + ' goes back on the shop\'s credit balance.')) return;
   postRepossessionAction({ formType:'undoRepossession', repossessionId: btn.getAttribute('data-id'), requestedBy: session.email, requestedByRole: session.role }, 'Repossession undone. The balance is back on the shop.');
 }
 
@@ -4054,7 +4105,53 @@ function exportArchivedPdf(share){
 var deviceAmountEdited = false;
 var depositAmountEdited = false;
 
-function fmtKsh(n){ n = Number(n)||0; return 'Ksh ' + n.toLocaleString(); }
+// ── CURRENCY (KES for Kenya, UGX for Uganda) ──────────────────
+// Amounts are stored in each country's own currency. A "(UG)" county means UGX.
+// Dashboards: Country = All converts UGX → KES using the admin's rate; Country = Uganda shows UGX.
+var UGX_PER_KES = 28, fxLoaded = false;
+var viewCountry = '';      // '' = all countries (shown in KES), 'Kenya', 'Uganda'
+var CURCTX = '';           // currency override while a dashboard list is being drawn
+var MONEY_KEYS = ['Device Price','Amount Paid','Balance','Installment Amount','Deposit Amount','Facility Amount','Payment Amount','Amount Paid Kept','Balance Removed'];
+function curOf(county){
+  var parts = String(county||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+  return (parts.length && parts.every(function(x){ return /\(UG\)/i.test(x); })) ? 'UGX' : 'KES';
+}
+function sessionCur(){ return curOf(session && session.county); }
+function K(county){ return county ? curOf(county) : (CURCTX || sessionCur()); }
+function dashViewCur(){ return viewCountry==='Uganda' ? 'UGX' : 'KES'; }
+function syncViewCountry(){
+  var el = document.getElementById('dash-country-filter');
+  var wrap = document.getElementById('dash-country-wrap');
+  if(el && wrap && wrap.style.display!=='none') viewCountry = el.value;
+  else viewCountry = sessionCur()==='UGX' ? 'Uganda' : '';
+}
+function dashCountryAllowed(row){
+  syncViewCountry();
+  if(!viewCountry) return true;
+  var c = curOf(row['County']);
+  return viewCountry==='Uganda' ? c==='UGX' : c==='KES';
+}
+function cvRow(row){
+  var o = {}; Object.keys(row).forEach(function(k){ o[k]=row[k]; });
+  if(viewCountry==='Uganda' || curOf(row['County'])!=='UGX') return o;
+  MONEY_KEYS.forEach(function(k){
+    if(row[k]!==undefined && row[k]!=='' && !isNaN(num(row[k]))) o[k] = Math.round(num(row[k])/UGX_PER_KES*100)/100;
+  });
+  return o;
+}
+function loadFxRate(){
+  if(fxLoaded) return; fxLoaded = true;
+  fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount').then(function(r){return r.json();}).then(function(d){
+    var r = Number(d && d.ugxPerKes);
+    if(r > 0 && r !== UGX_PER_KES){ UGX_PER_KES = r; if(dashFormType==='devicepay') renderDashList(); }
+  }).catch(function(){ fxLoaded = false; });
+}
+function applyCurLabels(){
+  var c = sessionCur();
+  document.querySelectorAll('.cur-label').forEach(function(el){ el.textContent = c; });
+}
+
+function fmtKsh(n){ n = Number(n)||0; return (sessionCur()==='UGX' ? 'UGX ' : 'Ksh ') + n.toLocaleString(); }
 
 var deviceRequestRecipients = [];
 
@@ -4122,12 +4219,14 @@ function loadDeviceSettings(){
   fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount')
     .then(function(r){return r.json();})
     .then(function(data){
-      deviceAmountDefaults.cash = data.cash || '';
-      deviceAmountDefaults.credit = data.credit || '';
-      deviceAmountDefaults.depositAmount = data.depositAmount || '';
-      deviceAmountDefaults.facilityAmount = data.facilityAmount || '';
-      deviceAmountDefaults.installmentAmount = data.installmentAmount || '';
-      deviceAmountDefaults.installmentCount = data.installmentCount || '';
+      if(Number(data.ugxPerKes) > 0) UGX_PER_KES = Number(data.ugxPerKes);
+      var src = sessionCur()==='UGX' ? (data.ugx || {}) : data;   // each country keeps its own defaults
+      deviceAmountDefaults.cash = src.cash || '';
+      deviceAmountDefaults.credit = src.credit || '';
+      deviceAmountDefaults.depositAmount = src.depositAmount || '';
+      deviceAmountDefaults.facilityAmount = src.facilityAmount || '';
+      deviceAmountDefaults.installmentAmount = src.installmentAmount || '';
+      deviceAmountDefaults.installmentCount = src.installmentCount || '';
       applyDefaultDeviceAmount();
     })
     .catch(function(){});
@@ -4177,8 +4276,8 @@ function applyDefaultDeviceAmount(){
     var installmentAmt = Number(deviceAmountDefaults.installmentAmount)||0;
     var installmentCount = Number(deviceAmountDefaults.installmentCount)||0;
     facilityEl.innerHTML =
-      '<strong>Credit terms:</strong> Deposit KES '+deposit.toLocaleString()+
-      (installmentAmt ? ' · then '+(installmentCount||'')+' installment(s) of KES '+installmentAmt.toLocaleString()+' each' : '');
+      '<strong>Credit terms:</strong> Deposit ' + K() + ' ' +deposit.toLocaleString()+
+      (installmentAmt ? ' · then '+(installmentCount||'')+' installment(s) of ' + K() + ' ' +installmentAmt.toLocaleString()+' each' : '');
     facilityEl.style.display='block';
   } else {
     facilityEl.style.display='none';
@@ -4209,6 +4308,40 @@ function autoFillDeviceRequestEndDate(){
   endEl.value = end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0');
 }
 
+var settingsData = null;
+function settingsCur(){ var el=document.getElementById('set-currency'); return el && el.value==='UGX' ? 'UGX' : 'KES'; }
+function fillSettingsFields(){
+  if(!settingsData) return;
+  var c = settingsCur();
+  var src = c==='UGX' ? (settingsData.ugx || {}) : settingsData;
+  document.querySelectorAll('.set-cur-label').forEach(function(el){ el.textContent = c; });
+  var cashStatus = document.getElementById('set-status-cash'), creditStatus = document.getElementById('set-status-credit');
+  setVal('set-device-amount-cash', src.cash||'');
+  setVal('set-device-amount-credit', src.credit||'');
+  cashStatus.textContent = src.cash ? 'Current default: '+c+' '+Number(src.cash).toLocaleString() : 'No default set yet.';
+  creditStatus.textContent = src.credit ? 'Current default: '+c+' '+Number(src.credit).toLocaleString() : 'No default set yet.';
+  setVal('set-deposit', src.depositAmount||'');
+  setVal('set-facility', src.facilityAmount||'');
+  setVal('set-installment-amount', src.installmentAmount||'');
+  setVal('set-installment-count', src.installmentCount||'');
+}
+function refreshSettingsData(){
+  fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount').then(function(r){return r.json();}).then(function(d){ settingsData = d; }).catch(function(){});
+}
+function saveExchangeRate(){
+  var statusEl = document.getElementById('set-status-fx');
+  var rate = parseFloat(v('set-fx'));
+  if(!(rate > 0)){ statusEl.textContent='Enter a valid rate.'; return; }
+  statusEl.textContent='Saving…';
+  fetch(APPS_SCRIPT_URL,{ method:'POST', body: JSON.stringify({ formType:'setExchangeRate', rate: rate, requestedBy: session.email, requestedByRole: session.role }) })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.status==='success'){ UGX_PER_KES = rate; statusEl.textContent='✅ Saved. 1 KES = '+rate+' UGX.'; refreshSettingsData(); }
+    else statusEl.textContent = d.message || 'Failed to save.';
+  })
+  .catch(function(){ statusEl.textContent='Network error — please try again.'; });
+}
+
 function openDeviceSettings(){
   if(isViewerRole()) return;
   showScreen('screen-settings');
@@ -4216,17 +4349,17 @@ function openDeviceSettings(){
   var creditStatus = document.getElementById('set-status-credit');
   cashStatus.textContent='Loading…'; creditStatus.textContent='Loading…';
   setVal('set-device-amount-cash',''); setVal('set-device-amount-credit','');
+  var curSel = document.getElementById('set-currency');
+  var lockedUg = !(session.role==='Admin') && sessionCur()==='UGX';
+  curSel.value = lockedUg ? 'UGX' : (session.role==='Admin' ? curSel.value||'KES' : 'KES');
+  curSel.disabled = session.role!=='Admin';      // managers edit only their own country
+  document.getElementById('set-fx-wrap').style.display = session.role==='Admin' ? 'block' : 'none';
   fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount')
     .then(function(r){return r.json();})
     .then(function(data){
-      if(data.cash){ setVal('set-device-amount-cash', data.cash); cashStatus.textContent='Current default: KES '+Number(data.cash).toLocaleString(); }
-      else { cashStatus.textContent='No default set yet.'; }
-      if(data.credit){ setVal('set-device-amount-credit', data.credit); creditStatus.textContent='Current default: KES '+Number(data.credit).toLocaleString(); }
-      else { creditStatus.textContent='No default set yet.'; }
-      setVal('set-deposit', data.depositAmount||'');
-      setVal('set-facility', data.facilityAmount||'');
-      setVal('set-installment-amount', data.installmentAmount||'');
-      setVal('set-installment-count', data.installmentCount||'');
+      settingsData = data;
+      if(Number(data.ugxPerKes) > 0){ UGX_PER_KES = Number(data.ugxPerKes); setVal('set-fx', UGX_PER_KES); }
+      fillSettingsFields();
     })
     .catch(function(){ cashStatus.textContent='Failed to load.'; creditStatus.textContent='Failed to load.'; });
 
@@ -4394,7 +4527,7 @@ function saveCreditFacilitySetting(){
   fetch(APPS_SCRIPT_URL,{
     method:'POST',
     body: JSON.stringify({
-      formType:'setCreditFacility',
+      formType:'setCreditFacility', currency: settingsCur(),
       depositAmount: v('set-deposit'), facilityAmount: v('set-facility'),
       installmentAmount: v('set-installment-amount'), installmentCount: v('set-installment-count'),
       requestedBy: session.email, requestedByRole: session.role
@@ -4402,7 +4535,8 @@ function saveCreditFacilitySetting(){
   })
   .then(function(r){return r.json();})
   .then(function(data){
-    statusEl.textContent = data.status==='success' ? '✅ Saved.' : (data.message || 'Failed to save.');
+    statusEl.textContent = data.status==='success' ? '✅ Saved ('+settingsCur()+').' : (data.message || 'Failed to save.');
+    if(data.status==='success') refreshSettingsData();
   })
   .catch(function(){ statusEl.textContent='Network error — please try again.'; });
 }
@@ -4447,13 +4581,14 @@ function saveDeviceAmountSetting(kind){
   statusEl.textContent='Saving…';
   fetch(APPS_SCRIPT_URL,{
     method:'POST',
-    body: JSON.stringify({ formType:'setDefaultDeviceAmount', kind:kind, amount: amount, requestedBy: session.email, requestedByRole: session.role })
+    body: JSON.stringify({ formType:'setDefaultDeviceAmount', kind:kind, amount: amount, currency: settingsCur(), requestedBy: session.email, requestedByRole: session.role })
   })
   .then(function(r){return r.json();})
   .then(function(data){
     statusEl.textContent = data.status==='success'
-      ? '✅ Saved. Default '+kind+' amount is now KES '+Number(amount).toLocaleString()+'.'
+      ? '✅ Saved. Default '+kind+' amount is now ' + settingsCur() + ' ' +Number(amount).toLocaleString()+'.'
       : (data.message || 'Failed to save.');
+    if(data.status==='success') refreshSettingsData();
   })
   .catch(function(){ statusEl.textContent='Network error — please try again.'; });
 }
@@ -4463,12 +4598,12 @@ function deleteDeviceAmountSetting(kind){
   statusEl.textContent='Clearing…';
   fetch(APPS_SCRIPT_URL,{
     method:'POST',
-    body: JSON.stringify({ formType:'setDefaultDeviceAmount', kind:kind, amount:'', requestedBy: session.email, requestedByRole: session.role })
+    body: JSON.stringify({ formType:'setDefaultDeviceAmount', kind:kind, amount:'', currency: settingsCur(), requestedBy: session.email, requestedByRole: session.role })
   })
   .then(function(r){return r.json();})
   .then(function(data){
     if(data.status==='success'){
-      setVal('set-device-amount-'+kind,'');
+      setVal('set-device-amount-'+kind,''); refreshSettingsData();
       statusEl.textContent='✅ Cleared. Trainers will need to enter the '+kind+' amount manually.';
     } else {
       statusEl.textContent = data.message || 'Failed to clear.';
@@ -4513,7 +4648,7 @@ function searchCreditShops(){
         '<div style="display:flex;justify-content:space-between;align-items:start">'+
         '<div>'+statusDot(m.status)+'<strong>'+(m.shopName||'—')+'</strong> <span style="color:var(--text-m);font-size:12px">(ID: '+(m.shopId||'—')+')</span><br>'+
         '<span style="font-size:12px;color:var(--text-m);margin-left:15px">'+(m.customerName||'')+' · '+(m.customerPhone||'')+'</span></div>'+
-        '<div style="text-align:right;color:'+amtColor+';font-weight:700">KES '+Number(m.balance||0).toLocaleString()+'<div style="font-size:10px;color:var(--text-m);font-weight:400">'+amtLabel+'</div></div>'+
+        '<div style="text-align:right;color:'+amtColor+';font-weight:700">' + K() + ' ' +Number(m.balance||0).toLocaleString()+'<div style="font-size:10px;color:var(--text-m);font-weight:400">'+amtLabel+'</div></div>'+
         '</div></div>';
     }).join('');
   }).catch(function(){ statusEl.textContent='Search failed — check your connection and try again.'; });
@@ -4547,7 +4682,7 @@ function selectCreditShop(i){
     'Location: '+(m.location||'')+'<br>'+
     (m.deviceSerial ? ('Device Serial No: '+m.deviceSerial+'<br>') : '')+
     (m.status==='pending' ? '<span style="color:#2563eb">Cash order — awaiting delivery confirmation</span><br>' : '')+
-    amountLabel+': <strong style="color:#b91c1c">KES '+Number(m.balance||0).toLocaleString()+'</strong>';
+    amountLabel+': <strong style="color:#b91c1c">' + K() + ' ' +Number(m.balance||0).toLocaleString()+'</strong>';
   document.getElementById('cr-repay-fields').style.display='block';
   document.getElementById('cr-selected').style.display='block';
   document.getElementById('cr-search-status').textContent='Shop selected.';
@@ -4589,7 +4724,7 @@ function submitCreditRepayment(){
     if(data.status==='success'){
       resetRequestId('repay');
       var bal = (data.balance!==undefined) ? Number(data.balance) : null;
-      document.getElementById('cr-success').innerHTML = '✅ Repayment recorded.' + (bal!==null ? (bal>0 ? ' New balance: KES '+bal.toLocaleString()+'.' : ' Fully paid off! 🎉') : '');
+      document.getElementById('cr-success').innerHTML = '✅ Repayment recorded.' + (bal!==null ? (bal>0 ? ' New balance: ' + K() + ' ' +bal.toLocaleString()+'.' : ' Fully paid off! 🎉') : '');
       document.getElementById('cr-success').style.display='block';
       crSelectedPaymentId=null;
       setVal('cr-search',''); setVal('cr-amount',''); setVal('cr-mpesa-msg',''); setVal('cr-device-serial',''); clearPhoto('cr-mpesa');
@@ -4777,11 +4912,11 @@ function calcNewSaleBalance(){
     var nextStr = nd.toLocaleDateString('en-KE',{weekday:'short',day:'numeric',month:'short'});
     balEl.style.display='block';
     balEl.innerHTML = balance>0
-      ? '💰 Balance: <strong>KES '+balance.toLocaleString()+'</strong> &nbsp;·&nbsp; ⏰ Next payment reminder: <strong>'+nextStr+'</strong> (in 30 days)'
+      ? '💰 Balance: <strong>' + K() + ' ' +balance.toLocaleString()+'</strong> &nbsp;·&nbsp; ⏰ Next payment reminder: <strong>'+nextStr+'</strong> (in 30 days)'
       : '✅ Fully paid off';
   } else {
     balEl.style.display='block';
-    balEl.innerHTML = '✅ Paid in full (Cash) — KES '+price.toLocaleString();
+    balEl.innerHTML = '✅ Paid in full (Cash) — ' + K() + ' ' +price.toLocaleString();
   }
 }
 
@@ -5613,6 +5748,9 @@ function setFormType(type){
   document.getElementById('dash-devicepay-summary').style.display = (type==='devicepay') ? 'block' : 'none';
   document.getElementById('dash-shop-filter-wrap').style.display = (type==='devicepay') ? 'block' : 'none';
   document.getElementById('dash-paytype-wrap').style.display = (type==='devicepay') ? 'block' : 'none';
+  document.getElementById('dash-country-wrap').style.display = (type==='devicepay' && (session.role==='Admin' || isViewerRole())) ? 'block' : 'none';
+  document.getElementById('dash-country-filter').value='';
+  if(type==='devicepay') loadFxRate();
   document.getElementById('dash-paytype-filter').value='';
   document.getElementById('dash-export-pdf-wrap').style.display = (type==='devicepay' || type==='route') ? 'block' : 'none';
   document.getElementById('dash-analytics-wrap').style.display = (type==='route') ? 'block' : 'none';
@@ -5852,10 +5990,14 @@ function dateMatches(itemDateStr){
 }
 
 function renderDashList(){
-  if(dashFormType==='install'){ renderInstallList(); }
-  else if(dashFormType==='users'){ renderUsersList(); }
-  else if(dashFormType==='devicepay'){ renderDevicePaySummary(); renderGenericList(); }
-  else { renderGenericList(); }
+  syncViewCountry();
+  CURCTX = dashFormType==='devicepay' ? dashViewCur() : '';
+  try {
+    if(dashFormType==='install'){ renderInstallList(); }
+    else if(dashFormType==='users'){ renderUsersList(); }
+    else if(dashFormType==='devicepay'){ renderDevicePaySummary(); renderGenericList(); }
+    else { renderGenericList(); }
+  } finally { CURCTX = ''; }
 }
 
 function num(x){ var n=parseFloat(String(x).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
@@ -5873,7 +6015,7 @@ function followUpRowHtml(f){
   var phone = String(f.phone||'').trim();
   var nDays = Math.abs(f.days||0);
   var late = f.overdue ? '<div style="color:#b91c1c;font-weight:700;font-size:11px">'+nDays+' day'+(nDays===1?'':'s')+' overdue</div>' : '';
-  var inst = num(f.installment) > 0 ? '<div style="color:#374151;font-size:11px;font-weight:600">Installment KES '+num(f.installment).toLocaleString()+'</div>' : '';
+  var inst = num(f.installment) > 0 ? '<div style="color:#374151;font-size:11px;font-weight:600">Installment ' + K() + ' ' +num(f.installment).toLocaleString()+'</div>' : '';
   return '<div style="display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;line-height:1.55">' +
     '<div style="min-width:0">' +
       '<div style="color:#dc2626;font-weight:800">'+(f.overdue?'🔴 Overdue':'⏰ Due soon')+'</div>' +
@@ -5882,9 +6024,9 @@ function followUpRowHtml(f){
       '<div style="color:#6b7280;font-weight:600">Trainer: '+escapeHtml(String(f.trainer||'—'))+'</div>' +
     '</div>' +
     '<div style="text-align:right;flex-shrink:0">' +
-      '<div style="color:#2563eb;font-weight:800;font-size:14px">KES '+num(f.balance).toLocaleString()+'</div>' +
+      '<div style="color:#2563eb;font-weight:800;font-size:14px">' + K() + ' ' +num(f.balance).toLocaleString()+'</div>' +
       '<div style="color:#6b7280;font-size:10px;font-weight:600">balance due</div>' +
-      '<div style="color:#374151;font-size:11px;font-weight:600;margin-top:3px">Paid KES '+num(f.paid).toLocaleString()+' of KES '+num(f.price).toLocaleString()+'</div>' +
+      '<div style="color:#374151;font-size:11px;font-weight:600;margin-top:3px">Paid ' + K() + ' ' +num(f.paid).toLocaleString()+' of ' + K() + ' ' +num(f.price).toLocaleString()+'</div>' +
       inst +
       '<div style="color:#2563eb;font-size:11px;font-weight:600">Due: '+escapeHtml(due)+'</div>' + late +
     '</div></div>';
@@ -5919,6 +6061,88 @@ function dashPayTypeAllowed(row){
   return f==='Cash' ? isCash : !isCash;
 }
 
+
+// ── REGIONAL PERFORMANCE BAR CHART (Admin / HR / Customer Care) ──
+// Cash sales, Credit sales and Overdue balance for every region, using the dashboard's
+// current filters. Amounts follow the Country filter (All Countries = KES).
+var rpView = 'chart';
+var rpOn = { cash:true, credit:true, overdue:true };   // which measures the chart shows
+function rpRegionOf(county){ return AN_COUNTY_TO_REGION[county] || 'Other / unassigned'; }
+function rpData(rows){
+  var by = {}, now = new Date();
+  rows.forEach(function(r){
+    var reg = rpRegionOf(r['County']);
+    var o = by[reg] || (by[reg] = { region:reg, cash:0, credit:0, overdue:0, n:0 });
+    o.n++;
+    var price = num(r['Device Price']);
+    if((r['Payment Method']||'')==='Cash') o.cash += price; else o.credit += price;
+    if(r['Status']==='Balance Due' && r['Next Payment Date']){
+      var d = parseAppDate(r['Next Payment Date']);
+      if(!isNaN(d.getTime()) && d < now) o.overdue += num(r['Balance']);
+    }
+  });
+  return Object.keys(by).map(function(k){ return by[k]; }).sort(function(a,b){ return (b.cash+b.credit)-(a.cash+a.credit); });
+}
+function rpFmt(n){ return Math.round(n).toLocaleString(); }
+function rpShort(n){
+  n = Number(n)||0;
+  if(n>=1e6) return (n/1e6).toFixed(n>=1e7?0:1).replace('.0','')+'M';
+  if(n>=1e3) return (n/1e3).toFixed(n>=1e4?0:1).replace('.0','')+'K';
+  return String(Math.round(n));
+}
+function rpNice(m){
+  if(!(m>0)) return 1;
+  var e = Math.pow(10, Math.floor(Math.log10(m))), f = m/e;
+  var st=[1,1.2,1.5,2,2.5,3,4,5,6,8,10]; for(var i=0;i<st.length;i++){ if(f<=st[i]) return st[i]*e; } return 10*e;
+}
+function regionChartHtml(rows){
+  if(!(session && (session.role==='Admin' || isViewerRole()))) return '';
+  var data = rpData(rows), c = dashViewCur();
+  var allSeries = [ ['cash','Cash sales','--rp-cash'], ['credit','Credit sales','--rp-credit'], ['overdue','Overdue balance','--rp-overdue'] ];
+  var series = allSeries.filter(function(sr){ return rpOn[sr[0]]; });
+  data.sort(function(a,b){ var t=function(d){ return series.reduce(function(n,sr){ return n+d[sr[0]]; },0); }; return t(b)-t(a); });
+  var body;
+  if(!data.length){
+    body = '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No records for this filter.</div>';
+  } else {
+    var max = 0; data.forEach(function(d){ series.forEach(function(sr){ if(d[sr[0]]>max) max=d[sr[0]]; }); });
+    var top = rpNice(max), BAR_H = 150;
+    var cols = data.map(function(d){
+      var w = series.length*20 + (series.length-1)*3 + 14;
+      return '<div class="rp-g" style="width:'+Math.max(w,66)+'px">' +
+        '<div class="rp-bars">' + series.map(function(sr){
+          var h = top ? Math.round(d[sr[0]]/top*BAR_H) : 0;
+          return '<div class="rp-col" title="'+escapeHtml(d.region)+' — '+sr[1]+': '+c+' '+rpFmt(d[sr[0]])+'">' +
+            '<span class="rp-v">'+rpShort(d[sr[0]])+'</span>' +
+            '<div class="rp-bar" style="height:'+(d[sr[0]]>0?Math.max(h,3):0)+'px;background:var('+sr[2]+')"></div></div>';
+        }).join('') + '</div>' +
+        '<div class="rp-lbl">'+escapeHtml(d.region)+'<small>'+d.n+' device(s)</small></div></div>';
+    }).join('');
+    var ticks = [top, top/2, 0].map(function(t){ return '<span style="bottom:'+(t/top*BAR_H+0)+'px">'+rpShort(t)+'</span>'; }).join('');
+    var grid = [top, top/2, 0].map(function(t){ return '<i style="top:'+(40+BAR_H-t/top*BAR_H)+'px"></i>'; }).join('');
+    var bars = (data.length>3 ? '<div style="font-size:10.5px;color:var(--text-m);text-align:right;margin-bottom:2px">Swipe sideways to see all regions ➜</div>' : '') + '<div class="rp-plot"><div class="rp-axis">'+ticks+'</div><div class="rp-scroll"><div class="rp-inner">'+grid+cols+'</div></div></div>';
+    var tbl = '<table class="rp-table"><thead><tr><th>Region</th>'+series.map(function(sr){ return '<th>'+sr[1].replace(' sales','').replace(' balance','')+'</th>'; }).join('')+'</tr></thead><tbody>' +
+      data.map(function(d){ return '<tr><td>'+escapeHtml(d.region)+'</td>'+series.map(function(sr){ return '<td>'+rpFmt(d[sr[0]])+'</td>'; }).join('')+'</tr>'; }).join('') + '</tbody></table>';
+    body = '<div id="rp-chart-view" style="display:'+(rpView==='chart'?'block':'none')+'">' +
+      bars + '</div>' +
+      '<div id="rp-table-view" style="display:'+(rpView==='table'?'block':'none')+'">'+tbl+'</div>';
+  }
+  return '<div class="section rp-chart" style="margin-bottom:10px">' +
+    '<div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>📊 Performance by region <span style="font-weight:500;color:var(--text-m)">('+c+')</span></span>' +
+    '<span><button type="button" class="rp-tab'+(rpView==='chart'?' on':'')+'" onclick="setRpView(\'chart\')">Chart</button> <button type="button" class="rp-tab'+(rpView==='table'?' on':'')+'" onclick="setRpView(\'table\')">Table</button></span></div>' +
+    '<div class="rp-legend">' + allSeries.map(function(sr){
+      var on = rpOn[sr[0]];
+      return '<button type="button" class="rp-chip'+(on?' on':'')+'" aria-pressed="'+on+'" onclick="toggleRpMeasure(\''+sr[0]+'\')"><i style="background:var('+sr[2]+')"></i>'+sr[1]+'</button>';
+    }).join('') + '</div>' + body + '</div>';
+}
+function toggleRpMeasure(k){
+  var onCount = Object.keys(rpOn).filter(function(x){ return rpOn[x]; }).length;
+  if(rpOn[k] && onCount===1) return;           // keep at least one measure showing
+  rpOn[k] = !rpOn[k];
+  if(dashFormType==='devicepay') renderDashList();
+}
+function setRpView(v){ rpView = v; if(dashFormType==='devicepay') renderDashList(); }
+
 function renderDevicePaySummary(){
   var trainerFilter = document.getElementById('dash-trainer-filter').value;
   var countyFilter = document.getElementById('dash-county-filter').value;
@@ -5927,10 +6151,11 @@ function renderDevicePaySummary(){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
       dashRegionManagerAllowed(x['County']) &&
+      dashCountryAllowed(x) &&
       dashPayTypeAllowed(x) &&
       (!shopFilter || String(x['Shop ID']||'').toLowerCase().indexOf(shopFilter)!==-1 || String(x['Shop Name']||'').toLowerCase().indexOf(shopFilter)!==-1) &&
       dateMatches(x['Date']);
-  });
+  }).map(cvRow);
 
   var totalDevices = filtered.length;
   var cashCount=0, cashTotal=0, creditCount=0, creditTotal=0, creditSalesTotal=0, balanceTotal=0, repoCount=0;
@@ -5957,7 +6182,7 @@ function renderDevicePaySummary(){
       var now=new Date();
       var diffDays=Math.ceil((due-now)/(1000*60*60*24));
       if(!isNaN(due.getTime()) && diffDays<=3){
-        upcoming.push({trainerEmail:String(row['Trainer Email']||'').trim().toLowerCase(),trainer:trainer,customer:row['Customer Name'],phone:row['Customer Phone'],shop:row['Shop Name'],shopId:row['Shop ID'],due:row['Next Payment Date'],balance:balance,paid:paid,price:price,installment:row['Installment Amount'],days:diffDays,overdue:diffDays<0});
+        upcoming.push({cur:dashViewCur(),trainerEmail:String(row['Trainer Email']||'').trim().toLowerCase(),trainer:trainer,customer:row['Customer Name'],phone:row['Customer Phone'],shop:row['Shop Name'],shopId:row['Shop ID'],due:row['Next Payment Date'],balance:balance,paid:paid,price:price,installment:row['Installment Amount'],days:diffDays,overdue:diffDays<0});
       }
     }
   });
@@ -5966,11 +6191,11 @@ function renderDevicePaySummary(){
   // Bold, solid colour cards (dark blue / dark green / orange / purple / bright red)
   var cardsHtml =
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px">' +
-      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalDevices, cashCount+' cash + '+creditCount+' credit · Sales Value KES '+salesValue.toLocaleString(), true) +
-      sumCard('#0f8a3f','💵','Cash Sales', 'KES '+cashTotal.toLocaleString(), cashCount+' Device(s) Sold on Cash') +
-      sumCard('#ea7a0c','📇','Credit Sales', 'KES '+creditSalesTotal.toLocaleString(), creditCount+' Device(s) Sold on Credit') +
-      sumCard('#9b3aab','✅','Credit Collected', 'KES '+creditTotal.toLocaleString(), 'Paid so far on Credit Sales') +
-      sumCard('#e0212a','⚠️','Outstanding Balance', 'KES '+balanceTotal.toLocaleString(), 'Still Owed on Credit Sales') +
+      sumCard('#0b4ea2','📦','Devices Sold (Cash + Credit)', totalDevices, cashCount+' cash + '+creditCount+' credit · Sales Value ' + K() + ' ' +salesValue.toLocaleString(), true) +
+      sumCard('#0f8a3f','💵','Cash Sales', '' + K() + ' ' +cashTotal.toLocaleString(), cashCount+' Device(s) Sold on Cash') +
+      sumCard('#ea7a0c','📇','Credit Sales', '' + K() + ' ' +creditSalesTotal.toLocaleString(), creditCount+' Device(s) Sold on Credit') +
+      sumCard('#9b3aab','✅','Credit Collected', '' + K() + ' ' +creditTotal.toLocaleString(), 'Paid so far on Credit Sales') +
+      sumCard('#e0212a','⚠️','Outstanding Balance', '' + K() + ' ' +balanceTotal.toLocaleString(), 'Still Owed on Credit Sales') +
       sumCard('#6b7280','↩️','Repossessed', repoCount, 'Balance Removed, Deposit & Payments Kept') +
     '</div>';
 
@@ -5978,7 +6203,7 @@ function renderDevicePaySummary(){
     var b=byTrainer[t];
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px">'+
       '<div><strong>'+t+'</strong><br><span style="color:var(--text-m)">'+b.devices+' device(s) · '+b.cash+' cash · '+b.credit+' credit</span></div>'+
-      '<div style="text-align:right;color:'+(b.balance>0?'#b91c1c':'#16a34a')+';font-weight:600">KES '+b.balance.toLocaleString()+'<br><span style="font-size:10px;color:var(--text-m);font-weight:400">balance</span></div>'+
+      '<div style="text-align:right;color:'+(b.balance>0?'#b91c1c':'#16a34a')+';font-weight:600">' + K() + ' ' +b.balance.toLocaleString()+'<br><span style="font-size:10px;color:var(--text-m);font-weight:400">balance</span></div>'+
     '</div>';
   }).join('') || '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No records for this filter.</div>';
 
@@ -5988,7 +6213,7 @@ function renderDevicePaySummary(){
   }).join('') : '<div style="color:var(--text-m);font-size:12px;padding:8px 0">No credit payments due in the next 3 days.</div>';
 
   document.getElementById('dash-devicepay-summary').innerHTML =
-    cardsHtml +
+    cardsHtml + regionChartHtml(filtered) +
     '<div class="section" style="margin-bottom:10px"><div class="section-title">👤 By trainer</div>'+trainerRows+'</div>' +
     '<div class="section"><div class="section-title" style="color:#16a34a;font-weight:700">⏰ 3-day credit follow-ups</div>'+(upcoming.length>1?'<div style="margin-bottom:8px"><button type="button" onclick="openReminderEmail(-1)" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">✉️ Email all '+upcoming.length+' follow-ups</button></div>':'')+upcomingHtml+'</div>' +
     '<div class="section-title" style="margin-top:1rem">📄 Individual records</div>';
@@ -6005,7 +6230,7 @@ function fuLine(u){
   var due = String(u.due||'').replace(/,\s*00:00(:00)?$/, '');
   var n = Math.abs(u.days||0);
   return (u.shop||'Shop')+(u.shopId?' (ID '+u.shopId+')':'')+' — '+(u.customer||'Customer')+(u.phone?' '+u.phone:'')+
-    ' — balance KES '+num(u.balance).toLocaleString()+', due '+due+(u.overdue?' ('+n+' day'+(n===1?'':'s')+' overdue)':'')+' — Trainer: '+(u.trainer||'—');
+    ' — balance ' + (u.cur||K()) + ' ' +num(u.balance).toLocaleString()+', due '+due+(u.overdue?' ('+n+' day'+(n===1?'':'s')+' overdue)':'')+' — Trainer: '+(u.trainer||'—');
 }
 function openReminderEmail(idx){
   var items = idx<0 ? fuItems.slice() : (fuItems[idx] ? [fuItems[idx]] : []);
@@ -6185,6 +6410,7 @@ function getFilteredDashItems(){
     return (!trainerFilter || x['Trainer Name']===trainerFilter) &&
       (!countyFilter || x['County']===countyFilter) &&
       dashRegionManagerAllowed(x['County']) &&
+      dashCountryAllowed(x) &&
       dashPayTypeAllowed(x) &&
       (!shopFilter || String(x['Shop ID']||'').toLowerCase().indexOf(shopFilter)!==-1 || String(x['Shop Name']||'').toLowerCase().indexOf(shopFilter)!==-1) &&
       dateMatches(x['Date']);
@@ -6279,6 +6505,7 @@ function renderRouteCards(filtered, listEl){
 
 function renderGenericList(){
   var filtered = getFilteredDashItems();
+  if(dashFormType==='devicepay') filtered = filtered.map(cvRow);
   var listEl = document.getElementById('dash-list');
   listEl.innerHTML='';
   document.getElementById('dash-empty').style.display = filtered.length ? 'none' : 'block';
@@ -6304,6 +6531,7 @@ function renderGenericList(){
     Object.keys(row).forEach(function(k){
       if(k==='Row#' || !row[k] || row[k]==='') return;
       var val = String(row[k]);
+      if(dashFormType==='devicepay' && MONEY_KEYS.indexOf(k)!==-1 && !isNaN(num(val))) val = dashViewCur()+' '+Math.round(num(val)).toLocaleString();
       var gpsMatch = val.match(/^(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
       if(/^https?:\/\//.test(val)){
         bodyRows += '<div><strong>'+k+':</strong> <a href="'+val+'" target="_blank">View photo</a></div>';
@@ -6376,9 +6604,9 @@ function renderPaymentHistory(sales){
         '<strong>'+(sale.shopName||'—')+'</strong> <span style="color:var(--text-m)">(ID: '+sale.shopId+')</span><br>' +
         '👤 '+(sale.trainerName||'')+' &middot; 📍 '+(sale.county||'')+'<br>' +
         (sale.customerName ? ('Customer: '+sale.customerName+(sale.customerPhone?(' · '+sale.customerPhone):'')+'<br>') : '') +
-        '💰 Device price: <strong>KES '+num(sale.devicePrice).toLocaleString()+'</strong> &middot; Method: <strong>'+(isCash?'Cash':'Credit')+'</strong><br>' +
-        'Total paid: <strong style="color:#16a34a">KES '+num(sale.totalPaid).toLocaleString()+'</strong> &middot; ' +
-        'Balance: <strong style="color:'+(sale.currentBalance>0?'#b91c1c':'#16a34a')+'">KES '+num(sale.currentBalance).toLocaleString()+'</strong>' +
+        '💰 Device price: <strong>' + K() + ' ' +num(sale.devicePrice).toLocaleString()+'</strong> &middot; Method: <strong>'+(isCash?'Cash':'Credit')+'</strong><br>' +
+        'Total paid: <strong style="color:#16a34a">' + K() + ' ' +num(sale.totalPaid).toLocaleString()+'</strong> &middot; ' +
+        'Balance: <strong style="color:'+(sale.currentBalance>0?'#b91c1c':'#16a34a')+'">' + K() + ' ' +num(sale.currentBalance).toLocaleString()+'</strong>' +
         (sale.currentBalance>0 && sale.nextPaymentDate ? ('<br>⏰ Next payment due: '+sale.nextPaymentDate) : '') +
       '</div>';
 
@@ -6388,10 +6616,10 @@ function renderPaymentHistory(sales){
       return '<div class="ph-tl-item" style="'+(isLast?'border-left-color:transparent':'')+'">' +
         '<div class="ph-tl-dot '+dotClass+'"></div>' +
         '<div class="ph-tl-row-top"><span class="ph-tl-type">'+t.type+'</span>' +
-          '<span class="ph-tl-amount" style="color:'+(t.method==='Cash'?'#16a34a':'#c2410c')+'">KES '+num(t.amount).toLocaleString()+'</span></div>' +
+          '<span class="ph-tl-amount" style="color:'+(t.method==='Cash'?'#16a34a':'#c2410c')+'">' + K() + ' ' +num(t.amount).toLocaleString()+'</span></div>' +
         '<div class="ph-tl-meta">'+
           '📅 '+(t.date||'—')+'<br>'+
-          'Balance after: KES '+num(t.balanceAfter).toLocaleString()+
+          'Balance after: ' + K() + ' ' +num(t.balanceAfter).toLocaleString()+
           (t.recordedBy ? (' &middot; Recorded by '+t.recordedBy) : '') +
           (t.mpesaMessage ? ('<br>💬 M-Pesa: '+escapeHtml(t.mpesaMessage)) : '') +
           (t.mpesaPhotoUrl ? ('<br>📎 <a href="'+t.mpesaPhotoUrl+'" target="_blank">View M-Pesa screenshot</a>') : '') +
@@ -7443,12 +7671,12 @@ function exportDevicePayPdfWithHistory(rows, subtitle, filename, btnId){
 
     var extraSections = relevantSales.map(function(sale){
       return {
-        heading: (sale.shopName||'Shop') + ' (ID: ' + sale.shopId + ') — ' + (sale.trainerName||'') + ' · ' + (sale.paymentMethod||'') + ' · Balance: KES ' + num(sale.currentBalance).toLocaleString(),
+        heading: (sale.shopName||'Shop') + ' (ID: ' + sale.shopId + ') — ' + (sale.trainerName||'') + ' · ' + (sale.paymentMethod||'') + ' · Balance: ' + K(sale.county) + ' ' + num(sale.currentBalance).toLocaleString(),
         columns: [
           {header:'Type', dataKey:'type'},
           {header:'Date', dataKey:'date'},
-          {header:'Amount (KES)', dataKey:'amount'},
-          {header:'Balance After (KES)', dataKey:'balanceAfter'},
+          {header:'Amount ('+K(sale.county)+')', dataKey:'amount'},
+          {header:'Balance After ('+K(sale.county)+')', dataKey:'balanceAfter'},
           {header:'Recorded By', dataKey:'recordedBy'},
           {header:'M-Pesa Message', dataKey:'mpesaMessage'}
         ],
