@@ -4908,7 +4908,8 @@ function calcNewSaleBalance(){
   if(!price){ balEl.style.display='none'; return; }
   if(method==='Installment'){
     var balance = Math.max(price-paid,0);
-    var nd=new Date(); nd.setDate(nd.getDate()+30);
+    var nd=new Date(), keepDay=nd.getDate(); nd.setDate(1); nd.setMonth(nd.getMonth()+1);
+    nd.setDate(Math.min(keepDay, new Date(nd.getFullYear(), nd.getMonth()+1, 0).getDate()));   // next calendar month
     var nextStr = nd.toLocaleDateString('en-KE',{weekday:'short',day:'numeric',month:'short'});
     balEl.style.display='block';
     balEl.innerHTML = balance>0
