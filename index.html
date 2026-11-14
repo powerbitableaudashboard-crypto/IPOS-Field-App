@@ -6664,6 +6664,56 @@ function openPaymentHistory(shopId, shopName){
   });
 }
 
+
+// ── EDIT A WRONG REPAYMENT AMOUNT (Admin, Area Manager, Trainer — not HR / Customer Care) ──
+function mpesaAmountOf(msg){
+  var m=String(msg||'').match(/(?:Ksh|KES|UGX|USh|Sh)\.?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i);
+  if(!m) return null; var n=parseFloat(m[1].replace(/,/g,'')); return n>0?n:null;
+}
+function canEditRepayment(t){
+  if(!t || !t.histRow || !t.paymentId) return false;
+  var r = session && session.role;
+  return r==='Admin' || r==='Manager';
+}
+function openEditRepayment(paymentId, histRow, oldAmount, mpesaAmt, shopId, shopName){
+  closeEditRepayment();
+  var ov=document.createElement('div'); ov.className='ph-overlay'; ov.id='er-overlay'; ov.style.zIndex=10001;
+  var inp='width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box';
+  ov.innerHTML='<div class="ph-modal"><div class="ph-modal-head"><div><div class="ph-modal-title">✏️ Correct repayment amount</div>'+
+    '<div class="ph-modal-sub">'+fuEsc(shopName||'Shop')+' · ID: '+fuEsc(shopId)+'</div></div><button class="ph-modal-close" onclick="closeEditRepayment()">✕</button></div>'+
+    '<div class="ph-modal-body">'+
+    '<div style="font-size:12px;margin-bottom:10px">Amount recorded now: <strong>'+K()+' '+num(oldAmount).toLocaleString()+'</strong></div>'+
+    '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Correct amount <span style="font-weight:400;color:var(--text-m)">(taken from the M-Pesa message)</span></div>'+
+    '<input type="text" id="er-amount" readonly value="'+mpesaAmt+'" style="'+inp+';margin-bottom:10px;background:var(--surface-2);font-weight:700">'+
+    '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Reason <span style="color:#dc2626">*</span></div>'+
+    '<input type="text" id="er-reason" maxlength="300" placeholder="e.g. Typed 7 instead of 7500" style="'+inp+';margin-bottom:10px">'+
+    '<div style="font-size:11px;color:var(--text-m);margin-bottom:10px">The balance, status and next payment date are recalculated automatically. Every correction is logged with your name.</div>'+
+    '<div id="er-status" style="font-size:12px;color:#b91c1c;margin-bottom:8px"></div>'+
+    '<button type="button" id="er-btn" style="width:100%;background:#ea580c;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">Save correction</button>'+
+    '</div></div>';
+  document.body.appendChild(ov);
+  document.getElementById('er-btn').onclick=function(){ submitEditRepayment(paymentId, histRow, oldAmount, mpesaAmt, shopId, shopName); };
+}
+function closeEditRepayment(){ var e=document.getElementById('er-overlay'); if(e) e.remove(); }
+function submitEditRepayment(paymentId, histRow, oldAmount, mpesaAmt, shopId, shopName){
+  var amt=mpesaAmt;
+  var reason=document.getElementById('er-reason').value.trim();
+  var st=document.getElementById('er-status');
+  if(!(amt>0)){ st.textContent='Enter the correct amount.'; return; }
+  if(amt===oldAmount){ st.textContent='That is the same as the amount already recorded.'; return; }
+  if(reason.length<3){ st.textContent='Type a short reason.'; return; }
+  if(!confirm('Change this repayment from '+num(oldAmount).toLocaleString()+' to '+amt.toLocaleString()+'?')) return;
+  var btn=document.getElementById('er-btn'); btn.disabled=true; btn.textContent='Saving…'; st.textContent='';
+  fetch(APPS_SCRIPT_URL,{ method:'POST', body: JSON.stringify({ formType:'editRepayment', paymentId:paymentId, histRow:histRow, oldAmount:oldAmount, newAmount:amt, reason:reason,
+      requestedBy:session.email, requestedByRole:session.role, requestedByName:session.name })})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.status==='success'){ closeEditRepayment(); closePaymentHistory(); alert('✅ '+(d.message||'Repayment corrected.')); openPaymentHistory(shopId, shopName); try{ if(typeof loadDashboard==='function') loadDashboard(); }catch(e){} }
+    else { st.textContent=d.message||'Could not save.'; btn.disabled=false; btn.textContent='Save correction'; }
+  })
+  .catch(function(){ st.textContent='Network error — please try again.'; btn.disabled=false; btn.textContent='Save correction'; });
+}
+
 function closePaymentHistory(){
   var el = document.getElementById('ph-overlay');
   if(el) el.remove();
@@ -6704,6 +6754,7 @@ function renderPaymentHistory(sales){
           (t.mpesaMessage ? ('<br>💬 M-Pesa: '+escapeHtml(t.mpesaMessage)) : '') +
           (t.mpesaPhotoUrl ? ('<br>📎 <a href="'+t.mpesaPhotoUrl+'" target="_blank">View M-Pesa screenshot</a>') : '') +
         '</div>' +
+        (canEditRepayment(t) && mpesaAmountOf(t.mpesaMessage)!==null && mpesaAmountOf(t.mpesaMessage)!==num(t.amount) ? ('<div style="margin-top:6px"><button type="button" onclick="openEditRepayment(decodeURIComponent(\''+encodeURIComponent(t.paymentId)+'\'),'+t.histRow+','+num(t.amount)+','+mpesaAmountOf(t.mpesaMessage)+',decodeURIComponent(\''+encodeURIComponent(sale.shopId)+'\'),decodeURIComponent(\''+encodeURIComponent(sale.shopName||'')+'\'))" style="background:#fff7ed;color:#c2410c;border:1px solid #fdba74;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer">✏️ Edit amount</button></div>') : '') +
       '</div>';
     }).join('');
 
