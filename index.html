@@ -1071,6 +1071,13 @@ input[type=file]{display:none}
         <div id="set-status-fx" style="font-size:12px;color:var(--text-m);margin-top:6px"></div>
       </div>
     </div>
+    <div class="section" id="set-loopin-wrap" style="display:none">
+      <div class="section-title">📧 Reminder loop-in emails (Admin only)</div>
+      <p style="font-size:12px;color:var(--text-m);margin:-6px 0 10px">These people are copied (CC) on every payment reminder email, together with the people tagged on the device request. Example: the Chief Commercial Officer.</p>
+      <textarea id="set-loopin" rows="3" placeholder="cco@company.com, finance@company.com" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box"></textarea>
+      <button type="button" onclick="saveLoopIn()" style="margin-top:8px;padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">💾 Save loop-in emails</button>
+      <div id="set-status-loopin" style="font-size:12px;color:var(--text-m);margin-top:6px"></div>
+    </div>
     <div class="section">
       <div class="section-title">💵 Default Amount — Cash</div>
       <p style="font-size:12px;color:var(--text-m);margin:-6px 0 12px">Auto-fills "Device amount" when a trainer selects <strong>Cash</strong> as the payment type on their Device Request form. Trainers can still edit it per request.</p>
@@ -4329,6 +4336,14 @@ function fillSettingsFields(){
 function refreshSettingsData(){
   fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount').then(function(r){return r.json();}).then(function(d){ settingsData = d; }).catch(function(){});
 }
+function saveLoopIn(){
+  var st=document.getElementById('set-status-loopin'), val=document.getElementById('set-loopin').value.trim();
+  st.textContent='Saving…';
+  fetch(APPS_SCRIPT_URL,{ method:'POST', body: JSON.stringify({ formType:'setReminderLoopIn', emails: val, requestedBy: session.email, requestedByRole: session.role }) })
+  .then(function(r){return r.json();})
+  .then(function(d){ if(d.status==='success'){ st.textContent='✅ Saved. These people are now copied on every reminder.'; if(settingsData) settingsData.reminderLoopIn=val; reminderLoopIn=null; } else st.textContent=d.message||'Failed to save.'; })
+  .catch(function(){ st.textContent='Network error — please try again.'; });
+}
 function saveExchangeRate(){
   var statusEl = document.getElementById('set-status-fx');
   var rate = parseFloat(v('set-fx'));
@@ -4355,6 +4370,8 @@ function openDeviceSettings(){
   curSel.value = lockedUg ? 'UGX' : (session.role==='Admin' ? curSel.value||'KES' : 'KES');
   curSel.disabled = session.role!=='Admin';      // managers edit only their own country
   document.getElementById('set-fx-wrap').style.display = session.role==='Admin' ? 'block' : 'none';
+  document.getElementById('set-loopin-wrap').style.display = session.role==='Admin' ? 'block' : 'none';
+  var li=document.getElementById('set-loopin'); if(li && settingsData) li.value = settingsData.reminderLoopIn||'';
   fetch(APPS_SCRIPT_URL + '?action=getDefaultDeviceAmount')
     .then(function(r){return r.json();})
     .then(function(data){
@@ -6278,7 +6295,7 @@ function renderDevicePaySummary(){
 // Type a short note and email the chief officer and others (To / CC)
 // about a due or 3-day follow-up payment. Sent by the backend.
 var fuItems = [];
-var reminderRecipients = null;
+var reminderRecipients = null; var reminderLoopIn = null;
 function fuEsc(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function fuLine(u){
   var due = String(u.due||'').replace(/,\s*00:00(:00)?$/, '');
@@ -6309,11 +6326,12 @@ function openReminderEmail(idx){
     '<div class="ph-modal-body">'+
       '<div style="font-size:12px;font-weight:700;margin-bottom:4px">To (the trainer)</div>'+
       '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;background:var(--surface-2)">'+toNames+'</div>'+
-      '<div style="font-size:11px;color:var(--text-m);margin:-4px 0 10px">Anyone else you choose below (e.g. the Chief Commercial Officer) is also copied.</div>'+
+      '<div style="font-size:11px;color:var(--text-m);margin:-4px 0 10px">Everyone below is copied (CC) automatically.</div>'+
       '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Tagged on the original request <span style="font-weight:400;color:var(--text-m)">(always copied)</span></div>'+
       '<div id="fu-tagged" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px;background:var(--surface-2);color:var(--text-m)">Loading…</div>'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Add others to CC <span style="font-weight:400;color:var(--text-m)">(not tagged on the request)</span></div>'+
-      '<div id="fu-cc-list" style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin-bottom:6px;font-size:12.5px">Loading…</div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Always looped in <span style="font-weight:400;color:var(--text-m)">(set by the Admin)</span></div>'+
+      '<div id="fu-loopin" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px;background:var(--surface-2);color:var(--text-m)">Loading…</div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Any other CC <span style="font-weight:400;color:var(--text-m)">(optional)</span></div>'+
       '<input type="text" id="fu-cc-extra" placeholder="Other CC emails (comma separated)" style="'+inp+';margin-bottom:10px">'+
       '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Subject</div>'+
       '<input type="text" id="fu-subject" value="'+fuEsc(subject)+'" style="'+inp+';margin-bottom:10px">'+
@@ -6330,25 +6348,11 @@ function openReminderEmail(idx){
     if(c) c.innerHTML=mk('cc');
   };
   var shopIds=items.map(function(u){return u.shopId;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;});
-  // Tagged people are copied automatically, so they are hidden from the CC list below;
-  // the list then only offers OTHER people (e.g. the Chief Commercial Officer) to loop in.
-  var tagged=[];
-  var refill=function(){
-    var tl=tagged.map(function(e){return e.toLowerCase();});
-    var c=document.getElementById('fu-cc-list'); if(!c) return;
-    var rest=(reminderRecipients||[]).filter(function(r){ return tl.indexOf(String(r.email).toLowerCase())===-1; });
-    fill(rest);
-  };
   fetch(APPS_SCRIPT_URL+'?action=getReminderTags&email='+encodeURIComponent(session.email)+'&role='+encodeURIComponent(session.role)+'&shopIds='+encodeURIComponent(shopIds.join(','))).then(function(r){return r.json();}).then(function(d){
-    tagged=d.all||[];
-    var el=document.getElementById('fu-tagged'); if(el) el.innerHTML=tagged.length?tagged.map(function(e){return '✅ '+fuEsc(e);}).join('<br>'):'No one was tagged on the original request.';
-  }).catch(function(){ var el=document.getElementById('fu-tagged'); if(el) el.textContent='Could not load. They are still copied automatically when you send.'; })
-  .then(function(){
-    if(reminderRecipients){ refill(); return; }
-    return fetch(APPS_SCRIPT_URL+'?action=getRecipients').then(function(r){return r.json();}).then(function(d){
-      reminderRecipients = d.recipients || []; refill();
-    }).catch(function(){ fill([]); });
-  });
+    var all=d.all||[], li=d.loopIn||[];
+    var el=document.getElementById('fu-tagged'); if(el) el.innerHTML=all.length?all.map(function(e){return '✅ '+fuEsc(e);}).join('<br>'):'No one was tagged on the original request.';
+    var el2=document.getElementById('fu-loopin'); if(el2) el2.innerHTML=li.length?li.map(function(e){return '✅ '+fuEsc(e);}).join('<br>'):'None set. The Admin can add them in Device Settings.';
+  }).catch(function(){ ['fu-tagged','fu-loopin'].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent='Could not load. They are still copied automatically when you send.'; }); });
 }
 function closeReminderEmail(){ var el=document.getElementById('fu-overlay'); if(el) el.remove(); }
 function sendReminderEmail(){
