@@ -166,6 +166,8 @@ body.has-motivation-banners .screen{padding-bottom:calc(3rem + 32px)}
 
 /* PAYMENT HISTORY MODAL */
 .ph-overlay{position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.fu-req{font-family:inherit}
+.fu-req::placeholder{font-weight:700;color:#9ca3af;font-family:inherit}
 .ph-modal{background:#fff;width:100%;max-width:480px;max-height:88vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden}
 .ph-modal-head{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-shrink:0}
 .ph-modal-title{font-size:15px;font-weight:700;color:var(--text)}
@@ -6308,10 +6310,10 @@ function openReminderEmail(idx){
   if(!items.length) return;
   window._fuSending = items;
   var overdue = items.filter(function(u){return u.overdue;}).length;
-  var subject = 'Payment reminder — ' + (items.length===1 ? (items[0].shop||'Shop')+(items[0].overdue?' (Overdue)':' (Due soon)') : items.length+' credit follow-ups'+(overdue?' ('+overdue+' overdue)':''));
+  var subject = 'Payment Reminder — ' + (items.length===1 ? (items[0].shop||'Shop')+(items[0].overdue?' (Overdue)':' (Due soon)') : items.length+' credit follow-ups'+(overdue?' ('+overdue+' overdue)':''));
   var msg = items.length===1
-    ? 'Please type your Message Here!.'
-    : 'Please type your Message Here!.';
+    ? 'Type your message to the trainer, e.g. Please follow up on this Credit Payment.'
+    : 'Type your message to the trainers, e.g. Please follow up on the Credit Payments Below.';
   var seenT={}, toNames=items.filter(function(u){ var k=u.trainerEmail||u.trainer; if(seenT[k]) return false; seenT[k]=1; return true; }).map(function(u){
     return '👤 <strong>'+fuEsc(u.trainer||'Trainer')+'</strong> <span style="color:#9ca3af;font-size:11px">('+(u.trainerEmail?fuEsc(u.trainerEmail):'<span style="color:#b91c1c">no email on record</span>')+')</span>';
   }).join('<br>');
@@ -6320,25 +6322,25 @@ function openReminderEmail(idx){
   overlay.onclick=function(e){ if(e.target===overlay) closeReminderEmail(); };
   var inp='width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-size:13px;box-sizing:border-box';
   overlay.innerHTML =
-    '<div class="ph-modal"><div class="ph-modal-head"><div><div class="ph-modal-title">✉️ Email payment reminder</div>'+
+    '<div class="ph-modal"><div class="ph-modal-head"><div><div class="ph-modal-title">✉️ Email Payment Reminder</div>'+
     '<div class="ph-modal-sub">'+items.length+' follow-up(s) will be listed in the email</div></div>'+
     '<button class="ph-modal-close" onclick="closeReminderEmail()">✕</button></div>'+
     '<div class="ph-modal-body">'+
       '<div style="font-size:12px;font-weight:700;margin-bottom:4px">To (Trainer)</div>'+
       '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;background:var(--surface-2)">'+toNames+'</div>'+
       '<div style="font-size:11px;color:var(--text-m);margin:-4px 0 10px">Everyone below is copied (CC) Automatically.</div>'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Tagged Emails<span style="font-weight:400;color:var(--text-m)"></span></div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Tagged on the Original Request <span style="font-weight:400;color:var(--text-m)"></span></div>'+
       '<div id="fu-tagged" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px;background:var(--surface-2);color:var(--text-m)">Loading…</div>'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Tagged<span style="font-weight:400;color:var(--text-m)"></span></div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Always Looped in <span style="font-weight:400;color:var(--text-m)"></span></div>'+
       '<div id="fu-loopin" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px;background:var(--surface-2);color:var(--text-m)">Loading…</div>'+
       '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Any other CC <span style="font-weight:400;color:var(--text-m)"></span></div>'+
       '<input type="text" id="fu-cc-extra" placeholder="Other CC Emails " style="'+inp+';margin-bottom:10px">'+
       '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Subject</div>'+
       '<input type="text" id="fu-subject" value="'+fuEsc(subject)+'" style="'+inp+';margin-bottom:10px">'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Short Message</div>'+
-      '<textarea id="fu-msg" rows="3" maxlength="1500" style="'+inp+';margin-bottom:10px">'+fuEsc(msg)+'</textarea>'+
-      '<div style="font-size:11px;color:var(--text-m);margin-bottom:10px">The follow-up details are added under your message Automatically.</div>'+
-      '<button type="button" id="fu-send-btn" onclick="sendReminderEmail()" style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">📨 Send Email</button>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Short message <span style="color:#dc2626">*</span> <span style="font-weight:400;color:var(--text-m)">(required)</span></div>'+
+      '<textarea id="fu-msg" class="fu-req" rows="3" maxlength="1500" required placeholder="'+fuEsc(msg)+'" style="'+inp+';margin-bottom:10px"></textarea>'+
+      '<div style="font-size:11px;color:var(--text-m);margin-bottom:10px">The follow-up details are added under your message automatically.</div>'+
+      '<button type="button" id="fu-send-btn" onclick="sendReminderEmail()" style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">📨 Send email</button>'+
     '</div></div>';
   document.body.appendChild(overlay);
   var fill=function(list){
@@ -6362,7 +6364,7 @@ function sendReminderEmail(){
   var bad=cc.filter(function(e){ return !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); });
   if(bad.length){ alert('Check these CC emails: '+bad.join(', ')); return; }
   var msg=document.getElementById('fu-msg').value.trim();
-  if(!msg){ alert('Type a short message.'); return; }
+  if(!msg){ var mb=document.getElementById('fu-msg'); mb.style.borderColor='#dc2626'; mb.focus(); alert('The short message is required. Type your message before sending.'); return; }
   var all=window._fuSending||[];
   var noEmail=all.filter(function(u){ return !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(u.trainerEmail||''); });
   if(noEmail.length){ alert('No email on record for: '+noEmail.map(function(u){return u.trainer;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join(', ')); return; }
