@@ -4717,6 +4717,10 @@ function submitCreditRepayment(){
   if(!crSelectedPaymentId){ errEl.textContent='Select a shop first.'; errEl.style.display='block'; return; }
   if(!amount || isNaN(parseFloat(amount)) || parseFloat(amount)<=0){ errEl.textContent='Enter a valid repayment amount.'; errEl.style.display='block'; return; }
   if(!v('cr-mpesa-msg')){ errEl.textContent='M-Pesa message is required.'; errEl.style.display='block'; return; }
+  // The amount typed must equal the amount in the M-Pesa message.
+  var crMsgAmt = mpesaAmountOf(v('cr-mpesa-msg'));
+  if(crMsgAmt===null){ errEl.textContent='Could not read an amount from the M-Pesa message. Paste the full, original M-Pesa message.'; errEl.style.display='block'; return; }
+  if(Math.abs(crMsgAmt-parseFloat(amount))>0.001){ errEl.textContent='The amount you typed ('+parseFloat(amount).toLocaleString()+') does not match the amount in the M-Pesa message ('+crMsgAmt.toLocaleString()+'). Correct the amount or paste the right message.'; errEl.style.display='block'; errEl.scrollIntoView({block:'center'}); return; }
 
   document.getElementById('cr-submit').style.display='none';
   document.getElementById('cr-spinner').style.display='block';
@@ -6777,7 +6781,7 @@ function actOnInstall(installId, action, btnEl){
 
   fetch(APPS_SCRIPT_URL, {
     method:'POST',
-    body: JSON.stringify({ formType:'approvalAction', installId:installId, action: action==='APPROVED'?'approve':'reject', by: session.name })
+    body: JSON.stringify({ formType:'approvalAction', installId:installId, action: action==='APPROVED'?'approve':'reject', by: session.name, requestedBy: session.email })
   })
   .then(function(r){return r.json();})
   .then(function(data){
