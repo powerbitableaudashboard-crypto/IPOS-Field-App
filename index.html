@@ -6308,10 +6308,10 @@ function openReminderEmail(idx){
   if(!items.length) return;
   window._fuSending = items;
   var overdue = items.filter(function(u){return u.overdue;}).length;
-  var subject = 'Payment reminder — ' + (items.length===1 ? (items[0].shop||'Shop')+(items[0].overdue?' (overdue)':' (due soon)') : items.length+' credit follow-ups'+(overdue?' ('+overdue+' overdue)':''));
+  var subject = 'Payment reminder — ' + (items.length===1 ? (items[0].shop||'Shop')+(items[0].overdue?' (Overdue)':' (Due soon)') : items.length+' credit follow-ups'+(overdue?' ('+overdue+' overdue)':''));
   var msg = items.length===1
-    ? 'Please follow up on this credit payment.'
-    : 'Please follow up on the credit payments below.';
+    ? 'Please type your Message Here!.'
+    : 'Please type your Message Here!.';
   var seenT={}, toNames=items.filter(function(u){ var k=u.trainerEmail||u.trainer; if(seenT[k]) return false; seenT[k]=1; return true; }).map(function(u){
     return '👤 <strong>'+fuEsc(u.trainer||'Trainer')+'</strong> <span style="color:#9ca3af;font-size:11px">('+(u.trainerEmail?fuEsc(u.trainerEmail):'<span style="color:#b91c1c">no email on record</span>')+')</span>';
   }).join('<br>');
