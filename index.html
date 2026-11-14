@@ -6324,21 +6324,21 @@ function openReminderEmail(idx){
     '<div class="ph-modal-sub">'+items.length+' follow-up(s) will be listed in the email</div></div>'+
     '<button class="ph-modal-close" onclick="closeReminderEmail()">✕</button></div>'+
     '<div class="ph-modal-body">'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">To (the trainer)</div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">To (Trainer)</div>'+
       '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;background:var(--surface-2)">'+toNames+'</div>'+
-      '<div style="font-size:11px;color:var(--text-m);margin:-4px 0 10px">Everyone below is copied (CC) automatically.</div>'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Tagged on the original request <span style="font-weight:400;color:var(--text-m)">(always copied)</span></div>'+
+      '<div style="font-size:11px;color:var(--text-m);margin:-4px 0 10px">Everyone below is copied (CC) Automatically.</div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Tagged Emails<span style="font-weight:400;color:var(--text-m)"></span></div>'+
       '<div id="fu-tagged" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px;background:var(--surface-2);color:var(--text-m)">Loading…</div>'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Always looped in <span style="font-weight:400;color:var(--text-m)">(set by the Admin)</span></div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Tagged<span style="font-weight:400;color:var(--text-m)"></span></div>'+
       '<div id="fu-loopin" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12px;background:var(--surface-2);color:var(--text-m)">Loading…</div>'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Any other CC <span style="font-weight:400;color:var(--text-m)">(optional)</span></div>'+
-      '<input type="text" id="fu-cc-extra" placeholder="Other CC emails (comma separated)" style="'+inp+';margin-bottom:10px">'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Any other CC <span style="font-weight:400;color:var(--text-m)"></span></div>'+
+      '<input type="text" id="fu-cc-extra" placeholder="Other CC Emails " style="'+inp+';margin-bottom:10px">'+
       '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Subject</div>'+
       '<input type="text" id="fu-subject" value="'+fuEsc(subject)+'" style="'+inp+';margin-bottom:10px">'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Short message</div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Short Message</div>'+
       '<textarea id="fu-msg" rows="3" maxlength="1500" style="'+inp+';margin-bottom:10px">'+fuEsc(msg)+'</textarea>'+
-      '<div style="font-size:11px;color:var(--text-m);margin-bottom:10px">The follow-up details are added under your message automatically.</div>'+
-      '<button type="button" id="fu-send-btn" onclick="sendReminderEmail()" style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">📨 Send email</button>'+
+      '<div style="font-size:11px;color:var(--text-m);margin-bottom:10px">The follow-up details are added under your message Automatically.</div>'+
+      '<button type="button" id="fu-send-btn" onclick="sendReminderEmail()" style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">📨 Send Email</button>'+
     '</div></div>';
   document.body.appendChild(overlay);
   var fill=function(list){
