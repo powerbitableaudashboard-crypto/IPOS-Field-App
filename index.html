@@ -511,7 +511,7 @@ input[type=file]{display:none}
         </div>
         <div class="field" id="dash-country-wrap" style="margin-bottom:0;display:none"><label>Country</label>
           <select id="dash-country-filter" onchange="renderDashList()">
-            <option value="">All Countries (shown in KES)</option>
+            <option value="">All Countries (KES)</option>
             <option value="Kenya">Kenya (KES)</option>
             <option value="Uganda">Uganda (UGX)</option>
           </select>
@@ -6337,7 +6337,7 @@ function openReminderEmail(idx){
       '<input type="text" id="fu-cc-extra" placeholder="Other CC Emails " style="'+inp+';margin-bottom:10px">'+
       '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Subject</div>'+
       '<input type="text" id="fu-subject" value="'+fuEsc(subject)+'" style="'+inp+';margin-bottom:10px">'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Short message <span style="color:#dc2626">*</span> <span style="font-weight:400;color:var(--text-m)">(required)</span></div>'+
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Short message <span style="color:#dc2626">*</span> <span style="font-weight:400;color:var(--text-m)"></span></div>'+
       '<textarea id="fu-msg" class="fu-req" rows="3" maxlength="1500" required placeholder="'+fuEsc(msg)+'" style="'+inp+';margin-bottom:10px"></textarea>'+
       '<div style="font-size:11px;color:var(--text-m);margin-bottom:10px">The follow-up details are added under your message automatically.</div>'+
       '<button type="button" id="fu-send-btn" onclick="sendReminderEmail()" style="width:100%;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">📨 Send email</button>'+
