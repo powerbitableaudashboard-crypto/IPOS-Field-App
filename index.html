@@ -6225,16 +6225,18 @@ function setRpView(v){ rpView = v; if(dashFormType==='devicepay') renderDashList
 var leadersPeriod='week', leadersData=null, leadersLoading=false;
 function leadersAllowed(){ return session && (session.role==='Admin'||session.role==='HR'||session.role==='Customer Care'); }
 function leadersRowsHtml(rows,good){
-  if(!rows||!rows.length) return '<div style="color:var(--text-m);font-size:12px;padding:6px 0">No trainers to show.</div>';
-  var mx=Math.max.apply(null,rows.map(function(r){return r.amount;}).concat([1]));
+  if(!rows||!rows.length) return '<div style="color:var(--text-m);font-size:12px;padding:6px 0">'+(good?'No trainers to show.':'No trainer has overdue credit without a payment.')+'</div>';
+  var val=function(r){return good?r.amount:r.outstanding;};
+  var mx=Math.max.apply(null,rows.map(val).concat([1]));
   return rows.map(function(r,i){
     var medal=good?(['🥇','🥈','🥉'][i]||String(i+1)):String(i+1);
     var col=good?'#16a34a':'#ea580c', tx=good?'#15803d':'#b91c1c';
+    var sub=good?(r.payments+' payment'+(r.payments===1?'':'s')):('No payment · '+r.overdueAccounts+' overdue account'+(r.overdueAccounts===1?'':'s'));
     return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">'+
       '<div style="width:24px;text-align:center;font-weight:700">'+medal+'</div>'+
-      '<div style="flex:1;min-width:0"><div style="font-weight:600">'+escapeHtml(r.name)+'</div><div style="font-size:11px;color:var(--text-m)">'+r.payments+' payment'+(r.payments===1?'':'s')+'</div>'+
-      '<div style="background:#e5e7eb;border-radius:6px;height:6px;margin-top:3px"><div style="width:'+Math.round(100*r.amount/mx)+'%;background:'+col+';height:6px;border-radius:6px"></div></div></div>'+
-      '<div style="font-weight:800;color:'+tx+';white-space:nowrap">'+r.amount.toLocaleString()+'</div></div>';
+      '<div style="flex:1;min-width:0"><div style="font-weight:600">'+escapeHtml(r.name)+'</div><div style="font-size:11px;color:var(--text-m)">'+sub+'</div>'+
+      '<div style="background:#e5e7eb;border-radius:6px;height:6px;margin-top:3px"><div style="width:'+Math.round(100*val(r)/mx)+'%;background:'+col+';height:6px;border-radius:6px"></div></div></div>'+
+      '<div style="text-align:right;white-space:nowrap">'+(good?'':'<div style="font-size:10px;color:var(--text-m)">Outstanding</div>')+'<div style="font-weight:800;color:'+tx+'">'+val(r).toLocaleString()+'</div></div></div>';
   }).join('');
 }
 function leadersInner(){
@@ -6245,7 +6247,7 @@ function leadersInner(){
   leadersData.groups.forEach(function(g){
     h+=(leadersData.groups.length>1?'<div style="font-weight:800;margin-top:6px">'+g.cur+'</div>':'')+
       '<div style="font-size:12px;font-weight:700;color:#15803d;margin:6px 0 0">🏆 Top 5 collectors</div>'+leadersRowsHtml(g.top,true)+
-      '<div style="font-size:12px;font-weight:700;color:#b91c1c;margin:12px 0 0">⚠️ Bottom 5 · need support</div>'+leadersRowsHtml(g.bottom,false);
+      '<div style="font-size:12px;font-weight:700;color:#b91c1c;margin:12px 0 0">⚠️ Bottom 5 · need support</div><div style="font-size:11px;color:var(--text-m)">Overdue credit and no payment collected</div>'+leadersRowsHtml(g.bottom,false);
   });
   return h+'<div style="font-size:11px;color:var(--text-m);margin-top:8px">Only trainers with credit devices are ranked.</div></div>';
 }
