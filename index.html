@@ -405,6 +405,11 @@ input[type=file]{display:none}
         <div class="form-card-title">Installation/Reactivation Form</div>
         <div class="form-card-desc">Record Installation</div>
       </div>
+      <div class="form-card pink" onclick="openHeldDevices()">
+        <div class="form-card-icon">📦</div>
+        <div class="form-card-title" id="home-held-title">Devices With Me</div>
+        <div class="form-card-desc">Not delivered devices &amp; handover</div>
+      </div>
     </div>
     <button class="logout-btn" onclick="doLogout()">⬅ Sign Out</button>
   </div>
@@ -455,6 +460,11 @@ input[type=file]{display:none}
           <div class="form-card-icon">↩️</div>
           <div class="form-card-title">Repossessed Devices</div>
           <div class="form-card-desc">Condition, photos &amp; resale status</div>
+        </div>
+        <div class="form-card blue" onclick="openHeldDevices()">
+          <div class="form-card-icon">📦</div>
+          <div class="form-card-title">Devices With Trainers</div>
+          <div class="form-card-desc">Not delivered, repossessed &amp; handover</div>
         </div>
         <div class="form-card orange" onclick="setFormType('survey')">
           <div class="form-card-icon">🏪</div>
@@ -1329,6 +1339,118 @@ input[type=file]{display:none}
   </div>
 </div>
 
+<!-- ══════════════════════════ DEVICES WITH TRAINERS (not delivered / repossessed, handover to Customer Care) -->
+<div class="screen" id="screen-held">
+  <div class="app-header">
+    <div><h1>📦 Devices With Trainers</h1><p id="held-sub">Not delivered or taken back, and their handover to Customer Care</p></div>
+    <button class="back-btn" onclick="heldBack()">← Back</button>
+  </div>
+  <div class="form-body">
+    <button type="button" id="held-report-btn" class="submit-btn" style="display:none;margin-bottom:14px;background:#1d4ed8" onclick="openHeldReport()"><span>+ Report a Device Not Delivered</span></button>
+    <div id="held-tiles" style="display:flex;gap:8px;margin-bottom:12px"></div>
+    <div class="two-col">
+      <div class="field" style="margin-bottom:0"><label>Search</label>
+        <input type="text" id="held-search" placeholder="Serial, shop, trainer…" oninput="renderHeldDevices()">
+      </div>
+      <div class="field" style="margin-bottom:0"><label>Status</label>
+        <select id="held-status" onchange="renderHeldDevices()">
+          <option value="OPEN">Open (with trainer or awaiting receipt)</option>
+          <option value="WITH_TRAINER">With trainer, not yet sent</option>
+          <option value="SENT">Sent, awaiting receipt</option>
+          <option value="RECEIVED">Received at Customer Care</option>
+          <option value="RESOLD">Resold</option>
+          <option value="ALL">All</option>
+        </select>
+      </div>
+    </div>
+    <div id="held-info" style="font-size:12px;color:var(--text-m);margin:10px 0"></div>
+    <div id="held-list"></div>
+  </div>
+</div>
+
+<!-- Report a device that was dispatched but not delivered / sold -->
+<div class="screen" id="screen-held-report">
+  <div class="app-header">
+    <div><h1>📦 Device Not Delivered</h1><p>Record a dispatched device that is still with you</p></div>
+    <button class="back-btn" onclick="openHeldDevices()">← Back</button>
+  </div>
+  <div class="form-body">
+    <p style="font-size:12px;color:var(--text-m);margin:0 0 12px">Use this when a device was dispatched to you but the customer did not take it. HR, Customer Care and your manager are notified, and the device stays on record until it is sold again or handed to Customer Care.</p>
+    <div class="field"><label for="hd-serial">Device serial no.<span class="req">*</span></label>
+      <input type="text" id="hd-serial" placeholder="e.g. SN-00123456">
+    </div>
+    <div class="field"><label for="hd-reason">Why was it not delivered?<span class="req">*</span></label>
+      <select id="hd-reason">
+        <option value="">Select…</option>
+        <option value="Customer changed his mind">Customer changed his mind</option>
+        <option value="Payment not made">Payment not made</option>
+        <option value="Customer unreachable">Customer unreachable</option>
+        <option value="Wrong device">Wrong device</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="two-col">
+      <div class="field"><label for="hd-shop">Shop name</label><input type="text" id="hd-shop" placeholder="Shop the device was for"></div>
+      <div class="field"><label for="hd-customer">Customer name</label><input type="text" id="hd-customer" placeholder="Customer"></div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label for="hd-phone">Customer phone</label><input type="tel" id="hd-phone" placeholder="07…"></div>
+      <div class="field"><label for="hd-type">Device type</label><input type="text" id="hd-type" placeholder="e.g. Tecno Spark"></div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label for="hd-price">Device price</label><input type="number" id="hd-price" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label for="hd-sale">Was it a credit or cash order?</label>
+        <select id="hd-sale"><option value="">Select…</option><option value="Credit">Credit</option><option value="Cash">Cash</option></select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label for="hd-charger">Charger</label>
+        <select id="hd-charger"><option value="">Select…</option><option value="Yes">Has charger</option><option value="No">No charger</option></select>
+      </div>
+      <div class="field"><label for="hd-power">Powers on</label>
+        <select id="hd-power"><option value="Not tested">Not tested</option><option value="Yes">Yes</option><option value="No">No</option></select>
+      </div>
+    </div>
+    <div class="field"><label for="hd-notes">Note (optional)</label>
+      <textarea id="hd-notes" style="min-height:60px" placeholder="Anything the team should know…"></textarea>
+    </div>
+    <div class="field"><label>Photo of the device (optional)</label>
+      <div class="photo-box" onclick="document.getElementById('hd-photo-file').click()">
+        <div class="photo-ph" id="hd-photo-ph"><span class="photo-ph-icon">📷</span><span>Tap to take photo</span><small>Photo of the device</small></div>
+        <div class="photo-preview" id="hd-photo-preview"><img id="hd-photo-img" src="" alt=""><button type="button" class="retake-btn" onclick="event.stopPropagation();clearPhoto('hd-photo')">↺ Retake</button></div>
+      </div>
+      <input type="file" id="hd-photo-file" accept="image/*" capture="environment" onchange="previewPhoto(this,'hd-photo')">
+    </div>
+    <button type="button" class="submit-btn" id="hd-submit" style="background:#1d4ed8" onclick="submitHeldReport()">
+      <div class="spinner" id="hd-spinner"></div><span>Submit</span>
+    </button>
+    <div class="error-msg" id="hd-error"></div>
+  </div>
+</div>
+
+<!-- Customer Care / HR: confirm a device was received -->
+<div id="held-recv-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;width:100%;max-width:420px;max-height:90vh;overflow:auto">
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">Confirm Receipt</div>
+    <div id="hd-recv-title" style="font-size:12px;color:var(--text-m);margin-bottom:12px"></div>
+    <div class="field"><label for="hd-recv-match">Does the serial number match?<span class="req">*</span></label>
+      <select id="hd-recv-match"><option value="">Select…</option><option value="Yes">Yes, it matches</option><option value="No">No, it does not match</option></select>
+    </div>
+    <div class="field"><label for="hd-recv-cond">Condition on receipt</label>
+      <select id="hd-recv-cond"><option value="Good">Good, powers on</option><option value="Missing charger">Missing charger</option><option value="Damaged">Damaged</option><option value="Does not power on">Does not power on</option></select>
+    </div>
+    <div class="field"><label for="hd-recv-note">Note (optional)</label>
+      <textarea id="hd-recv-note" style="min-height:50px"></textarea>
+    </div>
+    <div style="font-size:11px;color:var(--text-m);margin-bottom:10px">Received by you, today. The date and your name are recorded automatically.</div>
+    <div style="display:flex;gap:8px">
+      <button type="button" class="dash-approve-btn" style="background:#6b7280" onclick="heldCloseRecv()">Cancel</button>
+      <button type="button" class="dash-approve-btn" style="background:#16a34a" onclick="heldSubmitRecv()">✅ Confirm received</button>
+    </div>
+    <div class="error-msg" id="hd-recv-error"></div>
+  </div>
+</div>
+
 <!-- ══════════════════════════ ARCHIVE DATA (Admin/Manager) -->
 <div class="screen" id="screen-archive-manager">
   <div class="app-header">
@@ -2007,6 +2129,7 @@ function goHome() {
   document.getElementById('home-county-chip').textContent = '📍 ' + (session.county || (isManagerOrAdmin ? 'All Regions' : 'Unknown'));
   document.getElementById('home-manager-chip').textContent = '👔 ' + (session.managerName||'Manager');
   document.getElementById('home-role-chip').textContent = '🎯 ' + (session.role||'Trainer');
+  try{ var hht = document.getElementById('home-held-title'); if(hht) hht.textContent = (session.role==='Trainer') ? 'Devices With Me' : 'Devices With Trainers'; }catch(e){}
   document.getElementById('home-user-initial').textContent = session.name.charAt(0).toUpperCase();
   document.getElementById('home-header-sub').textContent = session.county ? session.county+' County' : 'Field data collection';
 
@@ -3862,6 +3985,185 @@ function undoRepossession(btn){
   var bal = Number(btn.getAttribute('data-bal') || 0).toLocaleString();
   if(!confirm('Undo this repossession?\n\n' + K() + ' ' + bal + ' goes back on the shop\'s credit balance.')) return;
   postRepossessionAction({ formType:'undoRepossession', repossessionId: btn.getAttribute('data-id'), requestedBy: session.email, requestedByRole: session.role }, 'Repossession undone. The balance is back on the shop.');
+}
+
+// ── DEVICES WITH TRAINERS (not delivered / repossessed → Customer Care → Head Office) ──
+var allHeld = [];
+var heldRecvId = '';
+
+function heldRole(){ return session ? session.role : ''; }
+function heldCanReport(){ return heldRole() === 'Trainer'; }
+function heldCanAct(){ var r = heldRole(); return r === 'Trainer' || r === 'Manager' || r === 'Admin'; }
+function heldCanConfirm(){ var r = heldRole(); return r === 'Customer Care' || r === 'HR'; }
+function heldDate(s){ return String(s || '').split(',')[0]; }
+
+function heldBack(){
+  if(session && session.role === 'Trainer') showScreen('screen-home');
+  else openDashboard();
+}
+
+function openHeldDevices(){
+  if(!session) return;
+  showScreen('screen-held');
+  var btn = document.getElementById('held-report-btn');
+  if(btn) btn.style.display = heldCanReport() ? 'flex' : 'none';
+  loadHeldDevices();
+}
+
+function loadHeldDevices(){
+  var info = document.getElementById('held-info');
+  info.textContent = 'Loading…';
+  document.getElementById('held-list').innerHTML = '';
+  fetch(APPS_SCRIPT_URL + '?action=getHeldDevices&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.status === 'error'){ info.textContent = data.message || 'Failed to load.'; return; }
+      allHeld = data.heldDevices || [];
+      renderHeldDevices();
+    })
+    .catch(function(){ info.textContent = 'Failed to load devices.'; });
+}
+
+function renderHeldDevices(){
+  var q = (v('held-search') || '').toLowerCase();
+  var st = document.getElementById('held-status').value;
+  var isOpen = function(r){ return r['Status'] === 'WITH_TRAINER' || r['Status'] === 'SENT'; };
+  var open = allHeld.filter(isOpen);
+  var over7 = open.filter(function(r){ return Number(r.daysHeld || 0) >= 7; }).length;
+  var awaiting = allHeld.filter(function(r){ return r['Status'] === 'SENT'; }).length;
+  var tile = function(n, label, bg, fg){ return '<div style="flex:1;background:' + bg + ';border-radius:10px;padding:9px 4px;text-align:center"><div style="font-size:19px;font-weight:700;color:' + fg + '">' + n + '</div><div style="font-size:10px;color:var(--text-m)">' + label + '</div></div>'; };
+  document.getElementById('held-tiles').innerHTML = tile(open.length, 'Open', '#eff6ff', '#1d4ed8') + tile(over7, '7+ days', '#fff7ed', '#c2410c') + tile(awaiting, 'Awaiting receipt', '#fffbeb', '#b45309');
+
+  var filtered = allHeld.filter(function(r){
+    if(st === 'OPEN' && !isOpen(r)) return false;
+    if(st !== 'OPEN' && st !== 'ALL' && r['Status'] !== st) return false;
+    if(st === 'ALL' && r['Status'] === 'UNDONE') return false;
+    if(!q) return true;
+    return [r['Device Serial No'], r['Shop Name'], r['Customer Name'], r['Trainer Name'], r['County'], r['Reason']].join(' ').toLowerCase().indexOf(q) !== -1;
+  });
+  filtered.sort(function(a, b){ return (isOpen(b) - isOpen(a)) || (Number(b.daysHeld || 0) - Number(a.daysHeld || 0)); });
+  document.getElementById('held-info').textContent = filtered.length + ' device(s) shown.';
+  var listEl = document.getElementById('held-list');
+  if(!filtered.length){ listEl.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:10px 0">No devices match.</div>'; return; }
+
+  listEl.innerHTML = filtered.map(function(r){
+    var id = escapeHtml(r['Hold ID'] || '');
+    var s = r['Status'], d = Number(r.daysHeld || 0);
+    var open1 = isOpen(r);
+    var border = !open1 ? '#9ca3af' : (d > 14 ? '#dc2626' : (d >= 7 ? '#f59e0b' : '#16a34a'));
+    var chipBg = d > 14 ? ['#fecaca', '#991b1b'] : (d >= 7 ? ['#fed7aa', '#9a3412'] : ['#bbf7d0', '#166534']);
+    var pill = s === 'WITH_TRAINER' ? '<span class="badge badge-yellow">With trainer</span>'
+             : s === 'SENT' ? '<span class="badge" style="background:#dbeafe;color:#1d4ed8">Sent, awaiting receipt</span>'
+             : s === 'RECEIVED' ? '<span class="badge badge-green">Received</span>'
+             : s === 'RESOLD' ? '<span class="badge badge-green">Resold</span>'
+             : '<span class="badge badge-red">Cancelled</span>';
+    var html = '<div class="dash-item" style="border-left:4px solid ' + border + '">' +
+      '<div class="dash-item-top"><div><div class="dash-item-shop">📟 ' + escapeHtml(r['Device Serial No'] || 'Serial not recorded') + '</div>' +
+      '<div class="dash-item-ref">' + escapeHtml(r['Source'] === 'Repossession' ? 'Repossessed device' : 'Not delivered') + ' · ' + escapeHtml(r['Shop Name'] || '—') + '</div></div>' + pill + '</div>' +
+      '<div class="dash-item-body">' +
+        '👤 ' + escapeHtml(r['Trainer Name'] || '—') + ' · ' + escapeHtml(r['County'] || '') + '<br>' +
+        (r['Customer Name'] ? '🧑 ' + escapeHtml(r['Customer Name']) + (r['Customer Phone'] ? ' · ' + escapeHtml(r['Customer Phone']) : '') + '<br>' : '') +
+        'Reason: ' + escapeHtml(r['Reason'] || '—') +
+        (Number(r['Device Price'] || 0) ? '<br>Device price: ' + K(r['County']) + ' ' + Number(r['Device Price']).toLocaleString() : '') +
+        (r['Condition'] || r['Has Charger'] ? '<br>Condition: ' + escapeHtml([r['Condition'], r['Has Charger'] ? 'charger: ' + r['Has Charger'] : '', r['Powers On'] ? 'powers on: ' + r['Powers On'] : ''].filter(Boolean).join(' · ')) : '') +
+        (r['Notes'] ? '<br>📝 ' + escapeHtml(r['Notes']) : '') +
+        (r['Device Photo URL'] ? '<br>📷 <a href="' + escapeHtml(r['Device Photo URL']) + '" target="_blank" rel="noopener" style="color:var(--accent)">View device photo</a>' : '') +
+      '</div>' +
+      '<div style="margin-top:8px;font-size:12px;line-height:1.7">' +
+        '<span style="background:' + chipBg[0] + ';color:' + chipBg[1] + ';font-weight:700;font-size:11px;padding:2px 8px;border-radius:10px">' + d + ' day' + (d === 1 ? '' : 's') + (open1 ? ' held' : ' held in total') + '</span><br>' +
+        '• Reported: ' + escapeHtml(heldDate(r['Date Reported'])) + '<br>' +
+        (r['Sent To Customer Care At'] ? '• Sent to Customer Care: ' + escapeHtml(heldDate(r['Sent To Customer Care At'])) + '<br>' : '') +
+        (r['Received At'] ? '• Received: ' + escapeHtml(heldDate(r['Received At'])) + ' by ' + escapeHtml(r['Received By'] || '—') + (r['Received Condition'] ? ' (' + escapeHtml(r['Received Condition']) + ')' : '') + (r['Serial Matches'] === 'No' ? ' <strong style="color:#b91c1c">· SERIAL DOES NOT MATCH</strong>' : '') + '<br>' : '') +
+        (r['Resold At'] ? '• Resold: ' + escapeHtml(heldDate(r['Resold At'])) + (r['Resold To Shop'] ? ' to ' + escapeHtml(r['Resold To Shop']) : '') + '<br>' : '') +
+      '</div>';
+    var btns = '';
+    if(heldCanAct() && s === 'WITH_TRAINER') btns += '<button class="dash-approve-btn" style="background:#1d4ed8" data-id="' + id + '" onclick="heldSend(this)">📤 Send to Customer Care</button>';
+    if(heldCanConfirm() && (s === 'WITH_TRAINER' || s === 'SENT')) btns += '<button class="dash-approve-btn" style="background:#16a34a" data-id="' + id + '" data-serial="' + escapeHtml(r['Device Serial No'] || '') + '" data-trainer="' + escapeHtml(r['Trainer Name'] || '') + '" onclick="heldOpenRecv(this)">✅ Confirm received</button>';
+    if(heldCanAct() && open1 && (heldRole() !== 'Trainer' || s === 'WITH_TRAINER')) btns += '<button class="dash-approve-btn" style="background:#6b7280" data-id="' + id + '" onclick="heldCancel(this)">✖ Cancel record</button>';
+    if(btns) html += '<div class="dash-item-actions" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' + btns + '</div>';
+    return html + '</div>';
+  }).join('');
+}
+
+function heldPost(payload, okMsg){
+  fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.status === 'success'){ if(okMsg) alert(okMsg); loadHeldDevices(); }
+      else alert(data.message || 'Action failed.');
+    })
+    .catch(function(){ alert('Network error — please try again.'); });
+}
+
+function heldSend(btn){
+  if(!confirm('Mark this device as sent to Customer Care?\n\nCustomer Care and HR will be notified and asked to confirm receipt in the app.')) return;
+  heldPost({ formType:'sendHeldDeviceToCare', holdId: btn.getAttribute('data-id'), requestedBy: session.email, requestedByRole: session.role }, 'Marked as sent to Customer Care.');
+}
+
+function heldCancel(btn){
+  if(!confirm('Cancel this record?\n\nOnly do this if it was recorded by mistake.')) return;
+  heldPost({ formType:'cancelHeldDevice', holdId: btn.getAttribute('data-id'), requestedBy: session.email, requestedByRole: session.role }, 'Record cancelled.');
+}
+
+function heldOpenRecv(btn){
+  heldRecvId = btn.getAttribute('data-id');
+  document.getElementById('hd-recv-title').textContent = 'Serial ' + (btn.getAttribute('data-serial') || '—') + ' · from ' + (btn.getAttribute('data-trainer') || '—');
+  setVal('hd-recv-match', ''); setVal('hd-recv-note', ''); setVal('hd-recv-cond', 'Good');
+  document.getElementById('hd-recv-error').style.display = 'none';
+  document.getElementById('held-recv-modal').style.display = 'flex';
+}
+function heldCloseRecv(){ document.getElementById('held-recv-modal').style.display = 'none'; heldRecvId = ''; }
+
+function heldSubmitRecv(){
+  var er = document.getElementById('hd-recv-error');
+  er.style.display = 'none';
+  if(!v('hd-recv-match')){ er.textContent = 'Say whether the serial number matches.'; er.style.display = 'block'; return; }
+  var payload = { formType:'confirmHeldDeviceReceived', holdId: heldRecvId, serialMatches: v('hd-recv-match'), condition: v('hd-recv-cond'), note: v('hd-recv-note'), requestedBy: session.email, requestedByRole: session.role };
+  heldCloseRecv();
+  heldPost(payload, 'Receipt confirmed.');
+}
+
+// ── Trainer: report a device that was not delivered ──
+function openHeldReport(){
+  showScreen('screen-held-report');
+  ['hd-serial','hd-shop','hd-customer','hd-phone','hd-type','hd-price','hd-notes'].forEach(function(id){ setVal(id, ''); });
+  ['hd-reason','hd-sale','hd-charger'].forEach(function(id){ setVal(id, ''); });
+  setVal('hd-power', 'Not tested');
+  clearPhoto('hd-photo');
+  document.getElementById('hd-error').style.display = 'none';
+}
+
+function submitHeldReport(){
+  var errEl = document.getElementById('hd-error');
+  errEl.style.display = 'none';
+  function fail(msg){ errEl.textContent = msg; errEl.style.display = 'block'; }
+  if(!v('hd-serial')){ fail('Enter the device serial number.'); return; }
+  if(!v('hd-reason')){ fail('Select why the device was not delivered.'); return; }
+  if(!confirm('Record this device as not delivered and still with you?\n\nHR, Customer Care and your manager will be notified.')) return;
+  document.getElementById('hd-submit').style.display = 'none';
+  document.getElementById('hd-spinner').style.display = 'block';
+  var payload = {
+    formType: 'reportHeldDevice',
+    deviceSerial: v('hd-serial'), reason: v('hd-reason'), shopName: v('hd-shop'), customerName: v('hd-customer'),
+    customerPhone: v('hd-phone'), deviceType: v('hd-type'), devicePrice: v('hd-price'), saleType: v('hd-sale'),
+    hasCharger: v('hd-charger'), poweredOn: v('hd-power'), notes: v('hd-notes'), photo: photos['hd-photo'] || '',
+    trainerName: session.name, trainerEmail: session.email, requestedBy: session.email, county: session.county,
+    clientRequestId: getRequestId('heldreport')
+  };
+  fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    document.getElementById('hd-spinner').style.display = 'none';
+    document.getElementById('hd-submit').style.display = 'flex';
+    resetRequestId('heldreport');
+    if(data.status === 'success'){ alert('Recorded. When you send the device to Customer Care, open it in Devices With Trainers and tap "Send to Customer Care".'); openHeldDevices(); }
+    else fail(data.message || 'Failed to record the device.');
+  })
+  .catch(function(){
+    document.getElementById('hd-spinner').style.display = 'none';
+    document.getElementById('hd-submit').style.display = 'flex';
+    fail('Network error — please try again.');
+  });
 }
 
 // ── SIGNED CONTRACTS (Manager/Admin view) ───────────────────────
@@ -5730,7 +6032,7 @@ function applyViewerRestrictions(){
   var v = isViewerRole();
   document.querySelectorAll('#dash-menu .form-card').forEach(function(c){
     var oc = c.getAttribute('onclick')||'';
-    var keep = oc.indexOf("setFormType('devicepay')") !== -1 || oc.indexOf("openSignedContracts()") !== -1 || oc.indexOf("openDeviceRequests()") !== -1 || oc.indexOf("openRepossessions()") !== -1;
+    var keep = oc.indexOf("setFormType('devicepay')") !== -1 || oc.indexOf("openSignedContracts()") !== -1 || oc.indexOf("openDeviceRequests()") !== -1 || oc.indexOf("openRepossessions()") !== -1 || oc.indexOf("openHeldDevices()") !== -1;
     if(v) c.style.display = keep ? '' : 'none';
     else if(c.id !== 'dash-archive-card') c.style.display = '';
   });
