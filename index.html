@@ -2126,12 +2126,14 @@ function goHome() {
   var isManagerOrAdmin = session.role === 'Manager' || session.role === 'Admin' || isViewer;
   document.getElementById('home-welcome').textContent = 'Good ' + getTimeOfDay() + ', ' + session.name.split(' ')[0] + '!';
   document.getElementById('home-date-str').textContent = now.toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  document.getElementById('home-county-chip').textContent = '📍 ' + (session.county || (isManagerOrAdmin ? 'All Regions' : 'Unknown'));
+  // A manager who covers several regions (e.g. Uganda) shows 'All Regions' instead of the long region list.
+  var multiRegion = !!session.county && (/\(UG\)/i.test(session.county) || session.county.indexOf(',') !== -1) && session.role !== 'Trainer';
+  document.getElementById('home-county-chip').textContent = '📍 ' + (multiRegion ? 'All Regions' : (session.county || (isManagerOrAdmin ? 'All Regions' : 'Unknown')));
   document.getElementById('home-manager-chip').textContent = '👔 ' + (session.managerName||'Manager');
   document.getElementById('home-role-chip').textContent = '🎯 ' + (session.role||'Trainer');
   try{ var hht = document.getElementById('home-held-title'); if(hht) hht.textContent = (session.role==='Trainer') ? 'Devices With Me' : 'Devices With Trainers'; }catch(e){}
   document.getElementById('home-user-initial').textContent = session.name.charAt(0).toUpperCase();
-  document.getElementById('home-header-sub').textContent = session.county ? session.county+' County' : 'Field data collection';
+  document.getElementById('home-header-sub').textContent = (session.county && !multiRegion) ? session.county+' County' : 'Field data collection';
 
   document.getElementById('dashboard-card-wrap').style.display = isManagerOrAdmin ? 'block' : 'none';
   document.getElementById('notif-bell').style.display = (isManagerOrAdmin && !isViewer) ? 'flex' : 'none';
