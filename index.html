@@ -6099,7 +6099,10 @@ function setFormType(type){
   document.getElementById('dash-date-from').value='';
   document.getElementById('dash-date-to').value='';
   closeUserForm();
-  document.getElementById('dash-sub').textContent = dashLabels[type] + ' — ' + ((session.role==='Admin' || isViewerRole()) ? 'All counties' : (session.county||'') + ' region');
+  var _dashRegion = (session.county||'');
+  // Uganda managers cover several regions, so their long region list is not shown in the header (same as Kenya managers).
+  var _hideRegion = !_dashRegion || /\(UG\)/i.test(_dashRegion) || _dashRegion.indexOf(',') !== -1;
+  document.getElementById('dash-sub').textContent = dashLabels[type] + ((session.role==='Admin' || isViewerRole()) ? ' — All counties' : (_hideRegion ? '' : ' — ' + _dashRegion + ' region'));
   loadDashboard();
 }
 
