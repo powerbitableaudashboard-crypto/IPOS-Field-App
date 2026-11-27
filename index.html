@@ -1512,6 +1512,7 @@ input[type=file]{display:none}
     <div id="cs-title" style="font-size:16px;font-weight:700;margin-bottom:2px"></div>
     <div id="cs-sub" style="font-size:12px;color:var(--text-m);margin-bottom:12px"></div>
     <div class="field"><label for="cs-reason">Reason for churn<span class="req">*</span></label><select id="cs-reason" onchange="churnSortCheck()"></select></div>
+    <div class="field" id="cs-other-wrap" style="display:none"><label for="cs-other">Specify the reason<span class="req">*</span> (minimum 10 characters)</label><input type="text" id="cs-other" placeholder="e.g. Owner relocated to another town" oninput="churnSortCheck()"></div>
     <div class="field"><label for="cs-status">Status<span class="req">*</span></label>
       <select id="cs-status" onchange="churnSortCheck()"><option value="">Select…</option><option value="FOLLOW_UP">Pending follow-up</option><option value="REACTIVATED">Reactivated</option><option value="LOST">Lost, cannot recover</option></select>
     </div>
@@ -2419,6 +2420,16 @@ function addVisit(){
     '<div class="field"><label>Shop Owner Phone Number<span class="req">*</span></label>'+
     '<input type="tel" id="v-phone-'+id+'" placeholder="0712 345 678" inputmode="tel" pattern="^(\\+254[17][0-9]{7,}|254[17][0-9]{7,}|0[17][0-9]{8,}|\\+?256[37][0-9]{8})$" title="Enter a valid phone number: +254712345678, 254712345678, 0712345678, or 0112345678" oninput="sanitizePhoneInput(this);calcProgress(\'r\')"></div>'+
 
+    '<div id="v-pipe-'+id+'" style="display:none;border:2px solid #0f766e;background:#f0fdfa;border-radius:12px;padding:12px;margin-bottom:12px">'+
+    '<div style="font-size:11px;font-weight:700;color:#0f766e;letter-spacing:.5px;margin-bottom:8px">SHOP PIPELINE</div>'+
+    '<div class="field"><label>Stage after this visit<span class="req">*</span></label><select id="v-stage-'+id+'" onchange="pipeChange(\''+id+'\')"><option value="">Select stage…</option><option>Lead</option><option>First visit</option><option>Second visit</option><option>Device booked</option><option>Installed</option></select></div>'+
+    '<div class="field"><label>Temperature<span class="req">*</span></label><select id="v-temp-'+id+'" onchange="calcProgress(\'r\')"><option value="">Select…</option><option>Hot</option><option>Warm</option><option>Cold</option></select></div>'+
+    '<div class="field"><label>Outcome<span class="req">*</span></label><select id="v-outcome-'+id+'" onchange="pipeChange(\''+id+'\')"><option value="">Select…</option><option>Interested</option><option>Wants to think</option><option>Not interested</option></select></div>'+
+    '<div class="field" id="v-lost-wrap-'+id+'" style="display:none"><label>Why not interested?<span class="req">*</span></label><select id="v-lost-'+id+'" onchange="pipeChange(\''+id+'\')"><option value="">Select reason…</option><option>Price</option><option>Has another POS</option><option>No device</option><option>Owner absent</option><option>Feature missing</option><option>Other</option></select></div>'+
+    '<div class="field" id="v-lostother-wrap-'+id+'" style="display:none"><label>Specify the reason<span class="req">*</span> (minimum 10 characters)</label><input type="text" id="v-lostother-'+id+'" placeholder="Describe why the shop said no" oninput="calcProgress(\'r\')"></div>'+
+    '<div class="field" id="v-next-wrap-'+id+'" style="margin-bottom:0"><label>Next follow-up date<span class="req">*</span></label><input type="date" id="v-next-'+id+'" onchange="calcProgress(\'r\')"></div>'+
+    '</div>'+
+
     '<div class="field"><label>Front Shop Picture <span style="font-size:11px;color:#9ca3af;font-weight:400">(optional)</span></label>'+
     '<div class="photo-box" onclick="document.getElementById(\'v-photo-'+id+'-file\').click()">'+
     '<div class="photo-ph" id="v-photo-'+id+'-ph"><span class="photo-ph-icon">📸</span><span>Tap to photograph</span><small>Front of the shop</small></div>'+
@@ -2438,8 +2449,17 @@ function removeVisit(n){
   calcProgress('r');
 }
 
+function isPitchPurpose(p){ return p === 'Leads Generation or Pitching' || p === 'Follow-up visit(Leads)'; }
+function pipeChange(id){
+  var out = v('v-outcome-'+id), st = v('v-stage-'+id);
+  var lw = document.getElementById('v-lost-wrap-'+id); if(lw) lw.style.display = out === 'Not interested' ? 'block' : 'none';
+  var lo = document.getElementById('v-lostother-wrap-'+id); if(lo) lo.style.display = (out === 'Not interested' && v('v-lost-'+id) === 'Other') ? 'block' : 'none';
+  var nw = document.getElementById('v-next-wrap-'+id); if(nw) nw.style.display = (out === 'Not interested' || st === 'Installed') ? 'none' : 'block';
+  calcProgress('r');
+}
 function onVisitPurposeChange(id){
   var purpose = document.getElementById('v-purpose-'+id).value;
+  var pw = document.getElementById('v-pipe-'+id); if(pw){ pw.style.display = isPitchPurpose(purpose) ? 'block' : 'none'; pipeChange(id); }
   var wrap = document.getElementById('v-other-wrap-'+id);
   var inp = document.getElementById('v-other-'+id);
   if(purpose === 'Other'){
@@ -4161,7 +4181,7 @@ function renderChurn(){
       '<div class="dash-item-top"><div><div class="dash-item-shop">🏪 ' + escapeHtml(r['Shop Name'] || '—') + '</div>' +
       '<div class="dash-item-ref">' + escapeHtml(r['Trainer Name'] || '—') + ' · ' + escapeHtml(churnCounty(r['County'])) + '</div></div>' + pill + '</div>' +
       '<div class="dash-item-body">' +
-        (r['Reason'] ? 'Reason: <b>' + escapeHtml(r['Reason']) + '</b>' : '<span style="color:#b91c1c">No reason recorded yet</span>') +
+        (r['Reason'] ? 'Reason: <b>' + escapeHtml(r['Reason'] + (r['Reason'] === 'Other' && r['Reason Detail'] ? ': ' + r['Reason Detail'] : '')) + '</b>' : '<span style="color:#b91c1c">No reason recorded yet</span>') +
         (r['Note'] ? '<br>📝 ' + escapeHtml(r['Note']) : '') +
         (st === 'FOLLOW_UP' && r['Next Follow-up'] ? '<br>📅 Next follow-up: ' + escapeHtml(String(r['Next Follow-up']).split(',')[0]) : '') +
         (r['Sorted At'] ? '<br>Sorted: ' + escapeHtml(String(r['Sorted At']).split(',')[0]) : '') +
@@ -4214,7 +4234,7 @@ function churnOpenSort(btn){
   document.getElementById('cs-title').textContent = r['Shop Name'] || 'Churned client';
   document.getElementById('cs-sub').textContent = (r['Trainer Name'] || '') + ' · ' + churnCounty(r['County']);
   document.getElementById('cs-reason').innerHTML = '<option value="">Select…</option>' + churnReasonList.map(function(x){ return '<option>' + escapeHtml(x) + '</option>'; }).join('');
-  setVal('cs-reason', r['Reason'] || ''); setVal('cs-status', r['Status'] === 'PENDING' ? '' : (r['Status'] || '')); setVal('cs-note', r['Note'] || '');
+  setVal('cs-reason', r['Reason'] || ''); setVal('cs-other', r['Reason Detail'] || ''); setVal('cs-status', r['Status'] === 'PENDING' ? '' : (r['Status'] || '')); setVal('cs-note', r['Note'] || '');
   var nx = String(r['Next Follow-up'] || '').split(',')[0].trim(); setVal('cs-next', /^\d{4}-\d{2}-\d{2}$/.test(nx) ? nx : '');
   document.getElementById('cs-error').style.display = 'none';
   churnSortCheck();
@@ -4225,7 +4245,9 @@ function churnSortCheck(){
   var len = (document.getElementById('cs-note').value || '').trim().length, st = v('cs-status');
   var c = document.getElementById('cs-count'); c.textContent = len + '/30' + (len >= 30 ? ' ✓' : ''); c.style.color = len >= 30 ? '#16a34a' : 'var(--text-m)';
   document.getElementById('cs-next-wrap').style.display = st === 'FOLLOW_UP' ? '' : 'none';
-  var okAll = v('cs-reason') && st && len >= 30 && (st !== 'FOLLOW_UP' || v('cs-next'));
+  var isOther = v('cs-reason') === 'Other';
+  document.getElementById('cs-other-wrap').style.display = isOther ? '' : 'none';
+  var okAll = v('cs-reason') && st && len >= 30 && (st !== 'FOLLOW_UP' || v('cs-next')) && (!isOther || v('cs-other').length >= 10);
   var b = document.getElementById('cs-save'); b.disabled = !okAll; b.style.opacity = okAll ? '1' : '.5';
   b.textContent = st === 'FOLLOW_UP' ? 'Save, keep pending' : 'Save, mark as sorted';
 }
@@ -4233,7 +4255,7 @@ function churnSortSubmit(){
   var er = document.getElementById('cs-error'); er.style.display = 'none';
   var note = (document.getElementById('cs-note').value || '').trim();
   if(note.length < 30){ er.textContent = 'The note must be at least 30 characters.'; er.style.display = 'block'; return; }
-  var payload = { formType:'sortChurnedClient', churnId: churnSortId, reason: v('cs-reason'), status: v('cs-status'), note: note, nextFollowUp: v('cs-next'), requestedBy: session.email, clientRequestId: getRequestId('churnsort' + churnSortId) };
+  var payload = { formType:'sortChurnedClient', churnId: churnSortId, reason: v('cs-reason'), reasonDetail: v('cs-reason') === 'Other' ? v('cs-other') : '', status: v('cs-status'), note: note, nextFollowUp: v('cs-next'), requestedBy: session.email, clientRequestId: getRequestId('churnsort' + churnSortId) };
   var rid = 'churnsort' + churnSortId;
   document.getElementById('cs-save').disabled = true;
   fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) })
@@ -5996,6 +6018,20 @@ function submitForm(type){
       if(!feedback) missing.push('Visit '+id+' client feedback');
       else if(feedback.trim().length <30) missing.push('Visit '+id+' — Client feedback is too short ('+feedback.trim().length+' characters). Please give at least 30 characters');
 
+      var pipe = { stage:'', temperature:'', outcome:'', lostReason:'', nextFollowUp:'' };
+      if(isPitchPurpose(purpose)){
+        pipe.stage = v('v-stage-'+id); pipe.temperature = v('v-temp-'+id); pipe.outcome = v('v-outcome-'+id);
+        pipe.lostReason = pipe.outcome === 'Not interested' ? v('v-lost-'+id) : '';
+        var needNext = pipe.outcome !== 'Not interested' && pipe.stage !== 'Installed';
+        pipe.nextFollowUp = needNext ? v('v-next-'+id) : '';
+        if(!pipe.stage) missing.push('Visit '+id+' — Pipeline stage is required');
+        if(!pipe.temperature) missing.push('Visit '+id+' — Temperature (Hot, Warm or Cold) is required');
+        if(!pipe.outcome) missing.push('Visit '+id+' — Outcome is required');
+        if(pipe.outcome === 'Not interested' && !pipe.lostReason) missing.push('Visit '+id+' — Select why the shop is not interested');
+        pipe.lostReasonDetail = pipe.lostReason === 'Other' ? v('v-lostother-'+id) : '';
+        if(pipe.lostReason === 'Other' && pipe.lostReasonDetail.length < 10) missing.push('Visit '+id+' — Specify the reason (at least 10 characters) when you choose Other');
+        if(needNext && !pipe.nextFollowUp) missing.push('Visit '+id+' — Next follow-up date is required');
+      }
       var displayPurpose = (purpose==='Other' && specifyReason) ? 'Other — ' + specifyReason : purpose;
 
       visits.push({
@@ -6004,7 +6040,8 @@ function submitForm(type){
         phone:phone,
         purpose:displayPurpose,
         photo:photos['v-photo-'+id]||'',
-        feedback:feedback
+        feedback:feedback,
+        stage:pipe.stage, temperature:pipe.temperature, outcome:pipe.outcome, lostReason:pipe.lostReason, lostReasonDetail:pipe.lostReasonDetail||'', nextFollowUp:pipe.nextFollowUp
       });
     });
     if(!visits.length) missing.push('At least one visit');
