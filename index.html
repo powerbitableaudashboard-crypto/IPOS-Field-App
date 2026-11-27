@@ -410,6 +410,11 @@ input[type=file]{display:none}
         <div class="form-card-title" id="home-held-title">Devices With Me</div>
         <div class="form-card-desc">Not delivered devices &amp; handover</div>
       </div>
+      <div class="form-card red" onclick="openChurn()">
+        <div class="form-card-icon">📉</div>
+        <div class="form-card-title">Churned Clients</div>
+        <div class="form-card-desc">Sort churned clients with reasons</div>
+      </div>
     </div>
     <button class="logout-btn" onclick="doLogout()">⬅ Sign Out</button>
   </div>
@@ -465,6 +470,11 @@ input[type=file]{display:none}
           <div class="form-card-icon">📦</div>
           <div class="form-card-title">Devices With Trainers</div>
           <div class="form-card-desc">Not delivered, repossessed &amp; handover</div>
+        </div>
+        <div class="form-card red" onclick="openChurn()">
+          <div class="form-card-icon">📉</div>
+          <div class="form-card-title">Churned Clients</div>
+          <div class="form-card-desc">Upload list, sorting status &amp; reasons</div>
         </div>
         <div class="form-card orange" onclick="setFormType('survey')">
           <div class="form-card-icon">🏪</div>
@@ -1448,6 +1458,73 @@ input[type=file]{display:none}
       <button type="button" class="dash-approve-btn" style="background:#16a34a" onclick="heldSubmitRecv()">✅ Confirm received</button>
     </div>
     <div class="error-msg" id="hd-recv-error"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ CHURNED CLIENTS (trainer sorts, manager uploads and sees reasons) -->
+<div class="screen" id="screen-churn">
+  <div class="app-header">
+    <div><h1>📉 Churned Clients</h1><p id="cn-sub">Sort each churned client with a reason and a note</p></div>
+    <button class="back-btn" onclick="churnBack()">← Back</button>
+  </div>
+  <div class="form-body">
+    <button type="button" id="cn-upload-btn" class="submit-btn" style="display:none;margin-bottom:14px;background:#1d4ed8" onclick="openChurnUpload()"><span>⬆ Upload Churn List</span></button>
+    <div class="field" style="margin-bottom:10px"><label for="cn-month">Month</label><select id="cn-month" onchange="renderChurn()"></select></div>
+    <div id="cn-tiles" style="display:flex;gap:8px;margin-bottom:8px"></div>
+    <div id="cn-bar" style="height:8px;border-radius:4px;background:#e5e7eb;margin-bottom:4px"><div id="cn-bar-fill" style="height:8px;border-radius:4px;background:#16a34a;width:0"></div></div>
+    <div id="cn-bar-txt" style="font-size:11px;color:var(--text-m);margin-bottom:10px"></div>
+    <div id="cn-tabs" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap"></div>
+    <div id="cn-list-wrap">
+      <div class="field" style="margin-bottom:0"><input type="text" id="cn-search" placeholder="Search shop, trainer, county…" oninput="renderChurn()"></div>
+      <div id="cn-info" style="font-size:12px;color:var(--text-m);margin:10px 0"></div>
+      <div id="cn-list"></div>
+    </div>
+    <div id="cn-reasons-wrap" style="display:none">
+      <div class="two-col" style="margin-bottom:10px">
+        <div class="field" style="margin-bottom:0"><label for="cn-county">County / region</label><select id="cn-county" onchange="renderChurn()"></select></div>
+        <div class="field" style="margin-bottom:0"><label for="cn-rtrainer">Trainer</label><select id="cn-rtrainer" onchange="renderChurn()"></select></div>
+      </div>
+      <div id="cn-reasons"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Upload the monthly churn list (Admin / Manager) -->
+<div class="screen" id="screen-churn-upload">
+  <div class="app-header">
+    <div><h1>⬆ Upload Churn List</h1><p>Shop Name, Trainer Name, County. Due by the 5th of every month</p></div>
+    <button class="back-btn" onclick="openChurn()">← Back</button>
+  </div>
+  <div class="form-body">
+    <div class="field"><label for="cu-month">Month<span class="req">*</span></label><input type="month" id="cu-month"></div>
+    <div class="field"><label for="cu-file">Excel or CSV file</label><input type="file" id="cu-file" accept=".xlsx,.xls,.csv" onchange="churnReadFile(this)"><div id="cu-file-info" style="font-size:11px;color:var(--text-m);margin-top:4px"></div></div>
+    <div class="field"><label for="cu-paste">Or paste rows copied from Excel</label><textarea id="cu-paste" style="min-height:90px" placeholder="Shop Name&#9;Trainer Name&#9;County"></textarea></div>
+    <div style="font-size:11px;color:var(--text-m);margin-bottom:12px">Columns: <b>Shop Name</b>, <b>Trainer Name</b>, <b>County</b>. Trainers are matched by name against the Users list. <a href="#" onclick="churnTemplate();return false" style="color:var(--accent)">Download blank template</a></div>
+    <button type="button" class="submit-btn" onclick="churnCheck()"><span>Check list</span></button>
+    <div class="error-msg" id="cu-error"></div>
+    <div id="cu-result" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- Sort one churned client -->
+<div id="churn-sort-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;width:100%;max-width:440px;max-height:92vh;overflow:auto">
+    <div id="cs-title" style="font-size:16px;font-weight:700;margin-bottom:2px"></div>
+    <div id="cs-sub" style="font-size:12px;color:var(--text-m);margin-bottom:12px"></div>
+    <div class="field"><label for="cs-reason">Reason for churn<span class="req">*</span></label><select id="cs-reason" onchange="churnSortCheck()"></select></div>
+    <div class="field"><label for="cs-status">Status<span class="req">*</span></label>
+      <select id="cs-status" onchange="churnSortCheck()"><option value="">Select…</option><option value="FOLLOW_UP">Pending follow-up</option><option value="REACTIVATED">Reactivated</option><option value="LOST">Lost, cannot recover</option></select>
+    </div>
+    <div class="field" id="cs-next-wrap" style="display:none"><label for="cs-next">Next follow-up date<span class="req">*</span></label><input type="date" id="cs-next" onchange="churnSortCheck()"></div>
+    <div class="field"><label for="cs-note">Note<span class="req">*</span> (minimum 30 characters)</label>
+      <textarea id="cs-note" style="min-height:80px" oninput="churnSortCheck()" placeholder="What did the client say? What was agreed?"></textarea>
+      <div id="cs-count" style="font-size:11px;color:var(--text-m);margin-top:3px">0/30</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button type="button" class="dash-approve-btn" style="background:#6b7280" onclick="churnSortClose()">Cancel</button>
+      <button type="button" id="cs-save" class="dash-approve-btn" style="background:#16a34a" onclick="churnSortSubmit()">Save</button>
+    </div>
+    <div class="error-msg" id="cs-error"></div>
   </div>
 </div>
 
@@ -4004,6 +4081,272 @@ function heldBack(){
   else openDashboard();
 }
 
+// ═════════════ CHURNED CLIENTS ═════════════
+var allChurn = [], churnReasonList = [], churnTab = 'PENDING', churnSortId = '', churnUpRows = [], churnCurMonth = '';
+var CHURN_ST = { PENDING:'Not sorted', FOLLOW_UP:'Pending follow-up', REACTIVATED:'Reactivated', LOST:'Lost' };
+function churnIsMgr(){ return session && (session.role === 'Manager' || session.role === 'Admin'); }
+function churnCanSort(){ return session && (session.role === 'Trainer' || session.role === 'Manager' || session.role === 'Admin'); }
+function churnIsOpen(r){ return r['Status'] === 'PENDING' || r['Status'] === 'FOLLOW_UP'; }
+function churnCounty(c){ return String(c || '').replace(/\s*\(UG\)\s*/i, '').trim() || 'Unknown'; }
+function churnBack(){ if(session && session.role === 'Trainer') showScreen('screen-home'); else openDashboard(); }
+
+function openChurn(){
+  if(!session) return;
+  showScreen('screen-churn');
+  var up = document.getElementById('cn-upload-btn'); if(up) up.style.display = churnIsMgr() ? 'flex' : 'none';
+  churnTab = 'PENDING';
+  loadChurn();
+}
+function loadChurn(){
+  var info = document.getElementById('cn-info'); info.textContent = 'Loading…';
+  document.getElementById('cn-list').innerHTML = '';
+  fetch(APPS_SCRIPT_URL + '?action=getChurnList&email=' + encodeURIComponent(session.email) + '&role=' + encodeURIComponent(session.role))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.status === 'error'){ info.textContent = d.message || 'Failed to load.'; return; }
+      allChurn = d.churn || []; churnReasonList = d.reasons || []; churnCurMonth = d.month || '';
+      var months = {}; allChurn.forEach(function(r){ months[r['Month']] = 1; });
+      if(churnCurMonth) months[churnCurMonth] = 1;
+      var sel = document.getElementById('cn-month'), keep = sel.value;
+      var list = Object.keys(months).sort().reverse();
+      sel.innerHTML = list.map(function(m){ return '<option value="' + m + '">' + churnMonthLabel(m) + '</option>'; }).join('');
+      sel.value = (keep && months[keep]) ? keep : (churnCurMonth || list[0] || '');
+      renderChurn();
+    })
+    .catch(function(){ info.textContent = 'Failed to load the churn list.'; });
+}
+function churnMonthLabel(m){
+  var p = String(m || '').split('-'); if(p.length < 2) return m;
+  return ['January','February','March','April','May','June','July','August','September','October','November','December'][(+p[1]) - 1] + ' ' + p[0];
+}
+
+function renderChurn(){
+  var month = document.getElementById('cn-month').value;
+  var rows = allChurn.filter(function(r){ return r['Month'] === month; });
+  var open = rows.filter(churnIsOpen), sorted = rows.length - open.length;
+  var dom = new Date().getDate(), late = (month === churnCurMonth && dom >= 25) ? open.length : 0;
+  var tile = function(n, label, bg, fg){ return '<div style="flex:1;background:' + bg + ';border-radius:10px;padding:9px 4px;text-align:center"><div style="font-size:19px;font-weight:700;color:' + fg + '">' + n + '</div><div style="font-size:10px;color:var(--text-m)">' + label + '</div></div>'; };
+  document.getElementById('cn-tiles').innerHTML = tile(rows.length, 'Listed', '#eff6ff', '#1d4ed8') + tile(sorted, 'Sorted', '#dcfce7', '#166534') + tile(open.length, 'Pending', '#fffbeb', '#b45309') + tile(late, 'Past the 25th', '#fee2e2', '#b91c1c');
+  var pct = rows.length ? Math.round(100 * sorted / rows.length) : 0;
+  document.getElementById('cn-bar-fill').style.width = pct + '%';
+  document.getElementById('cn-bar-txt').textContent = rows.length ? (sorted + ' of ' + rows.length + ' sorted · ' + open.length + ' pending · deadline the 25th') : 'No churn list for this month yet.' + (churnIsMgr() ? ' Upload it with the button above.' : ' Your Area Manager uploads it by the 5th.');
+  // tabs
+  var tabs = [['PENDING', 'Pending ' + open.length], ['SORTED', 'Sorted ' + sorted], ['ALL', 'All ' + rows.length]];
+  if(session.role !== 'Trainer') tabs.push(['REASONS', 'Reasons']);
+  document.getElementById('cn-tabs').innerHTML = tabs.map(function(t){
+    var on = churnTab === t[0];
+    return '<button type="button" onclick="churnSetTab(\'' + t[0] + '\')" style="padding:7px 13px;border-radius:99px;border:1px solid ' + (on ? '#2563eb' : 'var(--border)') + ';background:' + (on ? '#2563eb' : 'var(--surface)') + ';color:' + (on ? '#fff' : 'var(--text)') + ';font-size:12px;font-weight:600">' + t[1] + '</button>';
+  }).join('');
+  var isReasons = churnTab === 'REASONS';
+  document.getElementById('cn-list-wrap').style.display = isReasons ? 'none' : '';
+  document.getElementById('cn-reasons-wrap').style.display = isReasons ? '' : 'none';
+  if(isReasons){ renderChurnReasons(rows); return; }
+
+  var q = (v('cn-search') || '').toLowerCase();
+  var f = rows.filter(function(r){
+    if(churnTab === 'PENDING' && !churnIsOpen(r)) return false;
+    if(churnTab === 'SORTED' && churnIsOpen(r)) return false;
+    if(!q) return true;
+    return [r['Shop Name'], r['Trainer Name'], r['County'], r['Reason']].join(' ').toLowerCase().indexOf(q) !== -1;
+  });
+  document.getElementById('cn-info').textContent = f.length + ' client(s) shown.';
+  var el = document.getElementById('cn-list');
+  if(!f.length){ el.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:10px 0">' + (churnTab === 'PENDING' && rows.length ? 'Everything is sorted. Well done.' : 'No clients match.') + '</div>'; return; }
+  el.innerHTML = f.map(function(r){
+    var st = r['Status'], isOpen = churnIsOpen(r), over = isOpen && month === churnCurMonth && dom >= 25;
+    var border = !isOpen ? (st === 'REACTIVATED' ? '#16a34a' : '#9ca3af') : (over ? '#dc2626' : '#f59e0b');
+    var pill = st === 'REACTIVATED' ? '<span class="badge badge-green">Reactivated</span>' : st === 'LOST' ? '<span class="badge" style="background:#e5e7eb;color:#374151">Lost</span>' : st === 'FOLLOW_UP' ? '<span class="badge badge-yellow">Pending follow-up</span>' : (over ? '<span class="badge badge-red">Overdue</span>' : '<span class="badge badge-yellow">Not sorted</span>');
+    var id = escapeHtml(r['Churn ID'] || '');
+    return '<div class="dash-item" style="border-left:4px solid ' + border + '">' +
+      '<div class="dash-item-top"><div><div class="dash-item-shop">🏪 ' + escapeHtml(r['Shop Name'] || '—') + '</div>' +
+      '<div class="dash-item-ref">' + escapeHtml(r['Trainer Name'] || '—') + ' · ' + escapeHtml(churnCounty(r['County'])) + '</div></div>' + pill + '</div>' +
+      '<div class="dash-item-body">' +
+        (r['Reason'] ? 'Reason: <b>' + escapeHtml(r['Reason']) + '</b>' : '<span style="color:#b91c1c">No reason recorded yet</span>') +
+        (r['Note'] ? '<br>📝 ' + escapeHtml(r['Note']) : '') +
+        (st === 'FOLLOW_UP' && r['Next Follow-up'] ? '<br>📅 Next follow-up: ' + escapeHtml(String(r['Next Follow-up']).split(',')[0]) : '') +
+        (r['Sorted At'] ? '<br>Sorted: ' + escapeHtml(String(r['Sorted At']).split(',')[0]) : '') +
+      '</div>' +
+      (churnCanSort() ? '<div style="margin-top:8px"><button type="button" class="dash-approve-btn" style="background:#2563eb;width:100%" data-id="' + id + '" onclick="churnOpenSort(this)">' + (isOpen ? (r['Reason'] ? 'Update' : 'Sort this client') : 'Edit') + '</button></div>' : '') +
+    '</div>';
+  }).join('');
+}
+function churnSetTab(t){ churnTab = t; renderChurn(); }
+
+// Reasons chart, filtered by county / trainer
+function renderChurnReasons(rows){
+  var cs = document.getElementById('cn-county'), ts = document.getElementById('cn-rtrainer');
+  var counties = {}, trainers = {};
+  rows.forEach(function(r){ counties[churnCounty(r['County'])] = 1; trainers[r['Trainer Name']] = 1; });
+  var cKeep = cs.value, tKeep = ts.value;
+  cs.innerHTML = '<option value="">All counties</option>' + Object.keys(counties).sort().map(function(c){ return '<option>' + escapeHtml(c) + '</option>'; }).join('');
+  ts.innerHTML = '<option value="">All trainers</option>' + Object.keys(trainers).sort().map(function(c){ return '<option>' + escapeHtml(c) + '</option>'; }).join('');
+  cs.value = counties[cKeep] ? cKeep : ''; ts.value = trainers[tKeep] ? tKeep : '';
+  var f = rows.filter(function(r){ return (!cs.value || churnCounty(r['County']) === cs.value) && (!ts.value || r['Trainer Name'] === ts.value); });
+  var wr = f.filter(function(r){ return r['Reason']; }), cnt = {};
+  wr.forEach(function(r){ cnt[r['Reason']] = (cnt[r['Reason']] || 0) + 1; });
+  var el = document.getElementById('cn-reasons');
+  if(!wr.length){ el.innerHTML = '<div style="color:var(--text-m);font-size:12px;padding:10px 0">No reasons recorded yet for this selection (' + f.length + ' client(s) listed).</div>'; return; }
+  var order = Object.keys(cnt).sort(function(a, b){ return cnt[b] - cnt[a]; }), mx = cnt[order[0]];
+  var cols = { 'Low sales / no customers':'#2563eb', 'Device fault':'#dc2626', 'Has another POS':'#d97706', 'Shop closed':'#6b7280', 'Other':'#7c3aed' };
+  var html = '<div style="font-size:12px;color:var(--text-m);margin-bottom:8px">' + wr.length + ' client(s) with a reason' + (cs.value ? ' in ' + escapeHtml(cs.value) : '') + (ts.value ? ' · ' + escapeHtml(ts.value) : '') + '</div>' +
+    order.map(function(k){
+      var w = Math.max(4, Math.round(100 * cnt[k] / mx));
+      return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>' + escapeHtml(k) + '</span><b>' + cnt[k] + ' · ' + Math.round(100 * cnt[k] / wr.length) + '%</b></div>' +
+        '<div style="height:12px;border-radius:6px;background:#e5e7eb"><div style="height:12px;border-radius:6px;background:' + (cols[k] || '#2563eb') + ';width:' + w + '%"></div></div></div>';
+    }).join('');
+  html += '<div style="background:#eff6ff;border-radius:8px;padding:9px 11px;font-size:12px;margin-top:6px">Most common issue: <b>' + escapeHtml(order[0]) + '</b> (' + Math.round(100 * cnt[order[0]] / wr.length) + '%)</div>';
+  if(!cs.value){
+    var by = {};
+    wr.forEach(function(r){ var c = churnCounty(r['County']); var o = by[c] || (by[c] = { n:0, by:{} }); o.n++; o.by[r['Reason']] = (o.by[r['Reason']] || 0) + 1; });
+    var ks = Object.keys(by).sort(function(a, b){ return by[b].n - by[a].n; });
+    html += '<div style="font-weight:700;font-size:13px;margin:14px 0 6px">Top reason by county</div>' + ks.map(function(c){
+      var o = by[c], top = Object.keys(o.by).sort(function(a, b){ return o.by[b] - o.by[a]; })[0];
+      return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span>' + escapeHtml(c) + ' <span style="color:var(--text-m)">(' + o.n + ')</span></span><span><b>' + escapeHtml(top) + '</b> · ' + Math.round(100 * o.by[top] / o.n) + '%</span></div>';
+    }).join('');
+  }
+  el.innerHTML = html;
+}
+
+// ── Sort a client ──
+function churnOpenSort(btn){
+  churnSortId = btn.getAttribute('data-id');
+  var r = allChurn.filter(function(x){ return x['Churn ID'] === churnSortId; })[0]; if(!r) return;
+  document.getElementById('cs-title').textContent = r['Shop Name'] || 'Churned client';
+  document.getElementById('cs-sub').textContent = (r['Trainer Name'] || '') + ' · ' + churnCounty(r['County']);
+  document.getElementById('cs-reason').innerHTML = '<option value="">Select…</option>' + churnReasonList.map(function(x){ return '<option>' + escapeHtml(x) + '</option>'; }).join('');
+  setVal('cs-reason', r['Reason'] || ''); setVal('cs-status', r['Status'] === 'PENDING' ? '' : (r['Status'] || '')); setVal('cs-note', r['Note'] || '');
+  var nx = String(r['Next Follow-up'] || '').split(',')[0].trim(); setVal('cs-next', /^\d{4}-\d{2}-\d{2}$/.test(nx) ? nx : '');
+  document.getElementById('cs-error').style.display = 'none';
+  churnSortCheck();
+  document.getElementById('churn-sort-modal').style.display = 'flex';
+}
+function churnSortClose(){ document.getElementById('churn-sort-modal').style.display = 'none'; churnSortId = ''; }
+function churnSortCheck(){
+  var len = (document.getElementById('cs-note').value || '').trim().length, st = v('cs-status');
+  var c = document.getElementById('cs-count'); c.textContent = len + '/30' + (len >= 30 ? ' ✓' : ''); c.style.color = len >= 30 ? '#16a34a' : 'var(--text-m)';
+  document.getElementById('cs-next-wrap').style.display = st === 'FOLLOW_UP' ? '' : 'none';
+  var okAll = v('cs-reason') && st && len >= 30 && (st !== 'FOLLOW_UP' || v('cs-next'));
+  var b = document.getElementById('cs-save'); b.disabled = !okAll; b.style.opacity = okAll ? '1' : '.5';
+  b.textContent = st === 'FOLLOW_UP' ? 'Save, keep pending' : 'Save, mark as sorted';
+}
+function churnSortSubmit(){
+  var er = document.getElementById('cs-error'); er.style.display = 'none';
+  var note = (document.getElementById('cs-note').value || '').trim();
+  if(note.length < 30){ er.textContent = 'The note must be at least 30 characters.'; er.style.display = 'block'; return; }
+  var payload = { formType:'sortChurnedClient', churnId: churnSortId, reason: v('cs-reason'), status: v('cs-status'), note: note, nextFollowUp: v('cs-next'), requestedBy: session.email, clientRequestId: getRequestId('churnsort' + churnSortId) };
+  var rid = 'churnsort' + churnSortId;
+  document.getElementById('cs-save').disabled = true;
+  fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      resetRequestId(rid);
+      if(d.status === 'success'){ churnSortClose(); loadChurn(); }
+      else { er.textContent = d.message || 'Could not save.'; er.style.display = 'block'; churnSortCheck(); }
+    })
+    .catch(function(){ er.textContent = 'Network error, please try again.'; er.style.display = 'block'; churnSortCheck(); });
+}
+
+// ── Upload (Admin / Manager) ──
+function openChurnUpload(){
+  showScreen('screen-churn-upload');
+  var d = new Date(); setVal('cu-month', d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2));
+  setVal('cu-paste', ''); document.getElementById('cu-file').value = ''; document.getElementById('cu-file-info').textContent = '';
+  document.getElementById('cu-error').style.display = 'none'; document.getElementById('cu-result').innerHTML = ''; churnUpRows = [];
+}
+function churnTemplate(){
+  var csv = 'Shop Name,Trainer Name,County\r\nMkulima Agrovet,Peter Mutua,Makueni\r\nGreen Valley Agro,Esther Wawira,Embu\r\n';
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' })); a.download = 'Churn_List_Template.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function churnParseText(txt){
+  var lines = String(txt || '').replace(/\r/g, '').split('\n').filter(function(l){ return l.trim(); });
+  return lines.map(function(l){
+    if(l.indexOf('\t') !== -1) return l.split('\t');
+    var out = [], cur = '', q = false;
+    for(var i = 0; i < l.length; i++){ var ch = l.charAt(i); if(ch === '"'){ q = !q; } else if(ch === ',' && !q){ out.push(cur); cur = ''; } else cur += ch; }
+    out.push(cur); return out;
+  });
+}
+function churnRowsFromGrid(grid){
+  grid = (grid || []).filter(function(r){ return r && r.some(function(c){ return String(c || '').trim(); }); });
+  if(!grid.length) return [];
+  var h = grid[0].map(function(c){ return String(c || '').toLowerCase(); }), iS = -1, iT = -1, iC = -1;
+  h.forEach(function(c, i){ if(iS < 0 && /shop|client|name of/.test(c) && !/trainer/.test(c)) iS = i; if(iT < 0 && /trainer/.test(c)) iT = i; if(iC < 0 && /county|region/.test(c)) iC = i; });
+  var hasHead = iS >= 0 || iT >= 0;
+  if(!hasHead){ iS = 0; iT = 1; iC = 2; } else { if(iS < 0) iS = 0; if(iT < 0) iT = 1; }
+  return grid.slice(hasHead ? 1 : 0).map(function(r){ return { shop: String(r[iS] || '').trim(), trainer: String(r[iT] || '').trim(), county: iC >= 0 ? String(r[iC] || '').trim() : '' }; });
+}
+function churnReadFile(inp){
+  var f = inp.files && inp.files[0]; if(!f) return;
+  var info = document.getElementById('cu-file-info'); info.textContent = 'Reading…';
+  if(/\.csv$/i.test(f.name)){
+    var rd = new FileReader();
+    rd.onload = function(){ churnUpRows = churnRowsFromGrid(churnParseText(rd.result)); info.textContent = f.name + ' · ' + churnUpRows.length + ' row(s) read'; };
+    rd.readAsText(f);
+    return;
+  }
+  var go = function(){
+    var rd2 = new FileReader();
+    rd2.onload = function(){
+      try{
+        var wb = XLSX.read(rd2.result, { type:'array' });
+        var grid = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:'' });
+        churnUpRows = churnRowsFromGrid(grid); info.textContent = f.name + ' · ' + churnUpRows.length + ' row(s) read';
+      }catch(e){ info.textContent = 'Could not read this file. Save it as .xlsx or .csv and try again.'; }
+    };
+    rd2.readAsArrayBuffer(f);
+  };
+  if(window.XLSX) go();
+  else { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = go; s.onerror = function(){ info.textContent = 'Could not load the Excel reader (are you online?). Save the file as CSV, or paste the rows below.'; }; document.head.appendChild(s); }
+}
+function churnUpPayload(commit){
+  var p = { formType:'uploadChurnList', month: v('cu-month'), rows: churnUpRows, commit: !!commit, requestedBy: session.email };
+  if(commit) p.clientRequestId = getRequestId('churnup');
+  return p;
+}
+function churnCheck(){
+  var er = document.getElementById('cu-error'); er.style.display = 'none';
+  var pasted = document.getElementById('cu-paste').value;
+  if(pasted.trim()) churnUpRows = churnRowsFromGrid(churnParseText(pasted));
+  if(!v('cu-month')){ er.textContent = 'Choose the month.'; er.style.display = 'block'; return; }
+  if(!churnUpRows.length){ er.textContent = 'Choose a file or paste the rows first.'; er.style.display = 'block'; return; }
+  document.getElementById('cu-result').innerHTML = '<div style="font-size:12px;color:var(--text-m)">Checking…</div>';
+  fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(churnUpPayload(false)) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.status === 'error'){ document.getElementById('cu-result').innerHTML = ''; er.textContent = d.message || 'Check failed.'; er.style.display = 'block'; return; }
+      renderChurnCheck(d);
+    })
+    .catch(function(){ document.getElementById('cu-result').innerHTML = ''; er.textContent = 'Network error, please try again.'; er.style.display = 'block'; });
+}
+function renderChurnCheck(d){
+  var c = d.counts || {}, bad = (c.duplicate || 0) + (c.no_trainer || 0) + (c.ambiguous || 0) + (c.not_yours || 0) + (c.no_shop || 0);
+  var tile = function(n, l, bg, fg){ return '<div style="flex:1;background:' + bg + ';border-radius:10px;padding:9px 4px;text-align:center"><div style="font-size:19px;font-weight:700;color:' + fg + '">' + n + '</div><div style="font-size:10px;color:var(--text-m)">' + l + '</div></div>'; };
+  var tag = function(r){
+    var m = { ready:['#dcfce7','#166534','Ready'], duplicate:['#fef3c7','#92400e','Already listed'], no_trainer:['#fee2e2','#b91c1c','No such trainer'], ambiguous:['#fee2e2','#b91c1c','Two trainers, same name'], not_yours:['#fee2e2','#b91c1c','Not your trainer'], no_shop:['#fee2e2','#b91c1c','Shop name missing'] }[r.check];
+    return '<span style="background:' + m[0] + ';color:' + m[1] + ';font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px">' + m[2] + '</span>' + (r.hint ? '<div style="font-size:10px;color:var(--text-m)">Did you mean ' + escapeHtml(r.hint) + '?</div>' : '');
+  };
+  var rows = (d.rows || []).slice().sort(function(a, b){ return (a.check === 'ready') - (b.check === 'ready'); });
+  document.getElementById('cu-result').innerHTML =
+    '<div style="display:flex;gap:8px;margin-bottom:10px">' + tile(c.ready || 0, 'Ready', '#dcfce7', '#166534') + tile(c.duplicate || 0, 'Duplicates', '#fffbeb', '#b45309') + tile(bad - (c.duplicate || 0), 'Need fixing', '#fee2e2', '#b91c1c') + '</div>' +
+    '<div style="max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:10px"><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:var(--bg)"><th style="text-align:left;padding:6px">Shop</th><th style="text-align:left;padding:6px">Trainer</th><th style="text-align:left;padding:6px">County</th><th style="text-align:left;padding:6px">Check</th></tr>' +
+    rows.map(function(r){ return '<tr style="border-top:1px solid var(--border)"><td style="padding:6px">' + escapeHtml(r.shop || '—') + '</td><td style="padding:6px">' + escapeHtml(r.trainer || '—') + '</td><td style="padding:6px">' + escapeHtml(r.county || '') + '</td><td style="padding:6px">' + tag(r) + '</td></tr>'; }).join('') + '</table></div>' +
+    '<div style="font-size:11px;color:var(--text-m);margin:8px 0">Duplicates are skipped. Fix rows marked red in your file and check again, or save the ready ones now.</div>' +
+    '<button type="button" class="submit-btn" style="background:#16a34a" ' + ((c.ready || 0) ? '' : 'disabled') + ' onclick="churnSave()"><span>Save ' + (c.ready || 0) + ' client(s) and notify trainers</span></button>';
+}
+function churnSave(){
+  if(!confirm('Save these clients and notify each trainer?')) return;
+  var er = document.getElementById('cu-error'); er.style.display = 'none';
+  fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify(churnUpPayload(true)) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      resetRequestId('churnup');
+      if(d.status === 'success'){ alert('Saved ' + (d.saved || 0) + ' client(s). Trainers have been notified.'); openChurn(); }
+      else { er.textContent = d.message || 'Save failed.'; er.style.display = 'block'; }
+    })
+    .catch(function(){ er.textContent = 'Network error, please try again.'; er.style.display = 'block'; });
+}
+
 function openHeldDevices(){
   if(!session) return;
   showScreen('screen-held');
@@ -6034,7 +6377,7 @@ function applyViewerRestrictions(){
   var v = isViewerRole();
   document.querySelectorAll('#dash-menu .form-card').forEach(function(c){
     var oc = c.getAttribute('onclick')||'';
-    var keep = oc.indexOf("setFormType('devicepay')") !== -1 || oc.indexOf("openSignedContracts()") !== -1 || oc.indexOf("openDeviceRequests()") !== -1 || oc.indexOf("openRepossessions()") !== -1 || oc.indexOf("openHeldDevices()") !== -1;
+    var keep = oc.indexOf("setFormType('devicepay')") !== -1 || oc.indexOf("openSignedContracts()") !== -1 || oc.indexOf("openDeviceRequests()") !== -1 || oc.indexOf("openRepossessions()") !== -1 || oc.indexOf("openHeldDevices()") !== -1 || oc.indexOf("openChurn()") !== -1;
     if(v) c.style.display = keep ? '' : 'none';
     else if(c.id !== 'dash-archive-card') c.style.display = '';
   });
